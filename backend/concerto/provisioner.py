@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import secrets
 import time
 from typing import Literal
@@ -210,6 +211,9 @@ async def provision_droplet(
         tunnel_info = await create_named_tunnel(token)
         await db.update_buyer(token, cf_tunnel_id=tunnel_info["tunnel_id"])
 
+    # Sanitize email to safe chars before rendering into shell-sourced env file (Bug #24)
+    safe_email = re.sub(r"[^a-zA-Z0-9.+\-_@]", "", customer_email or "")
+
     cloud_init = Template(_load_cloud_init_template()).render(
         token=token,
         ssh_public_key=public_key,
@@ -218,7 +222,7 @@ async def provision_droplet(
         concerto_token=token,
         concerto_token_prefix=token[:8],
         concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
-        customer_email=customer_email,
+        customer_email=safe_email,
         ttyd_password=ttyd_password,
         tunnel_token=tunnel_info.get("tunnel_token", ""),
         tunnel_hostname=tunnel_info.get("hostname", ""),
@@ -232,12 +236,13 @@ async def provision_droplet(
 
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
 
-    async with httpx.AsyncClient(
-        base_url=_DO_API_BASE, headers=headers, timeout=30
-    ) as client:
-        droplet_id = await _create_droplet_with_fallback(
-            client, f"concerto-{token[:8]}", region, size, cloud_init, tag
-        )
+    try:
+        async with httpx.AsyncClient(
+            base_url=_DO_API_BASE, headers=headers, timeout=30
+        ) as client:
+            droplet_id = await _create_droplet_with_fallback(
+                client, f"concerto-{token[:8]}", region, size, cloud_init, tag
+            )
 
         # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
         if mode in ("solo", "pro"):
@@ -272,5 +277,14 @@ async def provision_droplet(
                                 created_at=int(time.time()),
                             )
                         return droplet_id, ipv4, private_key_path, ttyd_password
+
+    except Exception:
+        # CF tunnel was created but droplet creation/boot failed — clean it up
+        if is_hosted and tunnel_info.get("tunnel_id"):
+            try:
+                await destroy_named_tunnel(tunnel_info["tunnel_id"])
+            except Exception:
+                pass
+        raise
 
     raise TimeoutError(f"Droplet {droplet_id} did not become active within 5 minutes")
