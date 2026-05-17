@@ -1,16 +1,16 @@
 # Terms of Service
 
-**Maestro** — Remote Workshop for Claude Code Agents
+**Concerto** — Remote Workshop for Claude Code Agents
 
 _Last updated: 2026-05-17_
 
 ---
 
-## 1. Who We Are and What Maestro Does
+## 1. Who We Are and What Concerto Does
 
-Maestro is a provisioning and orchestration service operated by Ethan Adjedj ("we," "us," "our"). When you purchase access to Maestro, we use your DigitalOcean API key to spin up a Virtual Private Server (VPS) — a Droplet — inside **your** DigitalOcean account. We then install Claude Code, an MCP server, and a secure tunnel so you can pilot Claude Code agents from your browser.
+Concerto is a provisioning and orchestration service operated by Ethan Adjedj ("we," "us," "our"). When you purchase access to Concerto, we use your DigitalOcean API key to spin up a Virtual Private Server (VPS) — a Droplet — inside **your** DigitalOcean account. We then install Claude Code, an MCP server, and a secure tunnel so you can pilot Claude Code agents from your browser.
 
-Key point: **you own the infrastructure.** The Droplet lives in your DigitalOcean account, is billed by DigitalOcean directly to you, and you retain full control over it. Maestro's role is to provision it, connect you to it, and get out of your way.
+Key point: **you own the infrastructure.** The Droplet lives in your DigitalOcean account, is billed by DigitalOcean directly to you, and you retain full control over it. Concerto's role is to provision it, connect you to it, and get out of your way.
 
 ---
 
@@ -27,17 +27,17 @@ Key point: **you own the infrastructure.** The Droplet lives in your DigitalOcea
 
 All payments are processed by Stripe, Inc. By completing a purchase you agree to Stripe's terms of service. We do not store your payment card details; Stripe handles all card data under PCI-DSS compliance.
 
-The purchase price is **$99.00 USD**, charged once at the time of purchase. There are no recurring charges from Maestro. Your ongoing DigitalOcean Droplet costs are billed separately by DigitalOcean to your account.
+The purchase price is **$99.00 USD**, charged once at the time of purchase. There are no recurring charges from Concerto. Your ongoing DigitalOcean Droplet costs are billed separately by DigitalOcean to your account.
 
 ---
 
 ## 4. Refund Policy
 
-If your Droplet never reaches a "ready" state — meaning our provisioning process failed to successfully complete the installation — you are entitled to a **full refund** within **14 days** of your purchase date. To request a refund, email us at **support@maestro.run** with your purchase email address. We will process the refund through Stripe within 5 business days of approving your request.
+If your Droplet never reaches a "ready" state — meaning our provisioning process failed to successfully complete the installation — you are entitled to a **full refund** within **14 days** of your purchase date. To request a refund, email us at **support@concerto.run** with your purchase email address. We will process the refund through Stripe within 5 business days of approving your request.
 
 Once provisioning has completed successfully (you can access your Droplet via the dashboard), refunds are not available. The Droplet has been created inside your DigitalOcean account and belongs to you; the service has been rendered.
 
-A complete, standalone Refund Policy is available at [maestro.run/legal/refund](/legal/refund).
+A complete, standalone Refund Policy is available at [concerto.run/legal/refund](/legal/refund).
 
 ---
 
@@ -47,7 +47,7 @@ A complete, standalone Refund Policy is available at [maestro.run/legal/refund](
 
 **Anthropic Max subscription**: Claude Code requires an Anthropic Max subscription. Obtaining and maintaining that subscription is your responsibility.
 
-**Lawful use**: You may not use Maestro to provision Droplets for any purpose that violates DigitalOcean's Acceptable Use Policy, Anthropic's usage policies, or applicable law. See our full [Acceptable Use Policy](/legal/aup) for specifics.
+**Lawful use**: You may not use Concerto to provision Droplets for any purpose that violates DigitalOcean's Acceptable Use Policy, Anthropic's usage policies, or applicable law. See our full [Acceptable Use Policy](/legal/aup) for specifics.
 
 **Security**: Your dashboard token grants access to your Droplet's terminal. Treat it like a password. Do not share it publicly.
 
@@ -57,9 +57,9 @@ A complete, standalone Refund Policy is available at [maestro.run/legal/refund](
 
 ## 6. What We Provide and Do Not Guarantee
 
-We will make reasonable efforts to provision your Droplet successfully and keep the Maestro dashboard operational. However, the service is provided **"as is"** without warranties of any kind, express or implied. We do not guarantee:
+We will make reasonable efforts to provision your Droplet successfully and keep the Concerto dashboard operational. However, the service is provided **"as is"** without warranties of any kind, express or implied. We do not guarantee:
 
-- Uninterrupted availability of the Maestro dashboard
+- Uninterrupted availability of the Concerto dashboard
 - Compatibility with future versions of Claude Code, DigitalOcean's API, or Anthropic's services
 - That your Droplet will remain reachable if DigitalOcean experiences an outage or you exhaust your DO billing
 
@@ -67,7 +67,7 @@ We will make reasonable efforts to provision your Droplet successfully and keep 
 
 ## 7. Limitation of Liability
 
-To the maximum extent permitted by applicable law, our total liability to you for any claim arising from your use of Maestro — regardless of the legal theory — is limited to **the amount you paid us**, which is $99.00 USD. We are not liable for indirect, incidental, consequential, or punitive damages.
+To the maximum extent permitted by applicable law, our total liability to you for any claim arising from your use of Concerto — regardless of the legal theory — is limited to **the amount you paid us**, which is $99.00 USD. We are not liable for indirect, incidental, consequential, or punitive damages.
 
 This limitation exists because the infrastructure is in your hands: you own the Droplet, you control the DigitalOcean account, and any material loss would occur in your own cloud environment, not in ours.
 
@@ -75,7 +75,7 @@ This limitation exists because the infrastructure is in your hands: you own the 
 
 ## 8. Termination
 
-We reserve the right to suspend or terminate your Maestro dashboard access if:
+We reserve the right to suspend or terminate your Concerto dashboard access if:
 
 - We detect abuse as described in our Acceptable Use Policy
 - You initiate a fraudulent chargeback after a successful provisioning
@@ -93,7 +93,7 @@ We take your privacy seriously. We collect the minimum data needed to deliver th
 
 ## 10. Changes to These Terms
 
-We may update these Terms by posting a new version at maestro.run/legal/terms with an updated "Last updated" date. Continued use of the service after changes are posted constitutes acceptance. We will make reasonable efforts to notify existing customers of material changes via email.
+We may update these Terms by posting a new version at concerto.run/legal/terms with an updated "Last updated" date. Continued use of the service after changes are posted constitutes acceptance. We will make reasonable efforts to notify existing customers of material changes via email.
 
 ---
 
@@ -105,6 +105,6 @@ These Terms are governed by the laws of France, without regard to conflict-of-la
 
 ## 12. Contact
 
-**Email**: support@maestro.run
+**Email**: support@concerto.run
 
 Questions about these terms? Email us — we're a small team and we respond to real questions.

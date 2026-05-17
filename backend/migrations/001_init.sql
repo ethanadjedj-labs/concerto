@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS maestro_buyers (
+CREATE TABLE IF NOT EXISTS concerto_buyers (
     id                      INTEGER PRIMARY KEY AUTOINCREMENT,
     token                   TEXT    UNIQUE NOT NULL,
     email                   TEXT,

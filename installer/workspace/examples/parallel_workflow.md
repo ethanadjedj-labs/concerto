@@ -1,15 +1,15 @@
 # Parallel Workflow — running multiple sessions at once
 
-Maestro sessions are independent processes on your VPS. You can fire several in parallel from a single claude.ai message.
+Concerto sessions are independent processes on your VPS. You can fire several in parallel from a single claude.ai message.
 
 ## Pattern
 
 In one message, ask Claude to spawn N sessions simultaneously:
 
-> Spawn 3 Maestro sessions in parallel:
-> 1. Session "audit-backend": list all Python files in /opt/maestro-workspace/myapp/backend/ and report any files over 300 lines.
-> 2. Session "check-deps": run `pip list --outdated` in /opt/maestro-workspace/myapp/ and report packages more than 2 major versions behind.
-> 3. Session "test-suite": run `pytest /opt/maestro-workspace/myapp/tests/ -q` and return pass/fail counts.
+> Spawn 3 Concerto sessions in parallel:
+> 1. Session "audit-backend": list all Python files in /opt/concerto-workspace/myapp/backend/ and report any files over 300 lines.
+> 2. Session "check-deps": run `pip list --outdated` in /opt/concerto-workspace/myapp/ and report packages more than 2 major versions behind.
+> 3. Session "test-suite": run `pytest /opt/concerto-workspace/myapp/tests/ -q` and return pass/fail counts.
 
 Claude will call `start_claude_session` three times in sequence and return three session IDs.
 
@@ -23,7 +23,7 @@ Claude calls `get_claude_session` for each and surfaces the envelopes.
 
 ## Resource limits
 
-Your Maestro VPS has 2 GiB RAM by default. Running more than 2-3 heavy sessions simultaneously risks OOM. For safe parallel limits:
+Your Concerto VPS has 2 GiB RAM by default. Running more than 2-3 heavy sessions simultaneously risks OOM. For safe parallel limits:
 - Light sessions (file reads, small scripts): up to 4 in parallel.
 - Heavy sessions (npm install, large test suites, model inference): max 2 in parallel.
 

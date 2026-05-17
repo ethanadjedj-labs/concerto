@@ -120,7 +120,7 @@ const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
     title: "Provisioning timed out",
     titleFr: "Délai de provisionnement dépassé",
     description:
-      "The droplet took too long to become active. A full refund has been issued. Please retry or contact support@maestro.run.",
+      "The droplet took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
     descriptionFr:
       "Le serveur a mis trop longtemps à démarrer. Un remboursement a été initié. Veuillez réessayer.",
     retryable: false,
@@ -129,7 +129,7 @@ const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
     title: "Installation timed out",
     titleFr: "Délai d'installation dépassé",
     description:
-      "The Maestro installer did not complete within 8 minutes. A full refund has been issued. Please retry or contact support@maestro.run.",
+      "The Concerto installer did not complete within 8 minutes. A full refund has been issued. Please retry or contact support@concerto.run.",
     descriptionFr:
       "L'installateur n'a pas terminé dans les 8 minutes. Un remboursement a été initié.",
     retryable: false,
@@ -168,8 +168,8 @@ function ErrorCard({
             Retry / Réessayer
           </Button>
         )}
-        <a href="mailto:support@maestro.run" className="text-[12px] text-white/30 hover:text-white/50">
-          Contact support@maestro.run
+        <a href="mailto:support@concerto.run" className="text-[12px] text-white/30 hover:text-white/50">
+          Contact support@concerto.run
         </a>
       </div>
     </div>
@@ -188,7 +188,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   const [serverErr, setServerErr] = useState("")
   const [retrying, setRetrying]   = useState(false)
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
 
   useEffect(() => {
     fetch(`${backendUrl}/api/buyer/${params.token}/status`)
@@ -282,7 +282,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
             <circle cx="11" cy="11" r="2" fill="white" />
           </svg>
-          <h1 className="mt-3 text-2xl font-bold tracking-tight">Set up your Maestro</h1>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight">Set up your Concerto</h1>
           <p className="text-sm text-white/40">
             {plan === "hosted"
               ? "Pick a region — we'll provision your 4 GB / 2-vCPU droplet automatically."
@@ -443,7 +443,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   ) : retrying ? (
                     "Retry Provisioning"
                   ) : (
-                    "Provision My Maestro"
+                    "Provision My Concerto"
                   )}
                 </Button>
               </form>
@@ -452,7 +452,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             /* ── Provisioning stepper ──────────────────────────── */
             <div className="p-7">
               <div className="mb-5">
-                <h2 className="text-[15px] font-semibold text-white">Provisioning your Maestro</h2>
+                <h2 className="text-[15px] font-semibold text-white">Provisioning your Concerto</h2>
                 <p className="mt-1 text-[13px] text-white/40">This takes about 3–5 minutes. Don&apos;t close this tab.</p>
               </div>
 

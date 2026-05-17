@@ -2,7 +2,7 @@ import asyncio
 import os
 import sqlite3
 
-DB_PATH = os.getenv("MAESTRO_DB_PATH", "/var/lib/maestro/maestro.db")
+DB_PATH = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 
 
 def _conn() -> sqlite3.Connection:
@@ -21,8 +21,11 @@ async def run_migration(sql: str) -> None:
                 try:
                     conn.execute(stmt)
                 except sqlite3.OperationalError as exc:
-                    if "duplicate column name" not in str(exc).lower():
-                        raise
+                    msg = str(exc).lower()
+                    # Idempotent: skip if column already exists or source table gone
+                    if "duplicate column name" in msg or "no such table" in msg:
+                        continue
+                    raise
             conn.commit()
         finally:
             conn.close()
@@ -55,7 +58,7 @@ async def insert_buyer_with_plan(
         conn = _conn()
         try:
             conn.execute(
-                """INSERT INTO maestro_buyers
+                """INSERT INTO concerto_buyers
                    (token, email, stripe_session_id, status, paid_at,
                     plan, subscription_id, subscription_status, next_renewal_at,
                     stripe_customer_id)
@@ -76,7 +79,7 @@ async def get_buyer(token: str) -> dict | None:
         conn = _conn()
         try:
             row = conn.execute(
-                "SELECT * FROM maestro_buyers WHERE token = ?", (token,)
+                "SELECT * FROM concerto_buyers WHERE token = ?", (token,)
             ).fetchone()
             return dict(row) if row else None
         finally:
@@ -90,7 +93,7 @@ async def get_buyer_by_subscription(subscription_id: str) -> dict | None:
         conn = _conn()
         try:
             row = conn.execute(
-                "SELECT * FROM maestro_buyers WHERE subscription_id = ?",
+                "SELECT * FROM concerto_buyers WHERE subscription_id = ?",
                 (subscription_id,),
             ).fetchone()
             return dict(row) if row else None
@@ -110,7 +113,7 @@ async def update_buyer(token: str, **fields) -> None:
         conn = _conn()
         try:
             conn.execute(
-                f"UPDATE maestro_buyers SET {set_clause} WHERE token = ?",
+                f"UPDATE concerto_buyers SET {set_clause} WHERE token = ?",
                 values,
             )
             conn.commit()
@@ -131,7 +134,7 @@ async def upsert_hosted_pool(
         conn = _conn()
         try:
             conn.execute(
-                """INSERT INTO maestro_hosted_pool
+                """INSERT INTO concerto_hosted_pool
                    (droplet_id, buyer_token, ipv4, status, created_at)
                    VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT(droplet_id) DO UPDATE SET
@@ -151,7 +154,7 @@ async def update_hosted_pool_status(droplet_id: str, status: str) -> None:
         conn = _conn()
         try:
             conn.execute(
-                "UPDATE maestro_hosted_pool SET status = ? WHERE droplet_id = ?",
+                "UPDATE concerto_hosted_pool SET status = ? WHERE droplet_id = ?",
                 (status, droplet_id),
             )
             conn.commit()
@@ -167,12 +170,12 @@ async def get_hosted_pool_entries(status_prefix: str | None = None) -> list[dict
         try:
             if status_prefix:
                 rows = conn.execute(
-                    "SELECT * FROM maestro_hosted_pool WHERE status LIKE ?",
+                    "SELECT * FROM concerto_hosted_pool WHERE status LIKE ?",
                     (f"{status_prefix}%",),
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    "SELECT * FROM maestro_hosted_pool WHERE destroyed_at IS NULL"
+                    "SELECT * FROM concerto_hosted_pool WHERE destroyed_at IS NULL"
                 ).fetchall()
             return [dict(r) for r in rows]
         finally:

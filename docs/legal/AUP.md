@@ -1,6 +1,6 @@
 # Acceptable Use Policy
 
-**Maestro** — Remote Workshop for Claude Code Agents
+**Concerto** — Remote Workshop for Claude Code Agents
 
 _Last updated: 2026-05-17_
 
@@ -8,7 +8,7 @@ _Last updated: 2026-05-17_
 
 ## Purpose
 
-Maestro provisions a DigitalOcean Droplet inside your account and gives you browser-based access to Claude Code agents running on it. The Droplet's compute resources are yours to direct — but some uses are off-limits because they harm other people, violate our providers' rules, or expose us both to legal risk.
+Concerto provisions a DigitalOcean Droplet inside your account and gives you browser-based access to Claude Code agents running on it. The Droplet's compute resources are yours to direct — but some uses are off-limits because they harm other people, violate our providers' rules, or expose us both to legal risk.
 
 This policy defines those limits clearly.
 
@@ -16,7 +16,7 @@ This policy defines those limits clearly.
 
 ## Prohibited Uses
 
-You may not use Maestro-provisioned infrastructure for any of the following:
+You may not use Concerto-provisioned infrastructure for any of the following:
 
 ### 1. Cryptocurrency Mining
 Running proof-of-work mining software, staking validators that abuse compute at scale, or any activity designed primarily to consume compute in exchange for cryptocurrency rewards. This violates DigitalOcean's Acceptable Use Policy and strains shared infrastructure.
@@ -43,20 +43,20 @@ Any use that violates:
 
 ## Enforcement
 
-**Suspension**: If we receive a credible abuse report from DigitalOcean, Anthropic, or another party indicating that your Droplet is being used in violation of this policy, we reserve the right to suspend your Maestro **dashboard token** immediately. This disables your browser terminal access without deleting your Droplet — the Droplet remains in your DO account.
+**Suspension**: If we receive a credible abuse report from DigitalOcean, Anthropic, or another party indicating that your Droplet is being used in violation of this policy, we reserve the right to suspend your Concerto **dashboard token** immediately. This disables your browser terminal access without deleting your Droplet — the Droplet remains in your DO account.
 
 **Process**: We will email you at your purchase address explaining the suspension and giving you an opportunity to respond. Suspensions for clear violations (e.g., confirmed malware C2) are not reversible.
 
-**No refunds for AUP violations**: If your Maestro access is suspended or terminated due to an AUP violation, you are not entitled to a refund.
+**No refunds for AUP violations**: If your Concerto access is suspended or terminated due to an AUP violation, you are not entitled to a refund.
 
 ---
 
 ## Reporting Abuse
 
-If you observe a Maestro-provisioned resource being used abusively, please report it to **abuse@maestro.run**. Include the relevant IP address and a description of the observed behaviour. We take abuse reports seriously and investigate promptly.
+If you observe a Concerto-provisioned resource being used abusively, please report it to **abuse@concerto.run**. Include the relevant IP address and a description of the observed behaviour. We take abuse reports seriously and investigate promptly.
 
 ---
 
 ## Contact
 
-**Email**: support@maestro.run | abuse@maestro.run
+**Email**: support@concerto.run | abuse@concerto.run

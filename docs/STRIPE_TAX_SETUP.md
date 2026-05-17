@@ -1,6 +1,6 @@
 # Stripe Tax Setup — Operator Action Required
 
-Maestro's checkout already passes `automatic_tax: { enabled: true }` to Stripe Checkout.
+Concerto's checkout already passes `automatic_tax: { enabled: true }` to Stripe Checkout.
 Before going live you must activate Stripe Tax in the dashboard.
 
 ## 1. Enable Stripe Tax
@@ -48,7 +48,7 @@ A valid VAT number triggers the reverse-charge rule (0% VAT, note on invoice:
 
 ## 5. Currency Note
 
-Maestro prices in USD. EU customers see USD price + VAT shown separately by Stripe.
+Concerto prices in USD. EU customers see USD price + VAT shown separately by Stripe.
 Multi-currency presentment is deferred to v1.5 — see `docs/STRIPE_RECEIPTS_SETUP.md`.
 
 ## Operator Action Summary

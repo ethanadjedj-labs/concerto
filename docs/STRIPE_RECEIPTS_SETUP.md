@@ -1,9 +1,9 @@
 # Stripe Receipts & Invoices Setup — Operator Action Required
 
-## 1. Upload Maestro Logo
+## 1. Upload Concerto Logo
 
 1. Go to [dashboard.stripe.com/settings/branding](https://dashboard.stripe.com/settings/branding)
-2. Upload the Maestro logo (square PNG, min 128×128 px, transparent background)
+2. Upload the Concerto logo (square PNG, min 128×128 px, transparent background)
    - Source: `frontend/public/logo.png` or export the SVG nav icon as PNG
 3. Set **Brand colour**: `#7c3aed` (violet-600)
 4. Click **Save**
@@ -17,13 +17,13 @@ the customer portal.
 2. Enable **Successful payments** (one-time receipts — BYOC plan)
 3. Enable **Successful invoices** (monthly invoices — Hosted plan)
 4. Optional custom message:
-   > "Thanks for using Maestro! Questions? Reply to this email or contact support@maestro.run."
+   > "Thanks for using Concerto! Questions? Reply to this email or contact support@concerto.run."
 
 ## 3. Hosted Plan — Monthly Invoices
 
 Stripe Billing auto-generates a monthly invoice on each subscription renewal.
 Each invoice includes:
-- Line item: "Maestro Hosted — $39.00 USD"
+- Line item: "Concerto Hosted — $39.00 USD"
 - VAT line if applicable (Stripe Tax — see `docs/STRIPE_TAX_SETUP.md`)
 - Invoice PDF downloadable from customer portal
 
@@ -33,7 +33,7 @@ No code changes needed.
 
 Stripe sends a receipt automatically after each `checkout.session.completed` for
 one-time payments. The receipt includes:
-- Line item: "Maestro BYOC — $99.00 USD"
+- Line item: "Concerto BYOC — $99.00 USD"
 - Tax if applicable
 - Stripe order/session reference
 
@@ -50,8 +50,8 @@ For EU B2B customers who enter a VAT number at checkout, Stripe automatically:
 
 1. Go to [dashboard.stripe.com/settings/billing/portal](https://dashboard.stripe.com/settings/billing/portal)
 2. Enable the portal
-3. Set **Return URL**: `https://maestro.run/dashboard`
-   (Maestro appends the customer token dynamically)
+3. Set **Return URL**: `https://concerto.run/dashboard`
+   (Concerto appends the customer token dynamically)
 4. Enable features:
    - ✅ Update payment method
    - ✅ Cancel subscriptions
@@ -82,5 +82,5 @@ like `MST-0001`. Useful for accounting.
 | Enable receipt emails | Stripe → Settings → Customer emails | Both plans |
 | Add business VAT number | Stripe → Settings → Business details → Tax ID | EU compliance |
 | Enable customer portal | Stripe → Settings → Billing → Customer portal | Hosted plan |
-| Set return URL for portal | Same as above | https://maestro.run/dashboard |
+| Set return URL for portal | Same as above | https://concerto.run/dashboard |
 | Set invoice number prefix | Stripe → Settings → Invoice and Quote | Optional |

@@ -1,0 +1,13 @@
+[Unit]
+Description=Concerto hosted-pool healthcheck + OAuth reminder emails
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/concerto/backend
+EnvironmentFile=/etc/concerto/env
+ExecStart=/opt/concerto/.venv/bin/python -m concerto.monitoring
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=concerto-monitoring

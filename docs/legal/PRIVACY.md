@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Maestro** — Remote Workshop for Claude Code Agents
+**Concerto** — Remote Workshop for Claude Code Agents
 
 _Last updated: 2026-05-17_
 
@@ -8,7 +8,7 @@ _Last updated: 2026-05-17_
 
 ## 1. Who We Are
 
-Maestro is operated by Ethan Adjedj. You can reach us at **privacy@maestro.run**. For GDPR purposes, we are the data controller for the limited personal data described below.
+Concerto is operated by Ethan Adjedj. You can reach us at **privacy@concerto.run**. For GDPR purposes, we are the data controller for the limited personal data described below.
 
 ---
 
@@ -43,7 +43,7 @@ No personal data is transferred to jurisdictions outside the EU/EEA in the cours
 
 ## 4. Cookies and Tracking
 
-Maestro does not use cookies for tracking or analytics. We do not embed tracking pixels, use ad networks, or run third-party analytics scripts.
+Concerto does not use cookies for tracking or analytics. We do not embed tracking pixels, use ad networks, or run third-party analytics scripts.
 
 Stripe Checkout sets its own cookies during the payment flow. These are governed by [Stripe's Privacy Policy](https://stripe.com/privacy) and are outside our control.
 
@@ -83,13 +83,13 @@ If you are located in the EU/EEA, you have the following rights:
 
 - **Right of access** — request a copy of the data we hold about you
 - **Right to rectification** — correct inaccurate data
-- **Right to erasure** ("right to be forgotten") — request deletion of your data at any time by emailing **privacy@maestro.run**. We will process deletion requests within 30 days.
+- **Right to erasure** ("right to be forgotten") — request deletion of your data at any time by emailing **privacy@concerto.run**. We will process deletion requests within 30 days.
 - **Right to restrict processing** — ask us to pause processing while a dispute is resolved
 - **Right to data portability** — receive your data in a machine-readable format
 - **Right to object** — object to processing based on legitimate interest
 - **Right to lodge a complaint** — with your national supervisory authority (e.g., CNIL in France, ICO in the UK)
 
-To exercise any of these rights, email **privacy@maestro.run** with your purchase email address. We do not charge for these requests and will respond within 30 days.
+To exercise any of these rights, email **privacy@concerto.run** with your purchase email address. We do not charge for these requests and will respond within 30 days.
 
 ---
 
@@ -119,6 +119,6 @@ We will post any material changes here with an updated "Last updated" date and, 
 
 ## 11. Contact
 
-**Email**: privacy@maestro.run
+**Email**: privacy@concerto.run
 
 We respond to privacy requests within 30 days.

@@ -4,14 +4,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from maestro import db
-from maestro.stripe_webhook import router as stripe_router
-from maestro.provision_router import router as provision_router
-from maestro.status_router import router as status_router
-from maestro.terminal_router import router as terminal_router
-from maestro.oauth_status_router import router as oauth_status_router
-from maestro.first_call_detector import router as first_call_router
-from maestro.customer_portal import router as customer_portal_router
+from concerto import db
+from concerto.stripe_webhook import router as stripe_router
+from concerto.provision_router import router as provision_router
+from concerto.status_router import router as status_router
+from concerto.terminal_router import router as terminal_router
+from concerto.oauth_status_router import router as oauth_status_router
+from concerto.first_call_detector import router as first_call_router
+from concerto.customer_portal import router as customer_portal_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -22,6 +22,7 @@ _MIGRATIONS = [
     "005_stripe_customer_id.sql",
     "006_drip_tracking.sql",
     "007_recovery.sql",
+    "008_rename_maestro_to_concerto.sql",
 ]
 
 
@@ -33,11 +34,11 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Maestro Backend", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Concerto Backend", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://maestro.run", "https://www.maestro.run"],
+    allow_origins=["https://concerto.run", "https://www.concerto.run"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,7 +47,7 @@ app.add_middleware(
 
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok", "service": "maestro-backend"}
+    return {"status": "ok", "service": "concerto-backend"}
 
 
 app.include_router(stripe_router)

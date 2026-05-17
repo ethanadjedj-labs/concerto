@@ -126,7 +126,7 @@ function RefundedBanner() {
         <p className="text-[14px] font-semibold text-blue-300">Refund processed</p>
         <p className="mt-1 text-[13px] text-blue-200/60 leading-relaxed">
           Your refund has been issued. Allow 5–10 business days.
-          Questions? <a href="mailto:support@maestro.run" className="underline hover:text-blue-300">support@maestro.run</a>
+          Questions? <a href="mailto:support@concerto.run" className="underline hover:text-blue-300">support@concerto.run</a>
         </p>
       </div>
     </div>
@@ -152,7 +152,7 @@ function TerminalFallback({ vpsIp }: { vpsIp: string }) {
       )}
       <p className="text-[12px] text-white/30">
         Or{" "}
-        <a href="mailto:support@maestro.run" className="text-violet-400 hover:text-violet-300">
+        <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
           contact support
         </a>{" "}
         if the issue persists.
@@ -256,7 +256,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
   const [terminalError, setTerminalError] = useState(false)
   const [terminalRetry, setTerminalRetry] = useState(0)
 
-  const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
+  const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
   const terminalUrl = `${backendUrl}/terminal/${params.token}`
 
   useEffect(() => {
@@ -327,7 +327,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
               <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
               <circle cx="11" cy="11" r="2" fill="white" />
             </svg>
-            <span className="font-semibold tracking-tight text-white">Maestro</span>
+            <span className="font-semibold tracking-tight text-white">Concerto</span>
             <Separator orientation="vertical" className="mx-1 h-4 bg-white/[0.1]" />
             <span className="min-w-0 max-w-[110px] truncate font-mono text-[13px] text-white/30 sm:max-w-[180px]">
               {params.token}
@@ -365,7 +365,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
               <div className="space-y-4">
                 <CopyField label="MCP URL"        value={mcpUrl} />
                 <CopyField label="Bearer Token"   value={bearerToken} />
-                <CopyField label="Connector Name" value="Maestro" />
+                <CopyField label="Connector Name" value="Concerto" />
               </div>
 
               <Separator className="my-6 bg-white/[0.06]" />
@@ -376,7 +376,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
                   {[
                     <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-violet-400 hover:text-violet-300">claude.ai <ExternalLink className="h-3 w-3" /></a> → your avatar → <strong className="font-medium text-white/70">Settings</strong></>,
                     <>Navigate to <strong className="font-medium text-white/70">Connectors</strong> → <strong className="font-medium text-white/70">Add custom connector</strong></>,
-                    <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Maestro</strong>, and click Save</>,
+                    <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Concerto</strong>, and click Save</>,
                   ].map((step, i) => (
                     <li key={i} className="flex items-start gap-3 text-[13px]">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/18 text-[11px] font-medium text-violet-300">{i + 1}</span>
@@ -427,7 +427,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
                 <span className="h-2.5 w-2.5 rounded-full bg-red-500/55" />
                 <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/55" />
                 <span className="h-2.5 w-2.5 rounded-full bg-green-500/55" />
-                <span className="ml-2 font-mono text-[11px] text-white/20">maestro · shell</span>
+                <span className="ml-2 font-mono text-[11px] text-white/20">concerto · shell</span>
               </div>
               {terminalError ? (
                 <TerminalFallback vpsIp={vpsIp} />
@@ -436,7 +436,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
                   key={terminalRetry}
                   src={terminalUrl}
                   className="h-[500px] w-full border-0 md:h-[560px]"
-                  title="Maestro Terminal"
+                  title="Concerto Terminal"
                   allow="clipboard-read; clipboard-write"
                   onError={() => setTerminalError(true)}
                 />
@@ -500,8 +500,8 @@ export default function DashboardPage({ params }: { params: { token: string } })
           )}
           <p className="text-center text-[13px] text-white/25">
             Need help?{" "}
-            <a href="mailto:support@maestro.run" className="text-violet-400 transition-colors hover:text-violet-300">
-              support@maestro.run
+            <a href="mailto:support@concerto.run" className="text-violet-400 transition-colors hover:text-violet-300">
+              support@concerto.run
             </a>
           </p>
         </div>

@@ -19,5 +19,5 @@ Exemples pour `{why_them}` :
 
 **Lecture des réponses** :
 - Signal positif → "oui j'utilise", "j'ai un Max plan", "je galère avec la config", "j'ai un VPS" → envoyer `whatsapp_direct.md` ou inviter au programme bêta
-- Signal neutre → "un peu, pourquoi ?" → expliquer Maestro brièvement, demander si l'accès gratuit bêta les intéresse
+- Signal neutre → "un peu, pourquoi ?" → expliquer Concerto brièvement, demander si l'accès gratuit bêta les intéresse
 - Signal négatif → "c'est quoi Claude Code ?" → éduquer d'abord, ne pas convertir maintenant

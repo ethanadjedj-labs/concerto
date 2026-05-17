@@ -21,7 +21,7 @@ export default function SuccessPage() {
             </div>
 
             <h1 className="mb-2 text-2xl font-bold tracking-tight text-white">Payment confirmed</h1>
-            <p className="text-[14px] text-white/40">Your Maestro is ready to be set up.</p>
+            <p className="text-[14px] text-white/40">Your Concerto is ready to be set up.</p>
 
             {/* Email notice */}
             <div className="mt-6 rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 text-left">
@@ -30,7 +30,7 @@ export default function SuccessPage() {
                 <div>
                   <p className="text-[14px] font-medium text-white">Check your email</p>
                   <p className="mt-1 text-[13px] leading-relaxed text-white/40">
-                    Your setup link has been sent. It contains your unique token to provision your Maestro droplet.
+                    Your setup link has been sent. It contains your unique token to provision your Concerto droplet.
                   </p>
                 </div>
               </div>
@@ -45,7 +45,7 @@ export default function SuccessPage() {
                 {[
                   "Open the setup link in your email",
                   "Enter your DigitalOcean API key",
-                  "Maestro provisions your droplet (~3 min)",
+                  "Concerto provisions your droplet (~3 min)",
                   "Connect to claude.ai in 3 steps",
                 ].map((step, i) => (
                   <li key={i} className="flex items-center gap-3 text-[13px]">
@@ -61,8 +61,8 @@ export default function SuccessPage() {
             {/* Support note */}
             <div className="mt-6 rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-3 text-[12px] text-white/28">
               Need help?{" "}
-              <a href="mailto:support@maestro.run" className="text-violet-400 hover:text-violet-300">
-                support@maestro.run
+              <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
+                support@concerto.run
               </a>{" "}
               or join Discord (link in your email).
             </div>

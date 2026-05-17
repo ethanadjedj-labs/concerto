@@ -1,4 +1,4 @@
-# Maestro Architecture
+# Concerto Architecture
 
 ## System Diagram
 
@@ -9,13 +9,13 @@
                                              │ HTTPS
                                              ▼
                          ┌─────────────────────────────────────────────┐
-                         │           maestro.run  (Next.js)            │
+                         │           concerto.run  (Next.js)            │
                          │   landing · checkout · dashboard · setup     │
                          └──────────┬──────────────────────┬───────────┘
                                     │ Stripe Checkout       │ REST /api
                                     ▼                       ▼
                     ┌───────────────────────┐  ┌───────────────────────────┐
-                    │   Stripe              │  │  Maestro Backend          │
+                    │   Stripe              │  │  Concerto Backend          │
                     │   (payment, webhook)  │  │  FastAPI + SQLite         │
                     └───────────┬───────────┘  │  (DO provisioning,        │
                                 │ webhook       │   session mgmt, JWT)      │
@@ -35,7 +35,7 @@
                          │                                                 │
                          │   ┌─────────────┐   ┌─────────────────────┐   │
                          │   │ Claude Code  │   │ MCP Server (stdio)  │   │
-                         │   │ (node + npm) │◄──│ (maestro-mcp-relay) │   │
+                         │   │ (node + npm) │◄──│ (concerto-mcp-relay) │   │
                          │   └─────────────┘   └──────────┬──────────┘   │
                          │                                 │               │
                          │   ┌─────────────┐              │               │
@@ -61,12 +61,12 @@
 
 | Component | Tech | Responsibility |
 |-----------|------|----------------|
-| `maestro.run` frontend | Next.js / Vercel | Landing page, Stripe checkout, setup wizard, dashboard |
-| Maestro backend | FastAPI + SQLite | Stripe webhook handling, DO API calls, JWT issuance, session state |
+| `concerto.run` frontend | Next.js / Vercel | Landing page, Stripe checkout, setup wizard, dashboard |
+| Concerto backend | FastAPI + SQLite | Stripe webhook handling, DO API calls, JWT issuance, session state |
 | DigitalOcean API | DO v2 REST | Droplet CRUD (create, power-off, destroy) |
-| `cloud-init` installer | Bash (`install.maestro.run`) | Installs Claude Code, MCP server, ttyd, cloudflared; hardens firewall |
+| `cloud-init` installer | Bash (`install.concerto.run`) | Installs Claude Code, MCP server, ttyd, cloudflared; hardens firewall |
 | Claude Code | Node.js / npm | Agentic coding assistant running on the droplet |
-| `maestro-mcp-relay` | Python (stdio) | Bridges MCP protocol over the cloudflared tunnel |
+| `concerto-mcp-relay` | Python (stdio) | Bridges MCP protocol over the cloudflared tunnel |
 | ttyd | Binary | Web-based terminal for one-time Claude OAuth; tunnel-only, not internet-exposed |
 | cloudflared | Binary | Persistent outbound tunnel; the only network path into the droplet |
 | Stripe | SaaS | Payment processing, webhook delivery |
@@ -100,7 +100,7 @@
 [ MCP relay / ttyd ]  ← localhost only; not accessible without tunnel
      │
      ▼
-[ Claude Code ]  ← runs as non-root user; isolated to /home/maestro
+[ Claude Code ]  ← runs as non-root user; isolated to /home/concerto
 ```
 
 - The droplet has **no open inbound ports** (ufw denies all; cloudflared is outbound).
@@ -115,13 +115,13 @@
 | DO API key | Browser → backend (TLS) | Backend SQLite, AES-256 encrypted |
 | Customer email | Stripe webhook → backend | Backend SQLite |
 | Cloudflare tunnel token | Backend → droplet (cloud-init user data) | Ephemeral; not logged |
-| Claude conversations | claude.ai → cloudflared → MCP relay → Claude Code | Never stored by Maestro |
+| Claude conversations | claude.ai → cloudflared → MCP relay → Claude Code | Never stored by Concerto |
 | Droplet files/code | Stays on the customer's DO Droplet | Customer-owned |
 
 ## Deployment Topology
 
 ```
-Maestro backend: single Hetzner VPS (or DO Droplet) — FastAPI + SQLite
+Concerto backend: single Hetzner VPS (or DO Droplet) — FastAPI + SQLite
 Frontend:        Vercel (Next.js, edge CDN)
 Customer droplets: DigitalOcean (customer's own account, customer-billed)
 Tunnel:          Cloudflare (free tier per droplet)

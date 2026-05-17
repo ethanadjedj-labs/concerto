@@ -1,6 +1,6 @@
-# Maestro — Product Brief
+# Concerto — Product Brief
 *Strategic clarity for positioning, persona targeting, and competitive differentiation*
-*Version: 2026-05-17 | Phase MAESTRO-LAUNCH*
+*Version: 2026-05-17 | Phase CONCERTO-LAUNCH*
 
 ---
 
@@ -55,11 +55,11 @@ This has three layers:
 
 The tempting alternatives, and why they're wrong:
 
-**"Agent platform"** — This suggests you're building orchestration workflows, pipelines, DAGs. Maestro doesn't ask you to define agents. It just runs Claude Code — the tool developers already know. "Platform" adds cognitive overhead; Maestro removes it.
+**"Agent platform"** — This suggests you're building orchestration workflows, pipelines, DAGs. Concerto doesn't ask you to define agents. It just runs Claude Code — the tool developers already know. "Platform" adds cognitive overhead; Concerto removes it.
 
 **"Compute orchestrator"** — DevOps language. Repels the PM and indie hacker. Implies Kubernetes, YAML, and a learning curve. The buyer's whole problem is that they don't want to orchestrate compute.
 
-**"AI workforce"** — Science fiction framing that sets expectations it can't meet. Buyers become suspicious and trust drops before the trial starts. The workforce metaphor also implies many agents doing coordinated work; Maestro v1 is one agent per Droplet.
+**"AI workforce"** — Science fiction framing that sets expectations it can't meet. Buyers become suspicious and trust drops before the trial starts. The workforce metaphor also implies many agents doing coordinated work; Concerto v1 is one agent per Droplet.
 
 **"Claude Code in a browser"** wins because:
 - Claude Code is already validated — the buyer has heard of it, may already use it locally
@@ -77,31 +77,31 @@ The tempting alternatives, and why they're wrong:
 **What they sell**: An AI-native code editor with inline completions, agent requests, cloud agents, and code review. The IDE is the product.
 **Who they target**: Active developers who live in an IDE. Cursor replaces VS Code or JetBrains as the primary coding environment.
 **Pricing**: Free (Hobby), $20/mo (Individual), $40/user/mo (Teams), Enterprise custom.
-**The gap Maestro fills**: Cursor requires a local machine running an IDE. It cannot run headless or from a tablet. Cloud Agents in Cursor run on Cursor's infrastructure, not your cloud account — your code leaves your perimeter. Cursor also requires model credits from Cursor's pool (not your Claude Max subscription). A Claude Max subscriber gets zero leverage from their existing plan when using Cursor.
+**The gap Concerto fills**: Cursor requires a local machine running an IDE. It cannot run headless or from a tablet. Cloud Agents in Cursor run on Cursor's infrastructure, not your cloud account — your code leaves your perimeter. Cursor also requires model credits from Cursor's pool (not your Claude Max subscription). A Claude Max subscriber gets zero leverage from their existing plan when using Cursor.
 
 ### 2. Devin — devin.ai/pricing
 **What they sell**: A fully autonomous AI software engineer that plans, writes, tests, and deploys code. The pitch is "assign Devin a ticket and walk away."
 **Who they target**: Engineering teams who want to delegate entire tasks to an AI agent. Positioned as a junior engineer replacement.
 **Pricing**: Free (basic), $20/mo (Pro), $200/mo (Max), $80/mo (Teams), Enterprise custom.
-**The gap Maestro fills**: Devin runs on Devin's infrastructure — you never own the environment. At $200/mo for the Max plan, it's 24× more expensive annually than Maestro's $99 one-time. Devin doesn't integrate with your Claude Max subscription. For a user who wants Claude specifically (and already pays for Claude Max), Devin offers a different model family at a higher marginal cost. Devin also has an "autonomous black box" UX — you hand off the task and hope. Maestro keeps you in the driver's seat: you direct, Claude executes.
+**The gap Concerto fills**: Devin runs on Devin's infrastructure — you never own the environment. At $200/mo for the Max plan, it's 24× more expensive annually than Concerto's $99 one-time. Devin doesn't integrate with your Claude Max subscription. For a user who wants Claude specifically (and already pays for Claude Max), Devin offers a different model family at a higher marginal cost. Devin also has an "autonomous black box" UX — you hand off the task and hope. Concerto keeps you in the driver's seat: you direct, Claude executes.
 
 ### 3. Replit Agent — replit.com/pricing
 **What they sell**: A browser-based coding environment with integrated AI agents. The IDE and cloud compute are bundled — write, run, and deploy from one tab.
 **Who they target**: Beginners, learners, prototypers, and non-developers who want to build apps without any local setup.
 **Pricing**: Free (limited credits), $20/mo (Core, up to 2 parallel agents), $95/mo (Pro, up to 10 parallel agents).
-**The gap Maestro fills**: Replit's infrastructure is Replit's — you cannot run Replit Agent in your own DigitalOcean account. Replit Agent uses its own model credits, not your Claude Max plan. The $95/mo Pro tier costs more annually than Maestro's $99 one-time after just 2 months. Most critically, Replit Agent is purpose-built for building Replit-hosted apps — it cannot run arbitrary engineering tasks against your existing codebase in your private infrastructure. Maestro runs Claude Code against whatever's in your VPS: any repo, any toolchain.
+**The gap Concerto fills**: Replit's infrastructure is Replit's — you cannot run Replit Agent in your own DigitalOcean account. Replit Agent uses its own model credits, not your Claude Max plan. The $95/mo Pro tier costs more annually than Concerto's $99 one-time after just 2 months. Most critically, Replit Agent is purpose-built for building Replit-hosted apps — it cannot run arbitrary engineering tasks against your existing codebase in your private infrastructure. Concerto runs Claude Code against whatever's in your VPS: any repo, any toolchain.
 
 ### 4. Bolt.new — bolt.new/pricing
 **What they sell**: Full-stack application generation via conversational AI. "Create stunning apps & websites by chatting with AI." The output is a deployable web app, generated in minutes.
 **Who they target**: Product managers, marketers, entrepreneurs, and agencies who want a finished app without writing code. Non-developer first.
 **Pricing**: Free (300K tokens/day), $25/mo Pro (10M tokens/mo), $30/member/mo Teams.
-**The gap Maestro fills**: Bolt generates apps — it doesn't run a general-purpose coding agent. It cannot: refactor an existing backend, write tests for a repo it didn't create, build a data pipeline, or work on any codebase you didn't start inside Bolt. The output is locked into Bolt's cloud infrastructure. Maestro runs Claude Code against any existing codebase on a machine you own. A Bolt user who graduates to real engineering work has nowhere to go inside Bolt — they need Maestro.
+**The gap Concerto fills**: Bolt generates apps — it doesn't run a general-purpose coding agent. It cannot: refactor an existing backend, write tests for a repo it didn't create, build a data pipeline, or work on any codebase you didn't start inside Bolt. The output is locked into Bolt's cloud infrastructure. Concerto runs Claude Code against any existing codebase on a machine you own. A Bolt user who graduates to real engineering work has nowhere to go inside Bolt — they need Concerto.
 
 ### 5. Lovable — lovable.dev/pricing
 **What they sell**: Collaborative, AI-powered web application builder for teams. Real-time collaboration on AI-generated apps with governance features.
 **Who they target**: Fast-moving startup teams who want to ship web apps without deep engineering investment. Skews toward non-developers and hybrid teams.
 **Pricing**: Free, $25/mo Pro (100 credits), $50/mo Business (100 credits, SSO, team workspaces).
-**The gap Maestro fills**: Lovable is a web-app factory — it has a fixed output type (web applications) and runs on Lovable's cloud. Credits run out. The subscription renews monthly. Lovable cannot be directed at arbitrary engineering tasks outside the "build me a web app" paradigm. Like Bolt, it's a finishing tool, not a general-purpose coding agent. And like every other competitor: it doesn't use your Claude Max plan, and it doesn't run in your cloud account.
+**The gap Concerto fills**: Lovable is a web-app factory — it has a fixed output type (web applications) and runs on Lovable's cloud. Credits run out. The subscription renews monthly. Lovable cannot be directed at arbitrary engineering tasks outside the "build me a web app" paradigm. Like Bolt, it's a finishing tool, not a general-purpose coding agent. And like every other competitor: it doesn't use your Claude Max plan, and it doesn't run in your cloud account.
 
 ---
 
@@ -109,20 +109,20 @@ The tempting alternatives, and why they're wrong:
 
 ### Risk 1: Anthropic ships this themselves
 
-**Scenario**: Anthropic adds a "run Claude Code in the cloud" feature to claude.ai — e.g., a managed Claude Code environment bundled with the Max plan. Maestro's core value proposition is eliminated at the platform level.
+**Scenario**: Anthropic adds a "run Claude Code in the cloud" feature to claude.ai — e.g., a managed Claude Code environment bundled with the Max plan. Concerto's core value proposition is eliminated at the platform level.
 
 **Probability**: Medium-high. Anthropic already has the desktop app, IDE extensions, and web interface. Remote execution in a managed environment is a natural next step, likely within 12–18 months.
 
 **Mitigation**:
-- **Lean into "your cloud"**: Anthropic will run Claude Code on Anthropic's infrastructure. Maestro runs it on the customer's DigitalOcean account — no vendor lock-in, data stays in the customer's perimeter. Privacy-sensitive users (legal, healthcare, fintech) will pay for this.
-- **Expand cloud providers fast**: Ship Hetzner (v2) and AWS/GCP/Azure (v3). Maestro becomes "Claude Code on any cloud" — a multi-cloud provisioner Anthropic won't build.
-- **Build the management layer**: Session history, spend tracking per Droplet, multi-project organization, agent scheduling. If Anthropic ships raw remote execution, Maestro differentiates on the control plane.
+- **Lean into "your cloud"**: Anthropic will run Claude Code on Anthropic's infrastructure. Concerto runs it on the customer's DigitalOcean account — no vendor lock-in, data stays in the customer's perimeter. Privacy-sensitive users (legal, healthcare, fintech) will pay for this.
+- **Expand cloud providers fast**: Ship Hetzner (v2) and AWS/GCP/Azure (v3). Concerto becomes "Claude Code on any cloud" — a multi-cloud provisioner Anthropic won't build.
+- **Build the management layer**: Session history, spend tracking per Droplet, multi-project organization, agent scheduling. If Anthropic ships raw remote execution, Concerto differentiates on the control plane.
 
 ---
 
 ### Risk 2: Customer doesn't have a Claude Max plan
 
-**Scenario**: A buyer sees Maestro, pays $99, and then discovers the product requires a Claude Max subscription ($100/month) that they don't have. Churn and chargebacks follow.
+**Scenario**: A buyer sees Concerto, pays $99, and then discovers the product requires a Claude Max subscription ($100/month) that they don't have. Churn and chargebacks follow.
 
 **Probability**: High without explicit pre-purchase messaging. Max plan adoption is growing but nowhere near universal.
 

@@ -158,7 +158,7 @@ export default function LandingPage() {
               <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
               <circle cx="11" cy="11" r="2" fill="white" />
             </svg>
-            <span className="font-semibold tracking-tight text-white">Maestro</span>
+            <span className="font-semibold tracking-tight text-white">Concerto</span>
           </div>
 
           <div className="flex items-center gap-5">
@@ -228,7 +228,7 @@ export default function LandingPage() {
                 size="lg"
                 className="h-12 rounded-xl bg-violet-600 px-8 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(139,92,246,0.3),0_4px_20px_rgba(139,92,246,0.2)] hover:bg-violet-500"
               >
-                Get Hosted Maestro — $39/mo
+                Get Hosted Concerto — $39/mo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
@@ -257,7 +257,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { n: "01", title: "Choose your plan", desc: "Hosted $39/mo (we manage the VPS) or BYOC $99 once (your DO account). Secure Stripe checkout." },
-              { n: "02", title: "Enter DO key", desc: "Paste your DigitalOcean API key — Maestro provisions your own droplet." },
+              { n: "02", title: "Enter DO key", desc: "Paste your DigitalOcean API key — Concerto provisions your own droplet." },
               { n: "03", title: "Authenticate", desc: "One browser-based OAuth flow for your Claude Max account." },
               { n: "04", title: "Start building", desc: "Paste the connector config into claude.ai. Agents ready." },
             ].map((step, i) => (
@@ -286,7 +286,7 @@ export default function LandingPage() {
               Everything you need to run agents at scale
             </h2>
             <p className="mx-auto max-w-xl text-white/40">
-              Maestro handles provisioning, authentication, and monitoring — so you can focus on shipping.
+              Concerto handles provisioning, authentication, and monitoring — so you can focus on shipping.
             </p>
           </div>
 
@@ -303,7 +303,7 @@ export default function LandingPage() {
               icon={<Cloud className="h-5 w-5 text-blue-400" />}
               iconBg="bg-blue-500/15"
               title="Your cloud, your billing"
-              description="Maestro provisions a DigitalOcean droplet directly in your account. You own the infrastructure — no markup, no vendor lock-in."
+              description="Concerto provisions a DigitalOcean droplet directly in your account. You own the infrastructure — no markup, no vendor lock-in."
             />
             <FeatureCard
               revealDelay="reveal-d3"
@@ -345,7 +345,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Two ways to run Maestro
+              Two ways to run Concerto
             </h2>
             <p className="text-white/40">Hosted if you want zero setup. BYOC if you already use DigitalOcean.</p>
           </div>
@@ -358,7 +358,7 @@ export default function LandingPage() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(124,58,237,0.12)_0%,transparent_70%)]" />
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-semibold text-white">Maestro Hosted</span>
+                  <span className="text-lg font-semibold text-white">Concerto Hosted</span>
                   <Badge className="border-violet-500/40 bg-violet-500/25 text-xs text-violet-300">
                     Most popular
                   </Badge>
@@ -387,7 +387,7 @@ export default function LandingPage() {
                     type="submit"
                     className="h-12 w-full rounded-xl bg-violet-600 text-base font-semibold text-white hover:bg-violet-500"
                   >
-                    Get Hosted Maestro →
+                    Get Hosted Concerto →
                   </Button>
                 </form>
                 <p className="mt-3 text-center text-xs text-white/25">
@@ -400,7 +400,7 @@ export default function LandingPage() {
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8">
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-semibold text-white">Maestro BYOC</span>
+                  <span className="text-lg font-semibold text-white">Concerto BYOC</span>
                   <Badge className="border-white/15 bg-white/10 text-xs text-white/50">
                     One-time
                   </Badge>
@@ -429,7 +429,7 @@ export default function LandingPage() {
                     type="submit"
                     className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-white/92"
                   >
-                    Get BYOC Maestro →
+                    Get BYOC Concerto →
                   </Button>
                 </form>
                 <p className="mt-3 text-center text-xs text-white/25">
@@ -469,7 +469,7 @@ export default function LandingPage() {
               },
               {
                 q: "How is this different from running Claude Code locally?",
-                a: "Local Claude Code ties up your machine and stops when you close the lid. Maestro runs on a dedicated cloud VPS 24/7 — agents keep working while your laptop is off. You control everything from a browser tab with no SSH client needed.",
+                a: "Local Claude Code ties up your machine and stops when you close the lid. Concerto runs on a dedicated cloud VPS 24/7 — agents keep working while your laptop is off. You control everything from a browser tab with no SSH client needed.",
               },
               {
                 q: "Who pays for the DigitalOcean droplet?",
@@ -548,9 +548,9 @@ export default function LandingPage() {
                 <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
                 <circle cx="11" cy="11" r="2" fill="white" />
               </svg>
-              <span className="text-sm font-medium text-white/40">Maestro</span>
+              <span className="text-sm font-medium text-white/40">Concerto</span>
             </div>
-            <p className="text-sm text-white/20">© {new Date().getFullYear()} Maestro. All rights reserved.</p>
+            <p className="text-sm text-white/20">© {new Date().getFullYear()} Concerto. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
               {[
                 { href: "/legal/terms",   label: "Terms" },
@@ -563,8 +563,8 @@ export default function LandingPage() {
                   {label}
                 </Link>
               ))}
-              <a href="mailto:support@maestro.run" className="text-xs text-white/25 transition-colors hover:text-white/50">
-                support@maestro.run
+              <a href="mailto:support@concerto.run" className="text-xs text-white/25 transition-colors hover:text-white/50">
+                support@concerto.run
               </a>
             </div>
           </div>

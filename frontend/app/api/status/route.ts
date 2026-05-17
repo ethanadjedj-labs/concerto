@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { readFile } from "fs/promises"
 import path from "path"
 
-const STATUS_FILE = process.env.MAESTRO_STATUS_FILE || "/var/www/maestro-status/status.json"
+const STATUS_FILE = process.env.CONCERTO_STATUS_FILE || "/var/www/concerto-status/status.json"
 
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
       {
         updated_at: Math.floor(Date.now() / 1000),
         services: [
-          { name: "Maestro API", status: "unknown", latency_ms: null },
+          { name: "Concerto API", status: "unknown", latency_ms: null },
           { name: "DigitalOcean API", status: "unknown", latency_ms: null },
           { name: "Stripe API", status: "unknown", latency_ms: null },
           { name: "Resend API", status: "unknown", latency_ms: null },

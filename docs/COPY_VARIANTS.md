@@ -1,6 +1,6 @@
-# Maestro — Copy Variants
+# Concerto — Copy Variants
 *All variants ranked best-first. Final recommended combo marked ✅ FINAL.*
-*Version: 2026-05-17 | Phase MAESTRO-LAUNCH*
+*Version: 2026-05-17 | Phase CONCERTO-LAUNCH*
 
 ---
 
@@ -24,11 +24,11 @@
 
 | # | Sub-headline | Words | Angle |
 |---|--------------|-------|-------|
-| 1 | **Pay $99 once. Maestro provisions a Claude Code server in your DigitalOcean account and keeps it running — ready from any tab, any device.** | 25 | Price-forward + concrete mechanism |
-| 2 | **Maestro turns your Claude Max subscription into an always-on cloud agent you can direct from any browser, on any project, any time.** | 24 | Max-subscriber leverage |
+| 1 | **Pay $99 once. Concerto provisions a Claude Code server in your DigitalOcean account and keeps it running — ready from any tab, any device.** | 25 | Price-forward + concrete mechanism |
+| 2 | **Concerto turns your Claude Max subscription into an always-on cloud agent you can direct from any browser, on any project, any time.** | 24 | Max-subscriber leverage |
 | 3 | **One payment, five minutes of setup, and Claude Code runs on a private VPS in your cloud — not ours.** | 21 | Anti-SaaS, ownership |
-| 4 | **You own the Droplet. You own the data. Maestro handles the provisioning so you can handle the work.** | 18 | Sovereignty angle |
-| 5 | **Claude Code doesn't have to live on your laptop. Maestro puts it on a server in your cloud account, open in your browser.** | 25 | Liberation angle |
+| 4 | **You own the Droplet. You own the data. Concerto handles the provisioning so you can handle the work.** | 18 | Sovereignty angle |
+| 5 | **Claude Code doesn't have to live on your laptop. Concerto puts it on a server in your cloud account, open in your browser.** | 25 | Liberation angle |
 
 **Why #1 wins**: Leads with the price (pre-empts sticker shock, signals one-time model), names the mechanism (DigitalOcean — concrete, not vague "cloud"), ends with the access promise. The dash creates rhythm without being coy.
 
@@ -55,7 +55,7 @@ Your agent keeps working when you close the laptop. Pick up where it left off.
 ### Variant B — "Speed & Simplicity"
 
 **Live in Five Minutes**
-Maestro provisions your VPS, installs Claude Code, and opens a browser terminal automatically.
+Concerto provisions your VPS, installs Claude Code, and opens a browser terminal automatically.
 
 **Control From Any Device**
 Phone, tablet, or laptop — your Claude Code agent answers from any browser tab.
@@ -68,7 +68,7 @@ Pay $99 once. Droplet costs go to your DigitalOcean — transparent, no markup, 
 ### Variant C — "Max Plan Leverage"
 
 **Use Your Max Plan Fully**
-You're already paying $100/month for Claude. Maestro puts it to work in the cloud.
+You're already paying $100/month for Claude. Concerto puts it to work in the cloud.
 
 **No Engineers Required**
 Set up a production-grade Claude Code environment without touching a terminal or asking for help.
@@ -85,10 +85,10 @@ Your VPS, your DigitalOcean account, your files. No shared infrastructure, no ve
 
 ### Pricing Card A — Anchor Frame ✅ RECOMMENDED
 
-**Maestro**
+**Concerto**
 **$99** one-time
 
-> Devin Pro: $200/month. Maestro: $99, once, forever.
+> Devin Pro: $200/month. Concerto: $99, once, forever.
 
 What you get:
 - Claude Code server provisioned in your DigitalOcean account
@@ -106,7 +106,7 @@ What you get:
 
 ### Pricing Card B — Value Frame
 
-**Maestro**
+**Concerto**
 **$99** one-time
 
 > An always-on AI coding agent for the price of lunch, every month.
@@ -115,7 +115,7 @@ $99 ÷ 12 months = **$8.25/month** amortized.
 Add your Droplet (~$24/mo to DigitalOcean) = **$32/month total**.
 
 Compare: Devin Pro ($200/mo), Replit Pro ($95/mo), Cursor Teams ($40/user/mo).
-Maestro is the only one that runs on *your* cloud and uses *your* Claude Max plan.
+Concerto is the only one that runs on *your* cloud and uses *your* Claude Max plan.
 
 **[Start in 5 minutes]**
 
@@ -123,7 +123,7 @@ Maestro is the only one that runs on *your* cloud and uses *your* Claude Max pla
 
 ### Pricing Card C — "Why $99" Pre-empt
 
-**Maestro**
+**Concerto**
 **$99** one-time
 
 **Why $99?**
@@ -131,7 +131,7 @@ Your VPS runs in your DigitalOcean account — we never host your code or your a
 
 No subscription. No per-seat fees. No token markup.
 
-**[Get Maestro]**
+**[Get Concerto]**
 
 *Why this wins for skeptics*: Directly addresses the "what am I actually paying for?" doubt that every sophisticated buyer has. Transparency converts the skeptic who would otherwise bounce.
 
@@ -145,25 +145,25 @@ No subscription. No per-seat fees. No token markup.
 
 **1. What if Claude Code does something destructive to my Droplet — overwrites a file, runs a bad command, or fills the disk?**
 
-Claude Code runs with access only to the directories you specify. Nothing in the Maestro setup gives Claude Code system-wide write access. That said — the VPS is in your DigitalOcean account, which means you have full root access, snapshots, and DigitalOcean's "Destroy Droplet" button as a nuclear option. We recommend taking a DO snapshot before any large refactor, same as you'd commit before a big change.
+Claude Code runs with access only to the directories you specify. Nothing in the Concerto setup gives Claude Code system-wide write access. That said — the VPS is in your DigitalOcean account, which means you have full root access, snapshots, and DigitalOcean's "Destroy Droplet" button as a nuclear option. We recommend taking a DO snapshot before any large refactor, same as you'd commit before a big change.
 
 ---
 
-**2. Can Maestro or Anthropic see my files? What happens to my code?**
+**2. Can Concerto or Anthropic see my files? What happens to my code?**
 
-Maestro cannot see your files. The VPS runs in your DigitalOcean account — we provision it, then we're done. We maintain a Cloudflare tunnel for the browser terminal, but that tunnel is scoped to your session token and carries no file access. Your Claude Code conversations go directly from your VPS to Anthropic's API via your Claude Max plan. Anthropic's data handling policies apply, same as when you use Claude Code locally.
+Concerto cannot see your files. The VPS runs in your DigitalOcean account — we provision it, then we're done. We maintain a Cloudflare tunnel for the browser terminal, but that tunnel is scoped to your session token and carries no file access. Your Claude Code conversations go directly from your VPS to Anthropic's API via your Claude Max plan. Anthropic's data handling policies apply, same as when you use Claude Code locally.
 
 ---
 
-**3. I already pay $100/month for Claude Max. Is Maestro another subscription on top of that?**
+**3. I already pay $100/month for Claude Max. Is Concerto another subscription on top of that?**
 
-No. Maestro is $99 one-time. After that, the only recurring costs are: (a) your Claude Max subscription, which you already have, and (b) your DigitalOcean Droplet (~$24/month), billed directly to your DO account. Maestro charges you nothing monthly. We're the plumber, not the landlord.
+No. Concerto is $99 one-time. After that, the only recurring costs are: (a) your Claude Max subscription, which you already have, and (b) your DigitalOcean Droplet (~$24/month), billed directly to your DO account. Concerto charges you nothing monthly. We're the plumber, not the landlord.
 
 ---
 
 **4. What does "$99 one-time" actually cover? What am I paying for monthly after that?**
 
-The $99 covers: our provisioning API (which calls DigitalOcean to create and configure your Droplet), the installer script (which sets up Claude Code, the MCP server, and the secure tunnel), the browser terminal (the web interface for one-time Claude auth), and all future updates to the Maestro installer stack. Monthly after that: your DigitalOcean Droplet (~$24/month, billed to your DO account) and your Claude Max plan. No Maestro subscription, ever.
+The $99 covers: our provisioning API (which calls DigitalOcean to create and configure your Droplet), the installer script (which sets up Claude Code, the MCP server, and the secure tunnel), the browser terminal (the web interface for one-time Claude auth), and all future updates to the Concerto installer stack. Monthly after that: your DigitalOcean Droplet (~$24/month, billed to your DO account) and your Claude Max plan. No Concerto subscription, ever.
 
 ---
 
@@ -175,13 +175,13 @@ V1 requires a DigitalOcean account (free to create, no minimum spend). We use th
 
 **6. What happens if I want to cancel? Can I delete the Droplet and get a refund?**
 
-You can destroy your Droplet in your DigitalOcean dashboard at any time — you control it completely. DigitalOcean stops billing you the moment it's destroyed. As for the $99: we offer a 7-day full refund if the provisioning fails or Maestro doesn't work as described. If you've successfully provisioned and used the product, the $99 is non-refundable — it covers the one-time setup work.
+You can destroy your Droplet in your DigitalOcean dashboard at any time — you control it completely. DigitalOcean stops billing you the moment it's destroyed. As for the $99: we offer a 7-day full refund if the provisioning fails or Concerto doesn't work as described. If you've successfully provisioned and used the product, the $99 is non-refundable — it covers the one-time setup work.
 
 ---
 
 **7. How is this different from just SSH-ing into a server myself and running Claude Code?**
 
-If you're comfortable with SSH, Linux, npm, OAuth flows, and Cloudflare tunnel configuration — you can absolutely do it yourself. It takes 2–3 hours the first time and about 45 minutes each time you spin up a new machine. Maestro does all of that in 5 minutes, with a web terminal so you don't need to babysit an SSH session. The $99 is the price of not spending a Friday afternoon on DevOps when you could be building. If your time is worth more than $33/hour, the math works on the first use.
+If you're comfortable with SSH, Linux, npm, OAuth flows, and Cloudflare tunnel configuration — you can absolutely do it yourself. It takes 2–3 hours the first time and about 45 minutes each time you spin up a new machine. Concerto does all of that in 5 minutes, with a web terminal so you don't need to babysit an SSH session. The $99 is the price of not spending a Friday afternoon on DevOps when you could be building. If your time is worth more than $33/hour, the math works on the first use.
 
 ---
 
@@ -192,7 +192,7 @@ If you're comfortable with SSH, Linux, npm, OAuth flows, and Cloudflare tunnel c
 |---|----------|------|-------------|
 | 1 | **Deploy your agent — $99** | Price-forward, confident | Primary hero CTA. Shows price upfront, filters unqualified visitors. |
 | 2 | **Set up in 5 minutes** | Speed-forward, low-friction | A/B test after video or demo — lower commitment entry point. |
-| 3 | **Get Maestro** | Clean, minimal | Nav bars, repeat CTAs lower on page, email campaigns. |
+| 3 | **Get Concerto** | Clean, minimal | Nav bars, repeat CTAs lower on page, email campaigns. |
 
 **Why #1 wins for above-fold**: Showing the price in the CTA filters visitors who aren't serious, increasing conversion quality. "$99" in a button signals "one-time transaction" not a subscription trap — reducing checkout anxiety.
 
@@ -203,7 +203,7 @@ If you're comfortable with SSH, Linux, npm, OAuth flows, and Cloudflare tunnel c
 ```
 Hero headline:      "Claude Code on your cloud — from any browser."
 
-Sub-headline:       "Pay $99 once. Maestro provisions a Claude Code server in your
+Sub-headline:       "Pay $99 once. Concerto provisions a Claude Code server in your
                     DigitalOcean account and keeps it running — ready from any tab,
                     any device."
 
@@ -212,7 +212,7 @@ Feature triplet:    Variant A — "Ownership First"
                     2. Any Browser, Zero Terminal
                     3. Always On, Never Interrupted
 
-Pricing card:       Card A — Anchor Frame (Devin $200/mo vs. Maestro $99 once)
+Pricing card:       Card A — Anchor Frame (Devin $200/mo vs. Concerto $99 once)
 
 Primary CTA:        "Deploy your agent — $99"
 Secondary CTA:      "Set up in 5 minutes"

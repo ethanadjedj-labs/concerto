@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { MessageCircle, X, ExternalLink, Mail, BookOpen, Wifi, WifiOff, Zap } from "lucide-react"
 
-const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/maestro"
-const SUPPORT_EMAIL = "support@maestro.run"
+const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/concerto"
+const SUPPORT_EMAIL = "support@concerto.run"
 const FAQ_URL = "/help"
 
 const QUICK_ISSUES = [
@@ -98,7 +98,7 @@ export function SupportWidget() {
 
           <div className="mb-4 flex items-center gap-2">
             <Zap className="h-4 w-4 text-violet-400" />
-            <span className="text-sm font-semibold text-white">Maestro Support</span>
+            <span className="text-sm font-semibold text-white">Concerto Support</span>
           </div>
 
           {/* Quick links */}

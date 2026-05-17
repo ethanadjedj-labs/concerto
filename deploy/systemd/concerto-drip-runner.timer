@@ -1,5 +1,5 @@
 [Unit]
-Description=Maestro drip runner — every hour
+Description=Concerto drip runner — every hour
 
 [Timer]
 OnBootSec=5min

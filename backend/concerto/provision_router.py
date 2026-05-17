@@ -6,8 +6,8 @@ import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from maestro import db, provisioner
-from maestro.email_utils import send_operator_alert
+from concerto import db, provisioner
+from concerto.email_utils import send_operator_alert
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 _CLOUD_INIT_TIMEOUT_S = 8 * 60  # 8 minutes
 _MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 _HOSTED_SIZE = "s-2vcpu-4gb"
-_MAESTRO_DO_API_TOKEN = os.getenv("MAESTRO_DO_API_TOKEN", "")
+_CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 
 
 class ProvisionRequest(BaseModel):
@@ -55,10 +55,10 @@ async def provision(req: ProvisionRequest):
     plan = buyer.get("plan", "byoc")
 
     if plan == "hosted":
-        if not _MAESTRO_DO_API_TOKEN:
+        if not _CONCERTO_DO_API_TOKEN:
             raise HTTPException(
                 status_code=503,
-                detail="Hosted provisioning unavailable: MAESTRO_DO_API_TOKEN not configured",
+                detail="Hosted provisioning unavailable: CONCERTO_DO_API_TOKEN not configured",
             )
         await db.update_buyer(
             req.token, status="provisioning", region=req.region, vps_size=_HOSTED_SIZE
@@ -66,7 +66,7 @@ async def provision(req: ProvisionRequest):
         asyncio.create_task(
             _provision_async(
                 req.token,
-                _MAESTRO_DO_API_TOKEN,
+                _CONCERTO_DO_API_TOKEN,
                 req.region,
                 _HOSTED_SIZE,
                 mode="hosted",
@@ -125,7 +125,7 @@ async def _cloud_init_timeout_watch(
     )
 
     try:
-        from maestro.refunds import refund
+        from concerto.refunds import refund
         await refund(token, "Cloud-init install timed out after 8 minutes")
     except Exception as exc:
         logger.error("Auto-refund failed for timed-out token %.8s: %s", token, exc)
@@ -183,7 +183,7 @@ async def _provision_async(
             token, status="provisioning_failed", failure_reason=str(exc)
         )
         try:
-            from maestro.refunds import refund
+            from concerto.refunds import refund
             await refund(token, f"Droplet boot failed: {exc}")
         except Exception as ref_exc:
             logger.error("Auto-refund failed for boot-failed token %.8s: %s", token, ref_exc)
@@ -193,7 +193,7 @@ async def _provision_async(
             token, status="provisioning_timeout", failure_reason=str(exc)
         )
         try:
-            from maestro.refunds import refund
+            from concerto.refunds import refund
             await refund(token, "Droplet provisioning timed out after 5 minutes")
         except Exception as ref_exc:
             logger.error("Auto-refund failed for timeout token %.8s: %s", token, ref_exc)

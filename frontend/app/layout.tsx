@@ -17,21 +17,21 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Maestro — Remote Workshop for Claude Code Agents",
+  title: "Concerto — Remote Workshop for Claude Code Agents",
   description:
     "Pilot Claude Code workers from your browser. Never open a terminal. Parallel AI agents running 24/7 in your own cloud — one-time $99.",
-  metadataBase: new URL("https://maestro.run"),
+  metadataBase: new URL("https://concerto.run"),
   openGraph: {
-    title: "Maestro — Remote Workshop for Claude Code Agents",
+    title: "Concerto — Remote Workshop for Claude Code Agents",
     description:
       "Pilot Claude Code workers from your browser. Never open a terminal. Parallel agents 24/7, your cloud, your billing.",
     type: "website",
-    url: "https://maestro.run",
-    siteName: "Maestro",
+    url: "https://concerto.run",
+    siteName: "Concerto",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Maestro — Remote Workshop for Claude Code Agents",
+    title: "Concerto — Remote Workshop for Claude Code Agents",
     description: "Pilot Claude Code workers from your browser. One-time $99.",
   },
   robots: {

@@ -2,10 +2,10 @@
 import sys
 import os
 
-# Allow importing from backend/maestro without installation
+# Allow importing from backend/concerto without installation
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from maestro.terminal_router import _ttyd_ws_url, _basic_auth_header, _CSP_FRAME_ANCESTORS
+from concerto.terminal_router import _ttyd_ws_url, _basic_auth_header, _CSP_FRAME_ANCESTORS
 import base64
 
 
@@ -32,7 +32,7 @@ def test_basic_auth_header_format():
     header = _basic_auth_header("s3cr3t")
     assert header.startswith("Basic ")
     decoded = base64.b64decode(header[6:]).decode()
-    assert decoded == "maestro:s3cr3t"
+    assert decoded == "concerto:s3cr3t"
 
 
 def test_basic_auth_header_empty_password():
@@ -40,12 +40,12 @@ def test_basic_auth_header_empty_password():
     header = _basic_auth_header("")
     assert header.startswith("Basic ")
     decoded = base64.b64decode(header[6:]).decode()
-    assert decoded == "maestro:"
+    assert decoded == "concerto:"
 
 
-def test_csp_frame_ancestors_includes_maestro_run():
+def test_csp_frame_ancestors_includes_concerto_run():
     """F3: CSP header covers production domain."""
-    assert "https://maestro.run" in _CSP_FRAME_ANCESTORS
+    assert "https://concerto.run" in _CSP_FRAME_ANCESTORS
 
 
 def test_csp_frame_ancestors_includes_vercel():

@@ -1,0 +1,10 @@
+[Unit]
+Description=Concerto onboarding email drip runner
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/concerto/backend/.venv/bin/python -m concerto.drip_runner
+EnvironmentFile=/etc/concerto/env
+StandardOutput=journal
+StandardError=journal

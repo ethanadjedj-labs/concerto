@@ -27,9 +27,9 @@ def test_001_init_creates_table():
         conn = sqlite3.connect(tmp.name)
         _apply_migration_idempotent(conn, "001_init.sql")
         rows = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='maestro_buyers'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='concerto_buyers'"
         ).fetchall()
-        assert rows, "maestro_buyers table not created by 001_init.sql"
+        assert rows, "concerto_buyers table not created by 001_init.sql"
         conn.close()
 
 
@@ -41,7 +41,7 @@ def test_002_adds_ttyd_columns():
 
         cols = {
             row[1]
-            for row in conn.execute("PRAGMA table_info(maestro_buyers)").fetchall()
+            for row in conn.execute("PRAGMA table_info(concerto_buyers)").fetchall()
         }
         assert "ttyd_password" in cols, "ttyd_password column missing after migration 002"
         assert "ttyd_public_url" in cols, "ttyd_public_url column missing after migration 002"

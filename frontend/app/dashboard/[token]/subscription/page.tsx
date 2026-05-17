@@ -9,7 +9,7 @@ export default function SubscriptionPage({ params }: { params: { token: string }
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
 
   async function openPortal() {
     setLoading(true)
@@ -53,7 +53,7 @@ export default function SubscriptionPage({ params }: { params: { token: string }
 
         <h1 className="mb-2 text-2xl font-bold tracking-tight">Manage Subscription</h1>
         <p className="mb-8 text-[14px] leading-relaxed text-white/40">
-          Update your payment method, download invoices, or cancel your Maestro Hosted plan.
+          Update your payment method, download invoices, or cancel your Concerto Hosted plan.
           You&apos;ll be taken to Stripe&apos;s secure customer portal.
         </p>
 
@@ -99,8 +99,8 @@ export default function SubscriptionPage({ params }: { params: { token: string }
 
         <p className="mt-6 text-[12px] text-white/25">
           Questions?{" "}
-          <a href="mailto:support@maestro.run" className="text-violet-400/70 hover:text-violet-400">
-            support@maestro.run
+          <a href="mailto:support@concerto.run" className="text-violet-400/70 hover:text-violet-400">
+            support@concerto.run
           </a>
         </p>
       </main>

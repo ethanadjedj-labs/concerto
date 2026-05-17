@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Maestro installer dry-run — renders cloud_init.yaml.j2 with fake values
+# Concerto installer dry-run — renders cloud_init.yaml.j2 with fake values
 # and validates the result without touching systemd or installing packages.
 #
 # Usage:
@@ -12,7 +12,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALLER_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-WORK_DIR="$(mktemp -d /tmp/maestro-dryrun-XXXXXX)"
+WORK_DIR="$(mktemp -d /tmp/concerto-dryrun-XXXXXX)"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
@@ -29,7 +29,7 @@ if [[ "${1:-}" == "--check-sync" ]]; then
 
   # Extract the embedded mcp_server.py from the YAML using Python
   # Need jinja2+pyyaml — install to a temp venv if not present
-  _SYNC_VENV="$(mktemp -d /tmp/maestro-sync-venv-XXXXXX)"
+  _SYNC_VENV="$(mktemp -d /tmp/concerto-sync-venv-XXXXXX)"
   trap 'rm -rf "${_SYNC_VENV}"' EXIT
   python3 -m venv "${_SYNC_VENV}" >/dev/null 2>&1
   "${_SYNC_VENV}/bin/pip" install --quiet jinja2 pyyaml >/dev/null 2>&1
@@ -42,13 +42,13 @@ from jinja2 import Environment, FileSystemLoader
 env = Environment(loader=FileSystemLoader("installer"), keep_trailing_newline=True)
 tmpl = env.get_template("cloud_init.yaml.j2")
 rendered = tmpl.render(
-    maestro_token="x", maestro_callback_url="https://x.example.com/cb",
+    concerto_token="x", concerto_callback_url="https://x.example.com/cb",
     ssh_authorized_key="ssh-ed25519 AAAA fake@host", customer_email="x@x.com",
 )
 
 doc = yaml.safe_load(rendered)
 wf = {e["path"]: e for e in doc.get("write_files", []) if isinstance(e, dict) and "path" in e}
-key = "/opt/maestro/mcp_server.py"
+key = "/opt/concerto/mcp_server.py"
 if key not in wf:
     print(f"ERROR: {key} not found in write_files"); sys.exit(1)
 
@@ -99,9 +99,9 @@ env = Environment(
 )
 tmpl = env.get_template("cloud_init.yaml.j2")
 out = tmpl.render(
-    maestro_token="dryrun_token_abc123",
-    maestro_callback_url="https://empire.example.com/api/maestro/callback",
-    ssh_authorized_key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForDryRunOnly dryrun@maestro",
+    concerto_token="dryrun_token_abc123",
+    concerto_callback_url="https://empire.example.com/api/concerto/callback",
+    ssh_authorized_key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForDryRunOnly dryrun@concerto",
     customer_email="dryrun@example.com",
 )
 with open("${RENDERED}", "w") as f:
@@ -131,14 +131,14 @@ for key in ("ssh_authorized_keys", "write_files", "runcmd"):
 if "write_files" in doc:
     paths = [e.get("path") for e in doc["write_files"] if isinstance(e, dict)]
     required_paths = [
-        "/etc/maestro/env",
-        "/etc/maestro/version",
-        "/opt/maestro/mcp_server.py",
-        "/etc/nginx/conf.d/maestro.conf",
-        "/etc/systemd/system/maestro-mcp.service",
-        "/etc/systemd/system/maestro-tunnel.service",
-        "/etc/systemd/system/maestro-ttyd.service",
-        "/opt/maestro/provision_complete.sh",
+        "/etc/concerto/env",
+        "/etc/concerto/version",
+        "/opt/concerto/mcp_server.py",
+        "/etc/nginx/conf.d/concerto.conf",
+        "/etc/systemd/system/concerto-mcp.service",
+        "/etc/systemd/system/concerto-tunnel.service",
+        "/etc/systemd/system/concerto-ttyd.service",
+        "/opt/concerto/provision_complete.sh",
     ]
     for p in required_paths:
         if p not in paths:
@@ -190,7 +190,7 @@ import sys, yaml, pathlib
 rendered = pathlib.Path("${RENDERED}").read_text()
 doc = yaml.safe_load(rendered)
 wf = {e["path"]: e for e in doc.get("write_files", []) if isinstance(e, dict) and "path" in e}
-key = "/opt/maestro/mcp_server.py"
+key = "/opt/concerto/mcp_server.py"
 if key not in wf:
     print(f"  ERROR: {key} not found in write_files")
     sys.exit(1)
@@ -238,9 +238,9 @@ required_patterns = [
     "mcp[cli]",
     "openssl rand -hex 32",
     "provision_complete.sh",
-    "maestro-mcp",
-    "maestro-ttyd",
-    "maestro-tunnel",
+    "concerto-mcp",
+    "concerto-ttyd",
+    "concerto-tunnel",
 ]
 
 ok = True

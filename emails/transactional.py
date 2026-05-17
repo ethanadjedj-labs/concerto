@@ -1,5 +1,5 @@
 """
-Maestro transactional email templates.
+Concerto transactional email templates.
 
 Each template function returns a dict with:
     subject   : str
@@ -28,20 +28,20 @@ def _load_html(name: str) -> str | None:
 
 
 def purchase_confirmation(*, token: str, email: str) -> dict:
-    setup_url = f"https://maestro.run/setup/{token}"
-    subject = "Your Maestro workspace is being prepared"
+    setup_url = f"https://concerto.run/setup/{token}"
+    subject = "Your Concerto workspace is being prepared"
     text = f"""\
 Hi,
 
-Thanks for purchasing Maestro. Your order is confirmed.
+Thanks for purchasing Concerto. Your order is confirmed.
 
 Complete your setup here:
 {setup_url}
 
 The link expires in 48 hours. If anything goes wrong, reply to this email — we're fast.
 
-— The Maestro team
-https://maestro.run
+— The Concerto team
+https://concerto.run
 """
     html = _load_html("purchase_confirmation")
     if html:
@@ -50,7 +50,7 @@ https://maestro.run
 
 
 def provisioning_complete(*, dashboard_url: str, email: str) -> dict:
-    subject = "Your Maestro Droplet is ready"
+    subject = "Your Concerto Droplet is ready"
     text = f"""\
 Hi,
 
@@ -61,9 +61,9 @@ Open your dashboard to grab the connector config:
 
 Paste the connector config into claude.ai → Settings → Connectors, then start any conversation. Claude Code is live.
 
-If you run into anything, join our Discord: https://discord.gg/maestro
+If you run into anything, join our Discord: https://discord.gg/concerto
 
-— The Maestro team
+— The Concerto team
 """
     html = _load_html("provisioning_complete")
     if html:
@@ -72,7 +72,7 @@ If you run into anything, join our Discord: https://discord.gg/maestro
 
 
 def provisioning_failed(*, reason: str, refund_url: str, retry_url: str, email: str) -> dict:
-    subject = "Maestro setup failed — refund available"
+    subject = "Concerto setup failed — refund available"
     text = f"""\
 Hi,
 
@@ -90,7 +90,7 @@ You have two options:
 
 We're sorry for the trouble. If you want to understand what went wrong or need help, reply to this email.
 
-— The Maestro team
+— The Concerto team
 """
     html = _load_html("provisioning_failed")
     if html:
@@ -103,18 +103,18 @@ We're sorry for the trouble. If you want to understand what went wrong or need h
     return {"subject": subject, "text": text, "html": html}
 
 
-def welcome_after_first_session(*, email: str, discord_url: str = "https://discord.gg/maestro") -> dict:
+def welcome_after_first_session(*, email: str, discord_url: str = "https://discord.gg/concerto") -> dict:
     subject = "You're running Claude Code on your own machine"
     text = f"""\
 Hi,
 
-You just completed your first Maestro session. That means Claude Code ran a real task on your dedicated Droplet — files persisted, network was live, and nothing hit a context wall.
+You just completed your first Concerto session. That means Claude Code ran a real task on your dedicated Droplet — files persisted, network was live, and nothing hit a context wall.
 
 A few things worth knowing now that you're up:
 
 1. Sessions persist. You can start a task, close the browser, and come back — Claude Code keeps going.
 
-2. Use the Maestro Custom Style in claude.ai. It tells Claude to treat MCP tools as the primary execution surface and skip the narration. Grab it here: https://maestro.run/docs/custom-style
+2. Use the Concerto Custom Style in claude.ai. It tells Claude to treat MCP tools as the primary execution surface and skip the narration. Grab it here: https://concerto.run/docs/custom-style
 
 3. Join the Discord — it's where power users share session templates, workflows, and tips:
    {discord_url}
@@ -123,7 +123,7 @@ A few things worth knowing now that you're up:
 
 Let us know how it's going.
 
-— The Maestro team
+— The Concerto team
 """
     html = _load_html("welcome_after_first_session")
     if html:

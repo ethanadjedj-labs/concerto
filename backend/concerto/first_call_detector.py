@@ -10,7 +10,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
-from maestro import db
+from concerto import db
 
 router = APIRouter()
 
