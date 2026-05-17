@@ -14,9 +14,9 @@
 
 ## Beat 2 — Le paiement (0:15–0:30)
 
-**VO** : "On commence sur concerto.run. Un paiement unique de $99 via Stripe. Pas d'abonnement, pas de surprise mensuelle."
+**VO** : "On commence sur concerto.run. Deux options : version hébergée à 39$ par mois — Concerto gère tout — ou version BYOC à 99$ une fois sur votre propre compte DigitalOcean. On suit le parcours BYOC ici."
 
-**Écran** : Page d'accueil concerto.run → clic "Get started" → Stripe Checkout ($99, one-time) → confirmation de paiement → redirect vers l'onboarding.
+**Écran** : Page d'accueil concerto.run → plans côte à côte (Hosted $39/mo ★ recommandé, BYOC $99 one-time) → sélection BYOC → Stripe Checkout ($99) → confirmation → redirect vers l'onboarding.
 
 ---
 

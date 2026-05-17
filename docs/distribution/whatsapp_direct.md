@@ -4,9 +4,9 @@ Registre : direct, confiant, demande explicite de referrals.
 
 ---
 
-> {first_name}, voici mon nouveau produit : Concerto (concerto.run). Tu paies 99$ une fois, tu entres ta clé DigitalOcean, et en moins de 5 min t'as Claude Code installé sur ton propre VPS — terminal dans le navigateur, connecteur MCP pour claude.ai, zéro config manuelle. Tout tourne chez toi, sur ton propre compte. {why_them} — est-ce que tu connais 5 personnes à qui ça ferait sens ?
+> {first_name}, voici mon nouveau produit : Concerto (concerto.run). Le principe : t'es le soliste, Concerto te donne l'orchestre. Un agent Claude Code actif en permanence, depuis le navigateur, zéro config manuelle. Version hébergée : 39$/mois, on s'occupe de tout. BYOC : 99$ une fois sur ton propre VPS DigitalOcean. {why_them} — est-ce que tu connais 5 personnes à qui ça ferait sens ?
 
-*[~390 car.]*
+*[~385 car.]*
 
 ---
 

@@ -8,9 +8,9 @@ Hey {first_name},
 
 Je voulais te tenir au courant d'un truc que j'ai mis en ligne cette semaine.
 
-J'ai construit Concerto — un outil qui fait tourner Claude Code sur ton propre serveur DigitalOcean, accessible depuis n'importe quel navigateur. L'idée de départ : si tu as un abonnement Claude Max et que tu veux un agent actif en permanence — sans configurer un serveur toi-même, sans ouvrir un terminal à chaque fois — Concerto s'occupe de tout.
+J'ai construit Concerto — un agent Claude Code actif en permanence, accessible depuis n'importe quel navigateur. L'idée centrale : tu es le soliste, Concerto te donne l'orchestre pour te soutenir. Ton agent tourne dans ton cloud, sur tes termes, sans que tu aies à gérer l'infrastructure.
 
-Concrètement : tu paies 99$ une fois, tu entres ta clé DigitalOcean, et en moins de cinq minutes tu as un environnement complet — Claude Code installé, terminal web inclus, connecteur MCP pour claude.ai. Le VPS tourne sur ton compte, pas le mien. Tes fichiers t'appartiennent.
+Il y a deux façons d'utiliser Concerto. La version hébergée à 39$/mois : on s'occupe de tout, zéro infrastructure à gérer. Ou la version BYOC à 99$ une fois : tu entres ta clé DigitalOcean, et en moins de cinq minutes tu as un environnement complet — Claude Code installé sur ton propre VPS, terminal web inclus, connecteur MCP pour claude.ai. Dans les deux cas : tes fichiers t'appartiennent, ton contexte persiste d'un appareil à l'autre.
 
 {why_them} — je me suis dit que ça pouvait résonner.
 

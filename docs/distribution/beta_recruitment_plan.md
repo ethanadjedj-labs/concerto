@@ -9,18 +9,18 @@
 Un bêta testeur Concerto doit remplir au moins **deux** de ces conditions :
 
 - Abonné Claude Max ou utilisateur régulier de Claude Code
-- Dispose d'un compte DigitalOcean actif (ou prêt à en créer un — ~5 min)
 - Travaille avec des agents IA dans un contexte professionnel ou side project sérieux
 - Profil technique : développeur, opérateur, fondateur technique, freelance IA
 - A exprimé une frustration concrète avec la configuration de Claude Code en remote ou multi-appareil
+- Pour le plan BYOC : dispose d'un compte DigitalOcean actif (ou prêt à en créer un — ~5 min)
 
-**À exclure** : curieux sans usage réel ; personnes sans compte DO ni intention d'en créer un ; contacts qui demandent systématiquement des faveurs sans retour.
+**À exclure** : curieux sans usage réel ; contacts qui demandent systématiquement des faveurs sans retour.
 
 ---
 
 ## Termes de l'échange
 
-Le seat bêta est gratuit (valeur : $99). En contrepartie, le bêta testeur s'engage à :
+Le seat bêta est gratuit (valeur : $39/mois ou $99 selon le plan). En contrepartie, le bêta testeur s'engage à :
 
 1. **Feedback J+3** : un paragraphe honnête — ce qui a fonctionné, ce qui a bloqué, ce qui manque. Format libre, envoyé par email ou message direct.
 2. **Feedback J+14** : un paragraphe d'usage réel — est-ce que l'environnement tourne encore ? Qu'est-ce qui a changé dans votre workflow ? Qu'est-ce que vous abandonneriez si ça disparaissait demain ?
@@ -32,9 +32,9 @@ Pas de call imposé, pas de formulaire long, pas de NDA. Deux paragraphes en deu
 
 ## Template d'invitation (WhatsApp / email court)
 
-> {first_name}, je lance les 10 premiers seats bêta de Concerto — Claude Code sur ton propre VPS DigitalOcean, depuis le navigateur, sans toucher un terminal. $99 à terme ; pour les 10 premiers : gratuit, en échange d'un retour à J+3 et J+14. {why_them} — ça t'intéresse ? Je t'envoie l'accès direct.
+> {first_name}, je lance les 10 premiers seats bêta de Concerto — Claude Code en permanence depuis le navigateur, hébergé ou sur ton propre VPS. 39$/mois ou 99$ une fois à terme ; pour les 10 premiers : gratuit, en échange d'un retour à J+3 et J+14. {why_them} — ça t'intéresse ? Je t'envoie l'accès direct.
 
-*[~295 car.]*
+*[~315 car.]*
 
 ---
 

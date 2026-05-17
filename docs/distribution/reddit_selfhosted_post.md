@@ -1,6 +1,6 @@
 # Reddit — r/selfhosted
 
-**Titre** : Concerto: self-hosted Claude Code on your own DigitalOcean Droplet — browser terminal, MCP connector, $99 one-time setup fee
+**Titre** : Concerto: self-hosted Claude Code on your own DigitalOcean Droplet — browser terminal, MCP connector, $99 one-time (or $39/mo hosted)
 
 ---
 
@@ -12,11 +12,13 @@ Built this because I wanted Claude Code running on my own infrastructure, not so
 
 **The self-hosted angle**: the Droplet runs in your DigitalOcean account. You own the VPS, you own the data, you control the keys. Concerto's backend handles the initial provisioning and proxies the WebSocket terminal connection but has no persistent access to your Droplet after setup. Your SSH public key is injected during cloud-init so you can also SSH in directly if you prefer.
 
+**Pricing**: BYOC plan (this sub's crowd) is $99 one-time — covers the provisioning automation; ongoing compute is ~$24/mo directly to DigitalOcean. There's also a Hosted plan at $39/mo if you'd rather not manage the Droplet at all.
+
 **Honest caveats**:
 - You still need a Claude Max plan ($100/mo from Anthropic) — Concerto doesn't bundle API access or credits
 - v1 is one Droplet per account; if you want parallel agents you'd provision additional Droplets manually for now
-- The $99 is for the provisioning automation; ongoing compute is ~$24/mo directly to DigitalOcean
-- The domain (concerto.run) DNS is still propagating — the backend is live but the full flow requires the frontend too
+- BYOC: $99 is for the provisioning automation; ongoing compute is ~$24/mo directly to DigitalOcean
+- Hosted: $39/mo all-in, Concerto manages the infrastructure
 
 **Tech details** (for the people who want them):
 - ttyd behind cloudflared quick tunnel — WebSocket subprotocol `tty` is required or the connection silently receives no data (fun debugging session)
