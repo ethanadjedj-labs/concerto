@@ -1,5 +1,6 @@
 import Link from "next/link"
 import LegalFooter from "@/components/LegalFooter"
+import { HeroDemo } from "@/components/HeroDemo"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -90,24 +91,9 @@ export default function LandingPage() {
             <span className="text-white/30 text-sm">One-time payment · No subscription</span>
           </div>
 
-          {/* Terminal mockup */}
-          <div className="mt-20 mx-auto max-w-3xl rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden shadow-2xl">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-              <div className="h-3 w-3 rounded-full bg-red-500/60" />
-              <div className="h-3 w-3 rounded-full bg-yellow-500/60" />
-              <div className="h-3 w-3 rounded-full bg-green-500/60" />
-              <span className="ml-3 text-xs text-white/20 font-mono">maestro · agent-01</span>
-            </div>
-            <div className="p-6 font-mono text-sm text-left space-y-2">
-              <div className="text-white/30">$ claude --dangerously-skip-permissions</div>
-              <div className="text-green-400">✓ Authenticated with Claude Max</div>
-              <div className="text-white/50">Watching /workspace for tasks...</div>
-              <div className="text-violet-300 mt-4">▶ Task: Refactor auth middleware to JWT</div>
-              <div className="text-white/40">  Reading src/middleware/auth.ts...</div>
-              <div className="text-white/40">  Analyzing 847 lines across 12 files...</div>
-              <div className="text-white/40">  Writing changes...</div>
-              <div className="text-green-400">✓ 14 files modified · PR #42 opened</div>
-            </div>
+          {/* Interactive hero demo */}
+          <div className="mt-20 px-2">
+            <HeroDemo />
           </div>
         </div>
       </section>
