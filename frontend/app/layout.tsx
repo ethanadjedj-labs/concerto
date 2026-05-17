@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s — Concerto",
   },
   description:
-    "A dedicated remote workspace where Claude Code runs your projects. Talk to Claude in chat, Claude does the work. Solo $49/mo · Pro $99/mo.",
+    "Run Claude Code from Claude chat. Claude spawns sessions on your dedicated remote machine — no terminal, no setup. Solo $49/mo · Pro $99/mo.",
   keywords: [
     "Claude Code",
     "AI agents",
@@ -109,7 +109,7 @@ const jsonLd = {
       "@id": "https://concerto.run/#product-solo",
       name: "Concerto Solo",
       description:
-        "Dedicated remote workspace for Claude Code — 4GB memory, up to 2 parallel sessions, email support included.",
+        "Dedicated remote machine for Claude Code — 4GB memory, up to 2 parallel sessions, email support included.",
       url: "https://concerto.run",
       brand: { "@id": "https://concerto.run/#organization" },
       offers: {
@@ -131,7 +131,7 @@ const jsonLd = {
       "@id": "https://concerto.run/#product-pro",
       name: "Concerto Pro",
       description:
-        "Dedicated remote workspace for Claude Code — 8GB memory, up to 6–8 parallel sessions, email support included.",
+        "Dedicated remote machine for Claude Code — 8GB memory, up to 6–8 parallel sessions, email support included.",
       url: "https://concerto.run",
       brand: { "@id": "https://concerto.run/#organization" },
       offers: {
