@@ -24,8 +24,6 @@ logger = logging.getLogger(__name__)
 
 DB_PATH       = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 DO_API_TOKEN  = os.getenv("CONCERTO_DO_API_TOKEN", "")
-RESEND_KEY    = os.getenv("RESEND_API_KEY", "")
-EMAIL_FROM    = os.getenv("CONCERTO_EMAIL_FROM", os.getenv("EMAIL_FROM", "hello@concerto.run"))
 FRONTEND_URL  = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 DO_API_BASE   = "https://api.digitalocean.com/v2"
 
@@ -94,29 +92,18 @@ async def _destroy_droplet(droplet_id: str) -> None:
 
 
 async def _send_expired_email(email: str, token: str) -> None:
-    if not RESEND_KEY or not email:
+    if not email:
         return
-
     try:
         import sys
         sys.path.insert(0, str(_EMAILS_DIR.parent))
         from emails.transactional import trial_expired
+        from concerto.transactional import get_client
 
         upgrade_url = f"{FRONTEND_URL}/upgrade/{token}"
         tpl = trial_expired(upgrade_url=upgrade_url, email=email)
         html = tpl.get("html") or tpl["text"].replace("\n", "<br>")
-
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {RESEND_KEY}"},
-                json={
-                    "from": EMAIL_FROM,
-                    "to": [email],
-                    "subject": tpl["subject"],
-                    "html": html,
-                },
-            )
+        await get_client().send_async(email, tpl["subject"], html, tpl.get("text"))
     except Exception as exc:
         logger.warning("Failed to send trial_expired email to %s: %s", email, exc)
 

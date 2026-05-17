@@ -24,8 +24,10 @@ _MIGRATIONS = [
     "005_stripe_customer_id.sql",
     "006_drip_tracking.sql",
     "007_recovery.sql",
+    "007_pricing_tiers_v2.sql",
     "008_rename_maestro_to_concerto.sql",
     "009_trial_mode.sql",
+    "010_email_dead_letter.sql",
 ]
 
 

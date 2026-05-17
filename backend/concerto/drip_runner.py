@@ -7,7 +7,7 @@ Logic:
 
 Days schedule: 0, 1, 3, 7, 14 (hosted only), 21, 30
 Tracking: drip_day_N_sent_at columns in concerto_buyers (migration 006)
-Transport: Resend via arsenal.tools.send_email_resend
+Transport: Migadu SMTP via concerto.transactional.MigaduSMTPClient
 """
 
 from __future__ import annotations
@@ -17,9 +17,9 @@ import sqlite3
 import time
 from pathlib import Path
 
+from concerto.transactional import get_client
+
 DB_PATH = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "Concerto <noreply@concerto.run>")
 FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 DRIP_SCHEDULE = [
@@ -28,7 +28,7 @@ DRIP_SCHEDULE = [
     (1,  "drip_day_1_sent_at",  lambda b: "Have you tried your first session?", "day_1_first_session", False),
     (3,  "drip_day_3_sent_at",  lambda b: "Try this: spawn 3 sessions in parallel", "day_3_advanced_pattern", False),
     (7,  "drip_day_7_sent_at",  lambda b: "One week in — how's it going?", "day_7_check_in", False),
-    (14, "drip_day_14_sent_at", lambda b: "Your subscription renews in 16 days", "day_14_renewal_preview", True),
+    (14, "drip_day_14_sent_at", lambda b: "Your subscription renews in 16 days", "day_14_renewal_preview", False),
     (21, "drip_day_21_sent_at", lambda b: "5 things power users do with Concerto", "day_21_use_case_inspiration", False),
     (30, "drip_day_30_sent_at", lambda b: "30 days in — one quick question", "day_30_one_month", False),
 ]
@@ -63,16 +63,32 @@ def _load_template(name: str, buyer: dict) -> str | None:
     return html
 
 
-def _send(to: str, subject: str, html: str) -> bool:
-    if not RESEND_API_KEY:
-        print(f"  [skip] no RESEND_API_KEY — would send '{subject}' to {to}")
-        return False
+def _load_text_template(name: str, buyer: dict) -> str | None:
+    path = _TEMPLATE_DIR / f"{name}.txt"
+    if not path.exists():
+        return None
+    text = path.read_text()
+    token = buyer.get("token", "")
+    email = buyer.get("email", "")
+    setup_url = f"{FRONTEND_URL}/setup/{token}"
+    dashboard_url = f"{FRONTEND_URL}/dashboard/{token}"
+    replacements = {
+        "{{setup_url}}": setup_url,
+        "{{dashboard_url}}": dashboard_url,
+        "{{email}}": email,
+        "{{unsubscribe_url}}": f"{FRONTEND_URL}/unsubscribe/{token}",
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    return text
+
+
+def _send(to: str, subject: str, html: str, text: str | None = None) -> bool:
     try:
-        from arsenal.tools.send_email_resend import send_email_resend  # type: ignore
-        send_email_resend(to=to, subject=subject, html=html, sender=EMAIL_FROM)
+        get_client().send(to, subject, html, text)
         return True
     except Exception as e:
-        print(f"  [error] send failed: {e}")
+        print(f"  [error] SMTP send failed: {e}")
         return False
 
 
@@ -112,8 +128,9 @@ def run() -> None:
                 print(f"  [warn] template missing: {tpl_name}")
                 continue
 
+            text = _load_text_template(tpl_name, buyer)
             print(f"  → sending day_{day_offset} to {email}")
-            sent = _send(email, subject, html)
+            sent = _send(email, subject, html, text)
             if sent:
                 con.execute(
                     f"UPDATE concerto_buyers SET {col} = ? WHERE token = ?",
