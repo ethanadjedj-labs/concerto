@@ -20,6 +20,7 @@ _MIGRATIONS = [
     "003_hosted_plan.sql",
     "004_operator_kit.sql",
     "005_stripe_customer_id.sql",
+    "006_recovery.sql",
 ]
 
 

@@ -1,9 +1,11 @@
 import os
+import time
 
 import stripe
 from fastapi import APIRouter, HTTPException
 
 from maestro import db
+from maestro.refunds import RefundError, RefundNotEligible, is_eligible_auto
 
 router = APIRouter()
 
@@ -16,20 +18,37 @@ async def buyer_status(token: str):
     if not buyer:
         raise HTTPException(status_code=404, detail="Buyer not found")
 
-    resp: dict = {"status": buyer["status"], "plan": buyer.get("plan", "byoc")}
+    status = buyer["status"]
+    resp: dict = {"status": status, "plan": buyer.get("plan", "byoc")}
+
     if buyer.get("vps_ip"):
         resp["vps_ip"] = buyer["vps_ip"]
     if buyer.get("mcp_url"):
         resp["mcp_url"] = buyer["mcp_url"]
     if buyer.get("bearer_token"):
         resp["bearer_token"] = buyer["bearer_token"]
-    if buyer["status"] == "awaiting_oauth":
+    if status == "awaiting_oauth":
         resp["dashboard_ready_url"] = f"https://maestro.run/dashboard/{token}"
 
     # Hosted-only subscription fields
     if buyer.get("plan") == "hosted":
         resp["subscription_status"] = buyer.get("subscription_status")
         resp["next_renewal_at"] = buyer.get("next_renewal_at")
+
+    # Extra fields for error UX
+    if buyer.get("failure_reason"):
+        resp["failure_reason"] = buyer["failure_reason"]
+
+    # Refund eligibility (visible for 14 days)
+    paid_at = buyer.get("paid_at") or 0
+    age_days = (time.time() - paid_at) / 86400
+    resp["refund_eligible"] = is_eligible_auto(buyer)
+    resp["refund_window_open"] = age_days <= 14
+
+    # Dashboard opened tracking
+    if status in ("awaiting_oauth", "active"):
+        if not buyer.get("dashboard_opened_at"):
+            await db.update_buyer(token, dashboard_opened_at=int(time.time()))
 
     return resp
 
@@ -58,3 +77,22 @@ async def cancel_subscription(token: str):
 
     await db.update_buyer(token, subscription_status="cancelling")
     return {"cancelled": True}
+
+
+@router.post("/api/buyer/{token}/refund")
+async def request_refund(token: str):
+    buyer = await db.get_buyer(token)
+    if not buyer:
+        raise HTTPException(status_code=404, detail="Buyer not found")
+
+    from maestro.refunds import refund
+    try:
+        result = await refund(token, reason="Customer requested via dashboard")
+        return result
+    except RefundNotEligible as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "refund_not_eligible", "message": str(exc)},
+        )
+    except RefundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
