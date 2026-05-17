@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { ScrollReveal } from "@/components/scroll-reveal"
+import { TrustSection } from "@/components/TrustSection"
 import {
   Zap,
   Cloud,
@@ -335,6 +336,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Trust signals ───────────────────────────────────────── */}
+      <TrustSection />
 
       {/* ── Pricing ─────────────────────────────────────────────── */}
       <section id="pricing" className="px-6 py-24">

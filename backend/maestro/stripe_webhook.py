@@ -120,6 +120,7 @@ async def stripe_webhook(request: Request):
         token = str(uuid.uuid4())
         paid_at = int(time.time())
 
+        stripe_customer_id = obj.get("customer")
         subscription_id = obj.get("subscription")
         next_renewal_at = None
         if subscription_id:
@@ -139,6 +140,7 @@ async def stripe_webhook(request: Request):
             subscription_id=subscription_id,
             subscription_status="active" if subscription_id else None,
             next_renewal_at=next_renewal_at,
+            stripe_customer_id=stripe_customer_id,
         )
 
         if customer_email:
@@ -192,6 +194,7 @@ async def stripe_webhook(request: Request):
                     buyer["token"],
                     subscription_status="active",
                     next_renewal_at=next_renewal_at,
+                    stripe_customer_id=customer_id,
                 )
 
     return {"received": True}

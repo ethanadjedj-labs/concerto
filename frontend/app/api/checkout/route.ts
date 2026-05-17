@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       },
     ],
     mode: isHosted ? "subscription" : "payment",
+    automatic_tax: { enabled: true },
     metadata: {
       product: "maestro",
       plan,
