@@ -170,7 +170,7 @@ export default function LandingPage() {
             <Link href="#faq" className="hidden text-sm text-white/45 transition-colors hover:text-white md:block">
               FAQ
             </Link>
-            <form action="/api/checkout" method="POST">
+            <form action="/api/checkout?plan=hosted" method="POST">
               <Button
                 size="sm"
                 className="h-8 rounded-lg bg-white px-4 text-xs font-semibold text-black hover:bg-white/90"
@@ -222,16 +222,16 @@ export default function LandingPage() {
 
           {/* CTAs */}
           <div className="animate-fade-up delay-300 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <form action="/api/checkout" method="POST">
+            <form action="/api/checkout?plan=hosted" method="POST">
               <Button
                 size="lg"
-                className="h-12 rounded-xl bg-white px-8 text-base font-semibold text-black shadow-[0_0_0_1px_rgba(255,255,255,0.1),0_4px_20px_rgba(255,255,255,0.08)] hover:bg-white/92"
+                className="h-12 rounded-xl bg-violet-600 px-8 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(139,92,246,0.3),0_4px_20px_rgba(139,92,246,0.2)] hover:bg-violet-500"
               >
-                Get Maestro for $99
+                Get Hosted Maestro — $39/mo
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
-            <p className="text-sm text-white/28">One-time payment · No subscription</p>
+            <p className="text-sm text-white/28">Or <a href="#pricing" className="underline underline-offset-2 hover:text-white/50">BYOC $99 once</a> · Your own cloud</p>
           </div>
 
           {/* Interactive hero demo */}
@@ -255,7 +255,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { n: "01", title: "Pay once", desc: "Secure Stripe checkout. $99 one-time, no subscription ever." },
+              { n: "01", title: "Choose your plan", desc: "Hosted $39/mo (we manage the VPS) or BYOC $99 once (your DO account). Secure Stripe checkout." },
               { n: "02", title: "Enter DO key", desc: "Paste your DigitalOcean API key — Maestro provisions your own droplet." },
               { n: "03", title: "Authenticate", desc: "One browser-based OAuth flow for your Claude Max account." },
               { n: "04", title: "Start building", desc: "Paste the connector config into claude.ai. Agents ready." },
@@ -341,67 +341,110 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Simple, one-time pricing
+              Two ways to run Maestro
             </h2>
-            <p className="text-white/40">Pay once, own forever. No subscriptions, no surprises.</p>
+            <p className="text-white/40">Hosted if you want zero setup. BYOC if you already use DigitalOcean.</p>
           </div>
 
-          <div className="reveal mx-auto max-w-md">
-            <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-white/[0.03] p-8 shadow-violet-lg">
-              {/* Subtle gradient top highlight */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(124,58,237,0.08)_0%,transparent_70%)]" />
+          <div className="reveal mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
 
+            {/* Hosted — featured */}
+            <div className="relative overflow-hidden rounded-2xl border border-violet-500/40 bg-white/[0.04] p-8 shadow-violet-lg">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(124,58,237,0.12)_0%,transparent_70%)]" />
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-semibold text-white">Maestro</span>
-                  <Badge className="border-violet-500/30 bg-violet-500/15 text-xs text-violet-300">
-                    One-time
+                  <span className="text-lg font-semibold text-white">Maestro Hosted</span>
+                  <Badge className="border-violet-500/40 bg-violet-500/25 text-xs text-violet-300">
+                    Most popular
                   </Badge>
                 </div>
-
                 <div className="mt-5 flex items-baseline gap-2">
-                  <span className="text-6xl font-bold tracking-tight text-white">$99</span>
-                  <span className="text-sm text-white/35">one-time</span>
+                  <span className="text-6xl font-bold tracking-tight text-white">$39</span>
+                  <span className="text-sm text-white/35">/month</span>
                 </div>
-                <p className="mt-1.5 text-sm text-white/35">
-                  + ~$24/mo DigitalOcean droplet (billed directly to you)
-                </p>
-
+                <p className="mt-1.5 text-sm text-white/35">We host the VPS · Zero setup</p>
                 <Separator className="my-6 bg-white/[0.07]" />
-
                 <ul className="space-y-3.5">
                   {[
-                    "Auto-provisioned DigitalOcean droplet",
-                    "Claude Code pre-installed & configured",
-                    "Browser-based terminal (ttyd)",
-                    "MCP connector for claude.ai",
-                    "Parallel agent support",
-                    "Dedicated Discord support channel",
-                    "Lifetime access to updates",
+                    "Zero setup — no DigitalOcean account needed",
+                    "3–5 parallel Claude Code agents",
+                    "4 GB RAM / 2 vCPU dedicated droplet",
+                    "Browser terminal + MCP connector",
+                    "30-day support included",
+                    "Cancel anytime, 72h data grace",
                   ].map((feature) => (
                     <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
                 </ul>
-
                 <Separator className="my-6 bg-white/[0.07]" />
-
-                <form action="/api/checkout" method="POST">
+                <form action="/api/checkout?plan=hosted" method="POST">
                   <Button
                     type="submit"
-                    className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black shadow-[0_2px_8px_rgba(255,255,255,0.08)] hover:bg-white/92"
+                    className="h-12 w-full rounded-xl bg-violet-600 text-base font-semibold text-white hover:bg-violet-500"
                   >
-                    Get Maestro for $99
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    Get Hosted Maestro →
                   </Button>
                 </form>
+                <p className="mt-3 text-center text-xs text-white/25">
+                  Secure payment via Stripe · Cancel anytime
+                </p>
+              </div>
+            </div>
 
+            {/* BYOC */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8">
+              <div className="relative">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-lg font-semibold text-white">Maestro BYOC</span>
+                  <Badge className="border-white/15 bg-white/10 text-xs text-white/50">
+                    One-time
+                  </Badge>
+                </div>
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="text-6xl font-bold tracking-tight text-white">$99</span>
+                  <span className="text-sm text-white/35">once</span>
+                </div>
+                <p className="mt-1.5 text-sm text-white/35">Your cloud account · Full control</p>
+                <Separator className="my-6 bg-white/[0.07]" />
+                <ul className="space-y-3.5">
+                  {[
+                    "Bring your own DigitalOcean account",
+                    "Full control over infrastructure",
+                    "Choose your droplet size & region",
+                    "Browser terminal + MCP connector",
+                    "30-day support included",
+                    "Pay once, own forever",
+                  ].map((feature) => (
+                    <CheckItem key={feature}>{feature}</CheckItem>
+                  ))}
+                </ul>
+                <Separator className="my-6 bg-white/[0.07]" />
+                <form action="/api/checkout?plan=byoc" method="POST">
+                  <Button
+                    type="submit"
+                    className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-white/92"
+                  >
+                    Get BYOC Maestro →
+                  </Button>
+                </form>
                 <p className="mt-3 text-center text-xs text-white/25">
                   Secure payment via Stripe · 30-day refund policy
                 </p>
               </div>
             </div>
+
           </div>
+
+          {/* Plan picker FAQ */}
+          <div className="reveal mx-auto mt-8 max-w-xl rounded-xl border border-white/[0.07] bg-white/[0.02] px-6 py-4">
+            <p className="mb-1 text-sm font-medium text-white/60">Which plan should I pick?</p>
+            <p className="text-sm leading-relaxed text-white/35">
+              Hosted if you don&apos;t already use DigitalOcean — zero setup, we handle the VPS.
+              BYOC if you do and want full control over your infrastructure and billing.
+            </p>
+          </div>
+
         </div>
       </section>
 
@@ -418,7 +461,7 @@ export default function LandingPage() {
             {[
               {
                 q: "What do I need to get started?",
-                a: "A Claude Max subscription (for unlimited Claude Code usage), a DigitalOcean account (free to create — you only pay for the droplet), and a credit card for the $99 Maestro fee. No server knowledge required.",
+                a: "A Claude Max subscription (for unlimited Claude Code usage) and a credit card. With Hosted, that's it — we provision the VPS. With BYOC, you also need a DigitalOcean account. No server knowledge required in either case.",
               },
               {
                 q: "How is this different from running Claude Code locally?",
@@ -426,11 +469,11 @@ export default function LandingPage() {
               },
               {
                 q: "Who pays for the DigitalOcean droplet?",
-                a: "You do, directly. Maestro provisions the droplet into your DigitalOcean account using your API key. The $24/mo (or chosen size) is charged by DigitalOcean to your card — we never see or mark up your infrastructure costs.",
+                a: "With Hosted: the $39/mo covers the droplet — we manage it on our account. With BYOC: you pay DigitalOcean directly (~$24/mo), we never see your infrastructure costs.",
               },
               {
                 q: "What happens to my droplet if I cancel?",
-                a: "Your droplet is in your DigitalOcean account — you control it fully. You can keep it running, resize it, or destroy it anytime through the DigitalOcean dashboard. Maestro never has persistent access to your infrastructure after initial provisioning.",
+                a: "Hosted: your droplet stays live for 72 hours after cancellation so you can export data, then it's destroyed. BYOC: the droplet is in your own DigitalOcean account — you control it fully, forever.",
               },
               {
                 q: "Can I run multiple agents in parallel?",
@@ -464,16 +507,28 @@ export default function LandingPage() {
               <p className="mx-auto mb-8 max-w-md text-white/40">
                 Get set up in under 10 minutes. Your first agent runs before you finish your coffee.
               </p>
-              <form action="/api/checkout" method="POST">
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-12 rounded-xl bg-white px-10 text-base font-semibold text-black hover:bg-white/92"
-                >
-                  Get started for $99
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </form>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <form action="/api/checkout?plan=hosted" method="POST">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-12 rounded-xl bg-violet-600 px-10 text-base font-semibold text-white hover:bg-violet-500"
+                  >
+                    Get Hosted — $39/mo
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
+                <form action="/api/checkout?plan=byoc" method="POST">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    variant="outline"
+                    className="h-12 rounded-xl border-white/20 bg-transparent px-10 text-base font-semibold text-white hover:bg-white/10"
+                  >
+                    BYOC — $99 once
+                  </Button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -513,12 +568,12 @@ export default function LandingPage() {
 
       {/* ── Mobile sticky CTA (hidden on md+) ───────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#0a0a0b]/95 px-4 py-3 backdrop-blur-xl [padding-bottom:max(12px,env(safe-area-inset-bottom))] md:hidden">
-        <form action="/api/checkout" method="POST">
+        <form action="/api/checkout?plan=hosted" method="POST">
           <Button
             type="submit"
-            className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-white/92"
+            className="h-12 w-full rounded-xl bg-violet-600 text-base font-semibold text-white hover:bg-violet-500"
           >
-            Get Maestro for $99
+            Get Hosted — $39/mo
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>

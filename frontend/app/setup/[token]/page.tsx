@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ExternalLink, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { ExternalLink, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Server } from "lucide-react"
 
 /* DO Personal Access Token: dop_v1_ + 64 hex chars */
 const DO_TOKEN_RE = /^dop_v1_[0-9a-f]{64}$/i
@@ -48,6 +48,7 @@ type ProvisionStatus =
 
 export default function SetupPage({ params }: { params: { token: string } }) {
   const router = useRouter()
+  const [plan, setPlan]         = useState<"hosted" | "byoc" | null>(null)
   const [doKey, setDoKey]       = useState("")
   const [doKeyErr, setDoKeyErr] = useState("")
   const [showKey, setShowKey]   = useState(false)
@@ -58,12 +59,20 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
 
+  useEffect(() => {
+    fetch(`${backendUrl}/api/buyer/${params.token}/status`)
+      .then((r) => r.json())
+      .then((d) => setPlan(d.plan === "hosted" ? "hosted" : "byoc"))
+      .catch(() => setPlan("byoc"))
+  }, [backendUrl, params.token])
+
   const validateKey = useCallback((val: string): string => {
+    if (plan === "hosted") return ""
     if (!val.trim()) return "API key is required."
     if (!DO_TOKEN_RE.test(val.trim()))
       return "Invalid format — DigitalOcean tokens start with dop_v1_ followed by 64 hex characters."
     return ""
-  }, [])
+  }, [plan])
 
   function pollStatus(token: string) {
     let attempts = 0
@@ -103,7 +112,11 @@ export default function SetupPage({ params }: { params: { token: string } }) {
       const res = await fetch(`${backendUrl}/api/provision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: params.token, do_api_key: doKey.trim(), region, size }),
+        body: JSON.stringify(
+          plan === "hosted"
+            ? { token: params.token, region }
+            : { token: params.token, do_api_key: doKey.trim(), region, size }
+        ),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -134,7 +147,9 @@ export default function SetupPage({ params }: { params: { token: string } }) {
           </svg>
           <h1 className="mt-3 text-2xl font-bold tracking-tight">Set up your Maestro</h1>
           <p className="text-sm text-white/40">
-            Enter your DigitalOcean API key to provision your dedicated droplet.
+            {plan === "hosted"
+              ? "Pick a region — we\'ll provision your 4 GB / 2-vCPU droplet automatically."
+              : "Enter your DigitalOcean API key to provision your dedicated droplet."}
           </p>
         </div>
 
@@ -145,7 +160,19 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             <div className="p-7">
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
-                {/* DO API Key */}
+                {/* Hosted: info banner */}
+                {plan === "hosted" && (
+                  <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
+                    <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                    <p className="text-[13px] text-violet-300">
+                      Includes a 4 GB / 2-vCPU droplet — handles 3–5 parallel agents.
+                      No DigitalOcean account required.
+                    </p>
+                  </div>
+                )}
+
+                {/* BYOC: DO API Key */}
+                {plan !== "hosted" && (
                 <div className="space-y-2">
                   <Label htmlFor="do-key" className="text-[13px] font-medium text-white/60">
                     DigitalOcean API Key
@@ -196,6 +223,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                     Get your API token <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
+                )}
 
                 {/* Region picker */}
                 <div className="space-y-2">
@@ -220,7 +248,8 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   <p className="text-[12px] text-white/25">Choose the region closest to you for lowest latency.</p>
                 </div>
 
-                {/* Size picker */}
+                {/* Size picker — BYOC only */}
+                {plan !== "hosted" && (
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-white/60">VPS Size</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -251,6 +280,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                     Selected: <span className="text-white/50">{selectedSize?.spec} — {selectedSize?.price}</span>
                   </p>
                 </div>
+                )}
 
                 {/* Server error */}
                 {serverErr && (

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Copy, Check, ExternalLink, Terminal, Zap } from "lucide-react"
+import { Copy, Check, ExternalLink, Terminal, Zap, CalendarClock, AlertTriangle, Loader2 } from "lucide-react"
 
 /* ─── Copy field with flash feedback ─────────────────────────── */
 
@@ -79,7 +79,12 @@ export default function DashboardPage({ params }: { params: { token: string } })
   const [dashData, setDashData] = useState<{
     mcp_url?: string
     bearer_token?: string
+    plan?: string
+    subscription_status?: string
+    next_renewal_at?: number
   } | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelDone, setCancelDone] = useState(false)
 
   const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
   const terminalUrl = `${backendUrl}/terminal/${params.token}`
@@ -87,12 +92,35 @@ export default function DashboardPage({ params }: { params: { token: string } })
   useEffect(() => {
     fetch(`${backendUrl}/api/buyer/${params.token}/status`)
       .then((r) => r.json())
-      .then((d) => setDashData({ mcp_url: d.mcp_url, bearer_token: d.bearer_token }))
+      .then((d) => setDashData({
+        mcp_url: d.mcp_url,
+        bearer_token: d.bearer_token,
+        plan: d.plan,
+        subscription_status: d.subscription_status,
+        next_renewal_at: d.next_renewal_at,
+      }))
       .catch(() => {})
   }, [backendUrl, params.token])
 
   const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
+  const isHosted    = dashData?.plan === "hosted"
+  const nextRenewal = dashData?.next_renewal_at
+    ? new Date(dashData.next_renewal_at * 1000).toLocaleDateString("en-US", {
+        year: "numeric", month: "long", day: "numeric",
+      })
+    : null
+
+  async function cancelSubscription() {
+    if (!confirm("Cancel your Hosted subscription? Your droplet stays live for 72 hours after cancellation.")) return
+    setCancelling(true)
+    try {
+      const res = await fetch(`${backendUrl}/api/buyer/${params.token}/cancel`, { method: "POST" })
+      if (res.ok) setCancelDone(true)
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white">
