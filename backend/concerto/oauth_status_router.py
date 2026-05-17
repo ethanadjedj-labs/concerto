@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from maestro import db
+from concerto import db
 
 router = APIRouter()
 

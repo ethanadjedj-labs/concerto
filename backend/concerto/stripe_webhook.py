@@ -8,16 +8,16 @@ import httpx
 import stripe
 from fastapi import APIRouter, HTTPException, Request
 
-from maestro import db, provisioner
-from maestro.email_utils import send_email, send_operator_alert
+from concerto import db, provisioner
+from concerto.email_utils import send_email, send_operator_alert
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET_MAESTRO", "")
+_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET_CONCERTO", "")
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
-_SETUP_BASE = "https://maestro.run/setup"
-_MAESTRO_DO_API_TOKEN = os.getenv("MAESTRO_DO_API_TOKEN", "")
+_SETUP_BASE = "https://concerto.run/setup"
+_CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 
@@ -53,14 +53,14 @@ def _mark_processed(event_id: str, event_type: str) -> bool:
 async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
     setup_url = f"{_SETUP_BASE}/{token}"
     if plan == "hosted":
-        subject = "Welcome to Maestro Hosted — provision your workspace"
+        subject = "Welcome to Concerto Hosted — provision your workspace"
         body_extra = (
             "<p>Good news: you don't need a DigitalOcean account — "
             "we host the VPS for you. Just click below to pick a region "
-            "and provision your Maestro in seconds.</p>"
+            "and provision your Concerto in seconds.</p>"
         )
     else:
-        subject = "Welcome to Maestro — provision your remote workspace"
+        subject = "Welcome to Concerto — provision your remote workspace"
         body_extra = (
             "<p>Click the link below to connect your DigitalOcean account "
             "and provision your remote Claude Code workspace.</p>"
@@ -69,11 +69,11 @@ async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
         to=to_email,
         subject=subject,
         html=(
-            "<p>Thanks for purchasing Maestro!</p>"
+            "<p>Thanks for purchasing Concerto!</p>"
             + body_extra
             + f'<p><a href="{setup_url}" style="background:#7c3aed;color:white;'
             f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
-            f"Set up my Maestro</a></p>"
+            f"Set up my Concerto</a></p>"
             "<p>This link is unique to your account — keep it safe.</p>"
         ),
     )
@@ -82,10 +82,10 @@ async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
 async def _send_payment_failed_email(to_email: str, day: int) -> None:
     await send_email(
         to=to_email,
-        subject=f"Action required: Maestro payment failed (day {day})",
+        subject=f"Action required: Concerto payment failed (day {day})",
         html=(
             f"<p>Hi,</p>"
-            f"<p>We were unable to process your Maestro payment (attempt day {day}).</p>"
+            f"<p>We were unable to process your Concerto payment (attempt day {day}).</p>"
             f"<p>Please update your payment method at "
             f'<a href="https://billing.stripe.com">billing.stripe.com</a> '
             f"to avoid suspension.</p>"
@@ -98,9 +98,9 @@ async def _send_payment_failed_email(to_email: str, day: int) -> None:
 async def _send_suspended_email(to_email: str) -> None:
     await send_email(
         to=to_email,
-        subject="Your Maestro workspace has been suspended",
+        subject="Your Concerto workspace has been suspended",
         html=(
-            "<p>Your Maestro workspace has been <strong>suspended</strong> "
+            "<p>Your Concerto workspace has been <strong>suspended</strong> "
             "due to a failed payment.</p>"
             "<p>Your data is safe. Update your payment method at "
             '<a href="https://billing.stripe.com">billing.stripe.com</a> '
@@ -112,24 +112,24 @@ async def _send_suspended_email(to_email: str) -> None:
 async def _send_resumed_email(to_email: str) -> None:
     await send_email(
         to=to_email,
-        subject="Your Maestro workspace has been resumed",
+        subject="Your Concerto workspace has been resumed",
         html=(
-            "<p>Your Maestro payment succeeded. Your workspace is back online!</p>"
-            '<p><a href="https://maestro.run/dashboard">Open my Maestro</a></p>'
+            "<p>Your Concerto payment succeeded. Your workspace is back online!</p>"
+            '<p><a href="https://concerto.run/dashboard">Open my Concerto</a></p>'
         ),
     )
 
 
 async def _send_cancellation_email(to_email: str, token: str) -> None:
-    survey_url = f"https://maestro.run/feedback?token={token}"
+    survey_url = f"https://concerto.run/feedback?token={token}"
     await send_email(
         to=to_email,
-        subject="Your Maestro subscription has been cancelled",
+        subject="Your Concerto subscription has been cancelled",
         html=(
-            "<p>Your Maestro subscription has been cancelled. "
+            "<p>Your Concerto subscription has been cancelled. "
             "Your workspace will remain accessible until the end of the current billing period.</p>"
             f'<p><a href="{survey_url}">Why did you cancel?</a> (one question, 10 seconds)</p>'
-            "<p>You can reactivate at any time at maestro.run.</p>"
+            "<p>You can reactivate at any time at concerto.run.</p>"
         ),
     )
 
@@ -138,7 +138,7 @@ async def _send_cancellation_email(to_email: str, token: str) -> None:
 
 
 async def _poweroff_droplet(droplet_id: str) -> None:
-    do_key = os.getenv("DO_PROVISIONER_API_KEY", _MAESTRO_DO_API_TOKEN)
+    do_key = os.getenv("DO_PROVISIONER_API_KEY", _CONCERTO_DO_API_TOKEN)
     if not do_key or not droplet_id:
         return
     try:
@@ -153,7 +153,7 @@ async def _poweroff_droplet(droplet_id: str) -> None:
 
 
 async def _poweron_droplet(droplet_id: str) -> None:
-    do_key = os.getenv("DO_PROVISIONER_API_KEY", _MAESTRO_DO_API_TOKEN)
+    do_key = os.getenv("DO_PROVISIONER_API_KEY", _CONCERTO_DO_API_TOKEN)
     if not do_key or not droplet_id:
         return
     try:
@@ -234,13 +234,13 @@ async def _handle_payment_failed(obj: dict) -> None:
 
 
 async def _provision_hosted_async(token: str, region: str, customer_email: str) -> None:
-    if not _MAESTRO_DO_API_TOKEN:
+    if not _CONCERTO_DO_API_TOKEN:
         await db.update_buyer(token, status="pending_operator_do_token")
         return
     try:
         droplet_id, vps_ip, ssh_key_path, ttyd_password = await provisioner.provision_droplet(
             mode="hosted",
-            do_api_key=_MAESTRO_DO_API_TOKEN,
+            do_api_key=_CONCERTO_DO_API_TOKEN,
             region=region,
             size=_HOSTED_SIZE,
             token=token,
@@ -263,7 +263,7 @@ async def _provision_hosted_async(token: str, region: str, customer_email: str) 
 # ─── Webhook endpoint ─────────────────────────────────────────────────────────
 
 
-@router.post("/webhooks/stripe-maestro")
+@router.post("/webhooks/stripe-concerto")
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
@@ -288,7 +288,7 @@ async def stripe_webhook(request: Request):
 
     # ── checkout.session.completed ────────────────────────────────────────
     if event_type == "checkout.session.completed":
-        if metadata.get("product") != "maestro":
+        if metadata.get("product") != "concerto":
             return {"ignored": True, "reason": "product mismatch"}
 
         plan = metadata.get("plan", "byoc")
@@ -392,7 +392,7 @@ async def stripe_webhook(request: Request):
         conn = db._conn()
         try:
             row = conn.execute(
-                "SELECT * FROM maestro_buyers WHERE stripe_customer_id = ?",
+                "SELECT * FROM concerto_buyers WHERE stripe_customer_id = ?",
                 (obj.get("customer", ""),)
             ).fetchone()
             if row:

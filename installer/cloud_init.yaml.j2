@@ -1,13 +1,13 @@
 #cloud-config
-# Maestro installer — Jinja2 template rendered by the empire backend.
+# Concerto installer — Jinja2 template rendered by the empire backend.
 #
 # Template variables (all required):
-#   maestro_token        — per-provisioning callback token (identifies this droplet)
-#   maestro_callback_url — backend webhook URL to POST the tunnel/bearer details to
+#   concerto_token        — per-provisioning callback token (identifies this droplet)
+#   concerto_callback_url — backend webhook URL to POST the tunnel/bearer details to
 #   ssh_authorized_key   — backend-generated public key for terminal proxy access
 #   customer_email       — customer email for audit logs
 #   ttyd_password        — random 32-char hex credential for ttyd Basic Auth (F2)
-#   maestro_token_prefix — first 8 chars of bearer_token (display only)
+#   concerto_token_prefix — first 8 chars of bearer_token (display only)
 #
 # Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
 # cloud-init runs runcmd on first boot as root.
@@ -23,38 +23,38 @@ ssh_authorized_keys:
 
 write_files:
 
-  # Maestro environment — callback URL and provisioning identity
-  - path: /etc/maestro/env
+  # Concerto environment — callback URL and provisioning identity
+  - path: /etc/concerto/env
     owner: root:root
     permissions: '0600'
     content: |
-      MAESTRO_CALLBACK_URL={{ maestro_callback_url }}
-      MAESTRO_TOKEN={{ maestro_token }}
+      CONCERTO_CALLBACK_URL={{ concerto_callback_url }}
+      CONCERTO_TOKEN={{ concerto_token }}
       CUSTOMER_EMAIL={{ customer_email }}
 
   # Version stamp
-  - path: /etc/maestro/version
+  - path: /etc/concerto/version
     owner: root:root
     permissions: '0644'
     content: "1.0.0\n"
 
   # F2: ttyd credential file — password is rendered at provision time
-  - path: /etc/maestro/ttyd.env
+  - path: /etc/concerto/ttyd.env
     owner: root:root
     permissions: '0600'
     content: |
       TTYD_PASSWORD={{ ttyd_password }}
 
 
-  # ── maestro-workspace base files ────────────────────────────────────────────
-  # These are seeded onto the customer VPS at /opt/maestro-workspace/.
-  # {{ customer_email }} and {{ maestro_token_prefix }} are Jinja2-rendered at provision time.
+  # ── concerto-workspace base files ────────────────────────────────────────────
+  # These are seeded onto the customer VPS at /opt/concerto-workspace/.
+  # {{ customer_email }} and {{ concerto_token_prefix }} are Jinja2-rendered at provision time.
 
-  - path: /opt/maestro-workspace/OPS/MANAGER_STATE.md
+  - path: /opt/concerto-workspace/OPS/MANAGER_STATE.md
     owner: root:root
     permissions: '0644'
     content: |
-      # Manager State — {{ customer_email }}'s Maestro
+      # Manager State — {{ customer_email }}'s Concerto
 
       Last updated: <fill on first edit>
 
@@ -76,19 +76,19 @@ write_files:
       - Sessions write back here when state changes.
       - This file is your future-self handoff.
 
-  - path: /opt/maestro-workspace/OPS/SESSION_RULES.md
+  - path: /opt/concerto-workspace/OPS/SESSION_RULES.md
     owner: root:root
     permissions: '0644'
     content: |
       # Session Rules — read at the start of every spawned session
 
-      This file defines binding conventions for Claude Code sessions on your Maestro VPS.
+      This file defines binding conventions for Claude Code sessions on your Concerto VPS.
 
       ## Read first in every session
 
-      1. /opt/maestro-workspace/OPS/MANAGER_STATE.md — strategic state, decisions, follow-ups
-      2. /opt/maestro-workspace/OPS/SESSION_RULES.md — this file
-      3. /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md — return format
+      1. /opt/concerto-workspace/OPS/MANAGER_STATE.md — strategic state, decisions, follow-ups
+      2. /opt/concerto-workspace/OPS/SESSION_RULES.md — this file
+      3. /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md — return format
 
       ## Language and communication
 
@@ -98,7 +98,7 @@ write_files:
 
       ## Working directory
 
-      - Default working directory: /opt/maestro-workspace/ or a subdirectory.
+      - Default working directory: /opt/concerto-workspace/ or a subdirectory.
       - Prefer idempotent operations. Check before writing.
 
       ## State hygiene
@@ -108,7 +108,7 @@ write_files:
 
       ## Resource caveats
 
-      - Maestro VPS: 2 GiB RAM. Max 2 parallel Claude sessions.
+      - Concerto VPS: 2 GiB RAM. Max 2 parallel Claude sessions.
       - Abort and report if RAM drops below 200 MiB.
 
       ## Universal abort triggers
@@ -121,7 +121,7 @@ write_files:
 
       - Every session ends by printing its envelope (JSON) to stdout per ENVELOPE_SCHEMA.md.
 
-  - path: /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md
+  - path: /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md
     owner: root:root
     permissions: '0644'
     content: |
@@ -138,38 +138,38 @@ write_files:
       - aborted: hit abort trigger
       - failed: unexpected error
 
-  - path: /opt/maestro-workspace/OPS/queue/pending/.gitkeep
+  - path: /opt/concerto-workspace/OPS/queue/pending/.gitkeep
     owner: root:root
     permissions: '0644'
     content: ''
 
-  - path: /opt/maestro-workspace/OPS/queue/done/.gitkeep
+  - path: /opt/concerto-workspace/OPS/queue/done/.gitkeep
     owner: root:root
     permissions: '0644'
     content: ''
 
-  - path: /opt/maestro-workspace/OPS/queue/failed/.gitkeep
+  - path: /opt/concerto-workspace/OPS/queue/failed/.gitkeep
     owner: root:root
     permissions: '0644'
     content: ''
 
-  - path: /opt/maestro-workspace/README.md
+  - path: /opt/concerto-workspace/README.md
     owner: root:root
     permissions: '0644'
     content: |
-      # Your first 5 minutes with Maestro
+      # Your first 5 minutes with Concerto
 
-      Your Maestro VPS is running Claude Code connected to your claude.ai account.
+      Your Concerto VPS is running Claude Code connected to your claude.ai account.
 
       ## Step 1 — Send your first session
 
-      In any claude.ai conversation with the Maestro connector active:
+      In any claude.ai conversation with the Concerto connector active:
 
-        Spawn a Maestro session to write a hello world Python script.
+        Spawn a Concerto session to write a hello world Python script.
 
       ## Step 2 — Check the session
 
-        List my Maestro sessions.
+        List my Concerto sessions.
 
       ## Step 3 — Pull the output
 
@@ -178,8 +178,8 @@ write_files:
       ## Step 4 — Do real work
 
       Replace the hello world prompt with something useful. Examples:
-      - Spawn a Maestro session to clone my GitHub repo and run the tests.
-      - Spawn a Maestro session to set up a Flask app in /opt/maestro-workspace/myapp/.
+      - Spawn a Concerto session to clone my GitHub repo and run the tests.
+      - Spawn a Concerto session to set up a Flask app in /opt/concerto-workspace/myapp/.
       - Spawn 3 parallel sessions: audit backend, lint frontend, check deps.
 
       See examples/parallel_workflow.md for the parallel pattern.
@@ -189,13 +189,13 @@ write_files:
       Write what you're building in OPS/MANAGER_STATE.md.
       Every future session reads this file first.
 
-  - path: /opt/maestro-workspace/examples/sample_prompt.md
+  - path: /opt/concerto-workspace/examples/sample_prompt.md
     owner: root:root
     permissions: '0644'
     content: |
       # Sample Session Prompt
 
-      Read /opt/maestro-workspace/OPS/MANAGER_STATE.md and /opt/maestro-workspace/OPS/SESSION_RULES.md before starting.
+      Read /opt/concerto-workspace/OPS/MANAGER_STATE.md and /opt/concerto-workspace/OPS/SESSION_RULES.md before starting.
 
       ## Goal
 
@@ -211,7 +211,7 @@ write_files:
 
       ## Working directory
 
-      /opt/maestro-workspace/<subdirectory>
+      /opt/concerto-workspace/<subdirectory>
 
       ## Abort conditions
 
@@ -221,9 +221,9 @@ write_files:
 
       ## Return format
 
-      Print a JSON envelope as the final stdout line per /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md.
+      Print a JSON envelope as the final stdout line per /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md.
 
-  - path: /opt/maestro-workspace/examples/parallel_workflow.md
+  - path: /opt/concerto-workspace/examples/parallel_workflow.md
     owner: root:root
     permissions: '0644'
     content: |
@@ -231,7 +231,7 @@ write_files:
 
       In one claude.ai message, ask Claude to spawn N sessions simultaneously:
 
-        Spawn 3 Maestro sessions in parallel:
+        Spawn 3 Concerto sessions in parallel:
         1. Session "audit-backend": list Python files over 300 lines.
         2. Session "check-deps": run pip list --outdated.
         3. Session "test-suite": run pytest and return pass/fail counts.
@@ -242,11 +242,11 @@ write_files:
 
       Resource limits: max 2-3 heavy sessions in parallel on a 2 GiB VPS.
 
-  - path: /opt/maestro-workspace/.claude/CLAUDE.md
+  - path: /opt/concerto-workspace/.claude/CLAUDE.md
     owner: root:root
     permissions: '0644'
     content: |
-      # Maestro Workspace
+      # Concerto Workspace
 
       ## Read at the start of every session
 
@@ -263,17 +263,17 @@ write_files:
       End every session by printing a JSON envelope to stdout per OPS/ENVELOPE_SCHEMA.md.
 
   # ── MCP server ──────────────────────────────────────────────────────────────
-  - path: /opt/maestro/mcp_server.py
+  - path: /opt/concerto/mcp_server.py
     owner: root:root
     permissions: '0755'
     content: |
       #!/usr/bin/env python3
-      """Maestro MCP server — runs on the customer's VPS.
+      """Concerto MCP server — runs on the customer's VPS.
 
       FastMCP server (streamable HTTP transport, mcp>=1.2) with Bearer auth.
       Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
 
-      Auth: Bearer token read from /etc/maestro/token (generated at provision time).
+      Auth: Bearer token read from /etc/concerto/token (generated at provision time).
       Session state is in-process memory; sessions are lost on restart.
       """
       from __future__ import annotations
@@ -288,8 +288,8 @@ write_files:
       import anyio
       from mcp.server.fastmcp import FastMCP
 
-      TOKEN_PATH = Path(os.environ.get("MAESTRO_TOKEN_PATH", "/etc/maestro/token"))
-      SESSION_DIR = Path("/var/lib/maestro/sessions")
+      TOKEN_PATH = Path(os.environ.get("CONCERTO_TOKEN_PATH", "/etc/concerto/token"))
+      SESSION_DIR = Path("/var/lib/concerto/sessions")
 
       _sessions: dict[str, dict[str, Any]] = {}
 
@@ -298,7 +298,7 @@ write_files:
           return TOKEN_PATH.read_text().strip()
 
 
-      mcp = FastMCP("maestro", stateless_http=True)
+      mcp = FastMCP("concerto", stateless_http=True)
 
 
       @mcp.tool()
@@ -440,7 +440,7 @@ write_files:
           main()
 
   # ── nginx reverse proxy ─────────────────────────────────────────────────────
-  - path: /etc/nginx/conf.d/maestro.conf
+  - path: /etc/nginx/conf.d/concerto.conf
     owner: root:root
     permissions: '0644'
     content: |
@@ -480,21 +480,21 @@ write_files:
       }
 
   # ── systemd: MCP server ─────────────────────────────────────────────────────
-  - path: /etc/systemd/system/maestro-mcp.service
+  - path: /etc/systemd/system/concerto-mcp.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
-      Description=Maestro MCP Server
-      Documentation=https://github.com/ethanadjedj-labs/maestro
+      Description=Concerto MCP Server
+      Documentation=https://github.com/ethanadjedj-labs/concerto
       After=network.target
 
       [Service]
       Type=simple
-      ExecStart=/opt/maestro/.venv/bin/python /opt/maestro/mcp_server.py
+      ExecStart=/opt/concerto/.venv/bin/python /opt/concerto/mcp_server.py
       Restart=always
       RestartSec=5
-      EnvironmentFile=/etc/maestro/env
+      EnvironmentFile=/etc/concerto/env
 
       [Install]
       WantedBy=multi-user.target
@@ -502,14 +502,14 @@ write_files:
   # ── systemd: cloudflared tunnel ─────────────────────────────────────────────
   # F5: stdout/stderr redirect to log file so provision_complete.sh can poll
   # the file directly rather than racing against journald sync.
-  - path: /etc/systemd/system/maestro-tunnel.service
+  - path: /etc/systemd/system/concerto-tunnel.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
-      Description=Maestro Cloudflared Quick Tunnel
-      Documentation=https://github.com/ethanadjedja-labs/maestro
-      After=network.target maestro-mcp.service maestro-ttyd.service nginx.service
+      Description=Concerto Cloudflared Quick Tunnel
+      Documentation=https://github.com/ethanadjedja-labs/concerto
+      After=network.target concerto-mcp.service concerto-ttyd.service nginx.service
 
       [Service]
       Type=simple
@@ -527,22 +527,22 @@ write_files:
   # F3: --client-option flags for iframe embedding
   # F6: KillMode=control-group kills bash children on stop;
   #     ExecStopPost cleans up any zombie bash processes
-  - path: /etc/systemd/system/maestro-ttyd.service
+  - path: /etc/systemd/system/concerto-ttyd.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
-      Description=Maestro TTYd Web Terminal
-      Documentation=https://github.com/ethanadjedja-labs/maestro
+      Description=Concerto TTYd Web Terminal
+      Documentation=https://github.com/ethanadjedja-labs/concerto
       After=network.target
 
       [Service]
       Type=simple
-      EnvironmentFile=/etc/maestro/ttyd.env
+      EnvironmentFile=/etc/concerto/ttyd.env
       ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 -W \
-        --credential maestro:${TTYD_PASSWORD} \
+        --credential concerto:${TTYD_PASSWORD} \
         --client-option disableLeaveAlert=true \
-        --client-option titleFixed=Maestro \
+        --client-option titleFixed=Concerto \
         bash
       Restart=always
       RestartSec=5
@@ -555,29 +555,29 @@ write_files:
   # ── provision completion script ─────────────────────────────────────────────
   # F4: SSH key is already written by cloud-init ssh_authorized_keys section
   #     before runcmd runs — this script verifies then sleeps 5s before POST.
-  # F5: Polls /var/log/cloudflared-quicktunnel.log (written by maestro-tunnel
+  # F5: Polls /var/log/cloudflared-quicktunnel.log (written by concerto-tunnel
   #     systemd service) with 60s timeout + retry-on-empty.
-  - path: /opt/maestro/provision_complete.sh
+  - path: /opt/concerto/provision_complete.sh
     owner: root:root
     permissions: '0755'
     content: |
       #!/bin/bash
       set -euo pipefail
 
-      source /etc/maestro/env
+      source /etc/concerto/env
 
       # ── F4: verify SSH authorized_keys is in place before reporting back ─────
-      echo "[maestro] Verifying SSH authorized_keys..."
+      echo "[concerto] Verifying SSH authorized_keys..."
       if [ ! -f /root/.ssh/authorized_keys ] || [ ! -s /root/.ssh/authorized_keys ]; then
-        echo "[maestro] WARNING: authorized_keys missing or empty — SSH access may be broken" >&2
+        echo "[concerto] WARNING: authorized_keys missing or empty — SSH access may be broken" >&2
       else
-        echo "[maestro] SSH authorized_keys OK ($(wc -l < /root/.ssh/authorized_keys) key(s))"
+        echo "[concerto] SSH authorized_keys OK ($(wc -l < /root/.ssh/authorized_keys) key(s))"
       fi
 
       # ── F5: wait for cloudflared to log the tunnel URL ───────────────────────
-      # maestro-tunnel.service writes to /var/log/cloudflared-quicktunnel.log.
+      # concerto-tunnel.service writes to /var/log/cloudflared-quicktunnel.log.
       # Poll the file directly (avoids journald sync race).
-      echo "[maestro] Waiting for cloudflare tunnel URL (max 60s)..."
+      echo "[concerto] Waiting for cloudflare tunnel URL (max 60s)..."
       TUNNEL_URL=""
       for i in $(seq 1 30); do
         if [ -f /var/log/cloudflared-quicktunnel.log ]; then
@@ -591,31 +591,31 @@ write_files:
       done
 
       if [ -z "$TUNNEL_URL" ]; then
-        echo "[maestro] ERROR: tunnel URL not found after 60s" >&2
+        echo "[concerto] ERROR: tunnel URL not found after 60s" >&2
         cat /var/log/cloudflared-quicktunnel.log >&2 || true
         exit 1
       fi
 
-      echo "[maestro] Tunnel URL: ${TUNNEL_URL}"
+      echo "[concerto] Tunnel URL: ${TUNNEL_URL}"
 
       # ── Read the freshly-generated bearer token ───────────────────────────────
-      BEARER_TOKEN=$(cat /etc/maestro/token)
+      BEARER_TOKEN=$(cat /etc/concerto/token)
 
       # ── F4: sleep 5s to ensure SSH daemon has fully processed authorized_keys ─
-      echo "[maestro] Sleeping 5s before reporting back..."
+      echo "[concerto] Sleeping 5s before reporting back..."
       sleep 5
 
       # ── POST results back to empire backend ───────────────────────────────────
-      curl -fsSL -X POST "${MAESTRO_CALLBACK_URL}" \
+      curl -fsSL -X POST "${CONCERTO_CALLBACK_URL}" \
         -H "Content-Type: application/json" \
         -d "{
-          \"token\":         \"${MAESTRO_TOKEN}\",
+          \"token\":         \"${CONCERTO_TOKEN}\",
           \"mcp_url\":       \"${TUNNEL_URL}\",
           \"bearer_token\":  \"${BEARER_TOKEN}\",
           \"ttyd_url\":      \"${TUNNEL_URL}/terminal\"
         }"
 
-      echo "[maestro] Provisioning complete."
+      echo "[concerto] Provisioning complete."
 
 # ─── runcmd (runs on first boot as root, sequentially) ───────────────────────
 
@@ -635,15 +635,15 @@ runcmd:
   - ["bash", "-c",
      "curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb"]
 
-  # ── 5. Maestro Python venv + MCP deps ────────────────────────────────────
+  # ── 5. Concerto Python venv + MCP deps ────────────────────────────────────
   - ["bash", "-c",
-     "python3 -m venv /opt/maestro/.venv && /opt/maestro/.venv/bin/pip install --quiet --upgrade pip && /opt/maestro/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
+     "python3 -m venv /opt/concerto/.venv && /opt/concerto/.venv/bin/pip install --quiet --upgrade pip && /opt/concerto/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
 
   # ── 6. Generate MCP bearer token ─────────────────────────────────────────
-  - ["bash", "-c", "openssl rand -hex 32 > /etc/maestro/token && chmod 600 /etc/maestro/token"]
+  - ["bash", "-c", "openssl rand -hex 32 > /etc/concerto/token && chmod 600 /etc/concerto/token"]
 
   # ── 7. Session storage directory ──────────────────────────────────────────
-  - ["mkdir", "-p", "/var/lib/maestro/sessions"]
+  - ["mkdir", "-p", "/var/lib/concerto/sessions"]
 
   # ── 8. F4: verify SSH authorized_keys before starting services ────────────
   # cloud-init ssh_authorized_keys runs before runcmd, so key is already present.
@@ -653,7 +653,7 @@ runcmd:
   - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]
 
   # ── 10. Prepare cloudflared log file ─────────────────────────────────────
-  # F5: maestro-tunnel.service appends to this file; pre-create it so
+  # F5: concerto-tunnel.service appends to this file; pre-create it so
   # provision_complete.sh poll doesn't fail on first iteration.
   - ["bash", "-c", "touch /var/log/cloudflared-quicktunnel.log && chmod 644 /var/log/cloudflared-quicktunnel.log"]
 
@@ -662,19 +662,19 @@ runcmd:
   # F4: SSH is ready (ssh_authorized_keys processed) before we reach here.
   - ["systemctl", "daemon-reload"]
   - ["bash", "-c",
-     "systemctl enable maestro-mcp maestro-ttyd maestro-tunnel nginx && systemctl start nginx maestro-mcp maestro-ttyd"]
+     "systemctl enable concerto-mcp concerto-ttyd concerto-tunnel nginx && systemctl start nginx concerto-mcp concerto-ttyd"]
   # F5: brief pause to let ttyd fully bind before cloudflared starts
-  - ["bash", "-c", "sleep 3 && systemctl start maestro-tunnel"]
+  - ["bash", "-c", "sleep 3 && systemctl start concerto-tunnel"]
 
   # ── 12. Wait for tunnel URL and POST back to empire backend ───────────────
-  - ["/opt/maestro/provision_complete.sh"]
+  - ["/opt/concerto/provision_complete.sh"]
 
   # ── 13. Workspace directory permissions ──────────────────────────────────
   - ["bash", "-c",
-     "find /opt/maestro-workspace -type d -exec chmod 755 {} + && find /opt/maestro-workspace -type f -exec chmod 644 {} +"]
-  - ["bash", "-c", "chown -R root:root /opt/maestro-workspace"]
+     "find /opt/concerto-workspace -type d -exec chmod 755 {} + && find /opt/concerto-workspace -type f -exec chmod 644 {} +"]
+  - ["bash", "-c", "chown -R root:root /opt/concerto-workspace"]
 
   # ── 14. Default working directory when SSH'd in ───────────────────────────
   - ["bash", "-c",
-     "echo 'cd /opt/maestro-workspace' >> /root/.bashrc"]
+     "echo 'cd /opt/concerto-workspace' >> /root/.bashrc"]
 

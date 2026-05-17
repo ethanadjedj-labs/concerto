@@ -1,6 +1,6 @@
-# Maestro Frontend
+# Concerto Frontend
 
-Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui frontend for Maestro.
+Next.js 14 (App Router) + TypeScript + Tailwind + shadcn/ui frontend for Concerto.
 
 ## Pages
 
@@ -20,8 +20,8 @@ Copy `.env.local.example` → `.env.local` and fill in:
 |----------|-------------|
 | `STRIPE_SECRET_KEY` | Stripe secret key (server-side) |
 | `NEXT_PUBLIC_STRIPE_PUBLIC_KEY` | Stripe publishable key |
-| `STRIPE_MAESTRO_PRICE_ID` | Stripe Price ID for the $99 one-time product |
-| `NEXT_PUBLIC_BACKEND_URL` | Backend API base URL (default: `https://api.maestro.run`) |
+| `STRIPE_CONCERTO_PRICE_ID` | Stripe Price ID for the $99 one-time product |
+| `NEXT_PUBLIC_BACKEND_URL` | Backend API base URL (default: `https://api.concerto.run`) |
 
 ## Development
 

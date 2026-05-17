@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Concerto monitoring every hour
+Requires=concerto-monitoring.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=concerto-monitoring.service
+
+[Install]
+WantedBy=timers.target

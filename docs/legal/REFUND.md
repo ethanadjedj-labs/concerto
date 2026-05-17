@@ -1,6 +1,6 @@
 # Refund Policy
 
-**Maestro** — Remote Workshop for Claude Code Agents
+**Concerto** — Remote Workshop for Claude Code Agents
 
 _Last updated: 2026-05-17_
 
@@ -10,7 +10,7 @@ _Last updated: 2026-05-17_
 
 - **Full refund**: if your Droplet never reached "ready" and it's been fewer than 14 days since you purchased.
 - **No refund**: once your Droplet is successfully provisioned (you can access it in the dashboard), the service has been rendered.
-- **How to claim**: email **support@maestro.run** from your purchase email address.
+- **How to claim**: email **support@concerto.run** from your purchase email address.
 - **Timeline**: Stripe processes refunds within 5 business days of approval.
 
 ---
@@ -22,7 +22,7 @@ _Last updated: 2026-05-17_
 You qualify for a **100% refund of $99.00 USD** if all of the following are true:
 
 1. Your purchase was made within the last **14 calendar days**.
-2. Your Droplet status in the Maestro dashboard shows something other than **"ready"** — meaning the provisioning process did not complete successfully (stuck in "provisioning," "error," or "pending").
+2. Your Droplet status in the Concerto dashboard shows something other than **"ready"** — meaning the provisioning process did not complete successfully (stuck in "provisioning," "error," or "pending").
 3. You have not manually modified or deleted the Droplet in your DigitalOcean account in a way that prevented provisioning (e.g., deleted the DO API key before provisioning completed).
 
 We will issue the refund without argument. Provisioning is our job; if we failed at it, you owe us nothing.
@@ -43,13 +43,13 @@ Because the Droplet itself is in your DigitalOcean account — not ours — we c
 
 **Refund request after 14 days**: We will consider late refund requests for provisioning failures on a case-by-case basis. Email us — if we genuinely failed, we'll make it right.
 
-**Chargeback**: If you initiate a credit card chargeback before contacting us, it may prevent us from processing a refund and may result in suspension of your Maestro access. Please email us first — we resolve disputes quickly.
+**Chargeback**: If you initiate a credit card chargeback before contacting us, it may prevent us from processing a refund and may result in suspension of your Concerto access. Please email us first — we resolve disputes quickly.
 
 ---
 
 ## How to Request a Refund
 
-1. Email **support@maestro.run** with the subject line: `Refund request — [your purchase email]`
+1. Email **support@concerto.run** with the subject line: `Refund request — [your purchase email]`
 2. Include: your purchase email address and a brief description of what went wrong (optional but helpful for us to fix it)
 3. We will respond within 1 business day to confirm eligibility
 4. Once approved, Stripe processes the refund to your original payment method within **5 business days**
@@ -58,4 +58,4 @@ Because the Droplet itself is in your DigitalOcean account — not ours — we c
 
 ## Contact
 
-**Email**: support@maestro.run
+**Email**: support@concerto.run

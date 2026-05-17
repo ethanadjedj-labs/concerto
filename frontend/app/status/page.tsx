@@ -104,8 +104,8 @@ export default function StatusPage() {
             <span className="text-lg">◎</span>
           </div>
           <div>
-            <h1 className="text-xl font-semibold">Maestro Status</h1>
-            <p className="text-sm text-white/40">status.maestro.run</p>
+            <h1 className="text-xl font-semibold">Concerto Status</h1>
+            <p className="text-sm text-white/40">status.concerto.run</p>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export default function StatusPage() {
         {/* Footer */}
         <div className="text-center text-xs text-white/20">
           <a href="/" className="hover:text-white/50 transition-colors">
-            maestro.run
+            concerto.run
           </a>
           {" · "}
           <a href="/help" className="hover:text-white/50 transition-colors">

@@ -1,15 +1,15 @@
-# Maestro Operator Support Setup Runbook
+# Concerto Operator Support Setup Runbook
 
-This document covers everything you need to stand up support infrastructure for Maestro: Discord community, support email routing, and auto-responder templates.
+This document covers everything you need to stand up support infrastructure for Concerto: Discord community, support email routing, and auto-responder templates.
 
 ---
 
-## 1. Discord Server — "Maestro Operators"
+## 1. Discord Server — "Concerto Operators"
 
 ### 1.1 Create the server
 
 1. Open Discord → "+" (Add a Server) → **Create My Own** → **For a club or community**.
-2. Server name: **Maestro Operators**. Upload the Maestro logo as the icon.
+2. Server name: **Concerto Operators**. Upload the Concerto logo as the icon.
 3. Delete the auto-created `#general` channel — you'll replace it with the channels below.
 
 ### 1.2 Channel structure
@@ -55,12 +55,12 @@ This requires collecting the buyer's Discord username during onboarding (add fie
 
 ### 1.4 Bot setup (Carl-bot — free tier)
 
-1. Visit https://carl.gg → "Invite" → select **Maestro Operators** server.
+1. Visit https://carl.gg → "Invite" → select **Concerto Operators** server.
 2. Grant permissions: Manage Roles, Manage Messages, Read/Send Messages, Embed Links.
 3. In Carl-bot dashboard → **Autoroles**: set `Hosted` to auto-assign on join (temporary default until Stripe webhook is live).
 4. In Carl-bot dashboard → **Welcome**: set #welcome as the welcome channel. Template:
    ```
-   Welcome {mention}! You've joined the Maestro Operators community.
+   Welcome {mention}! You've joined the Concerto Operators community.
    • Check #welcome for orientation
    • Ask questions in #help
    • Share what you build in #show-and-tell
@@ -87,11 +87,11 @@ Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel
 
 ---
 
-## 2. Support Email — support@maestro.run
+## 2. Support Email — support@concerto.run
 
 ### 2.1 DNS prerequisite
 
-`maestro.run` must be acquired and delegated to Cloudflare before email can be configured. See [pending operator action #1 in MANAGER_STATE.md].
+`concerto.run` must be acquired and delegated to Cloudflare before email can be configured. See [pending operator action #1 in MANAGER_STATE.md].
 
 ### 2.2 Option A — Migadu (recommended)
 
@@ -109,15 +109,15 @@ Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel
 
 **Setup steps**:
 1. Sign up at https://www.migadu.com → select **Micro** plan.
-2. Add domain `maestro.run`. Migadu will show you MX, SPF, DKIM, DMARC records.
+2. Add domain `concerto.run`. Migadu will show you MX, SPF, DKIM, DMARC records.
 3. In Cloudflare (zone `d4f729f470a0804a4ef89ff0dc8281ad`), add:
-   - `MX maestro.run → aspmx1.migadu.com` (priority 10)
-   - `MX maestro.run → aspmx2.migadu.com` (priority 20)
-   - `TXT maestro.run → "v=spf1 include:spf.migadu.com ~all"`
-   - `TXT _dmarc.maestro.run → "v=DMARC1; p=quarantine; rua=mailto:dmarc@maestro.run"`
-   - `CNAME key1._domainkey.maestro.run → key1.maestro.run._domainkey.migadu.com`
-4. Create mailbox: `support@maestro.run` (forward to `adjedjethan@gmail.com` or team inbox).
-5. Create alias: `noreply@maestro.run` → discard (for transactional email From address).
+   - `MX concerto.run → aspmx1.migadu.com` (priority 10)
+   - `MX concerto.run → aspmx2.migadu.com` (priority 20)
+   - `TXT concerto.run → "v=spf1 include:spf.migadu.com ~all"`
+   - `TXT _dmarc.concerto.run → "v=DMARC1; p=quarantine; rua=mailto:dmarc@concerto.run"`
+   - `CNAME key1._domainkey.concerto.run → key1.concerto.run._domainkey.migadu.com`
+4. Create mailbox: `support@concerto.run` (forward to `adjedjethan@gmail.com` or team inbox).
+5. Create alias: `noreply@concerto.run` → discard (for transactional email From address).
 
 ### 2.3 Option B — Resend Inbound (alternative)
 
@@ -133,7 +133,7 @@ Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel
 - Inbound webhooks require a public endpoint to receive tickets
 - More expensive at volume vs Migadu
 
-**Setup**: Resend dashboard → Domains → `maestro.run` → Inbound → enable. Point MX to Resend's servers. Configure webhook URL: `https://api.maestro.run/webhooks/inbound-email`.
+**Setup**: Resend dashboard → Domains → `concerto.run` → Inbound → enable. Point MX to Resend's servers. Configure webhook URL: `https://api.concerto.run/webhooks/inbound-email`.
 
 ### 2.4 Recommendation
 
@@ -143,7 +143,7 @@ Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel
 
 ## 3. Auto-Responder Templates
 
-When a support email arrives at `support@maestro.run`, an auto-responder should acknowledge receipt immediately.
+When a support email arrives at `support@concerto.run`, an auto-responder should acknowledge receipt immediately.
 
 ### 3.1 English template
 
@@ -152,14 +152,14 @@ When a support email arrives at `support@maestro.run`, an auto-responder should 
 ```
 Hi,
 
-Thanks for reaching out to Maestro support. We've received your message and will get back to you within 24 hours (usually sooner).
+Thanks for reaching out to Concerto support. We've received your message and will get back to you within 24 hours (usually sooner).
 
 While you wait, you might find an answer in our:
-• Help center: https://maestro.run/help
+• Help center: https://concerto.run/help
 • Community Discord: {{discord_invite_url}}
 
-— The Maestro team
-support@maestro.run | https://maestro.run
+— The Concerto team
+support@concerto.run | https://concerto.run
 ```
 
 ### 3.2 French template
@@ -172,11 +172,11 @@ Bonjour,
 Merci de nous avoir contacté. Votre message a bien été reçu et nous vous répondrons dans les 24 heures (souvent plus tôt).
 
 En attendant, vous trouverez peut-être une réponse dans :
-• Notre centre d'aide : https://maestro.run/help
+• Notre centre d'aide : https://concerto.run/help
 • Notre communauté Discord : {{discord_invite_url}}
 
-— L'équipe Maestro
-support@maestro.run | https://maestro.run
+— L'équipe Concerto
+support@concerto.run | https://concerto.run
 ```
 
 ### 3.3 Implementation
@@ -189,9 +189,9 @@ Migadu supports auto-responders natively under mailbox settings → **Vacation /
 
 Add these to the pending operator actions list:
 
-- [ ] **Acquire maestro.run** and delegate NS to Cloudflare (prerequisite for all email setup)
-- [ ] **Migadu**: sign up, add domain, add DNS records in Cloudflare, create `support@maestro.run` mailbox
+- [ ] **Acquire concerto.run** and delegate NS to Cloudflare (prerequisite for all email setup)
+- [ ] **Migadu**: sign up, add domain, add DNS records in Cloudflare, create `support@concerto.run` mailbox
 - [ ] **Discord**: create server, configure channels, generate permanent invite link, store as `DISCORD_INVITE_URL` env var
 - [ ] **Carl-bot**: invite, configure autorole + welcome message
 - [ ] **Stripe webhook**: wire Discord role assignment when buyer Discord username is collected
-- [ ] **status.maestro.run DNS**: add CNAME → Vercel (once status page is deployed)
+- [ ] **status.concerto.run DNS**: add CNAME → Vercel (once status page is deployed)

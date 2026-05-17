@@ -1,4 +1,4 @@
-# Maestro Roadmap
+# Concerto Roadmap
 
 ## v1.0 — Shipped (May 2026)
 
@@ -18,7 +18,7 @@
 | **Hetzner provider support** | Q3 2026 | Hetzner is ~40% cheaper per vCPU than DO; popular with EU customers. Same installer, new provider adapter in the backend. |
 | **Multi-account routing** | Q3 2026 | Per-conversation credentials: link multiple Droplets to one claude.ai account and route by conversation tag or connector alias. |
 | **Session templates library** | Q3 2026 | Pre-configured environments (Python dev, Node dev, data science, Rust) installable in one click after provisioning. |
-| **Observability dashboard** | Q4 2026 | Per-session metrics: tool calls/min, active processes, disk usage, uptime. Accessible from the Maestro web dashboard. |
+| **Observability dashboard** | Q4 2026 | Per-session metrics: tool calls/min, active processes, disk usage, uptime. Accessible from the Concerto web dashboard. |
 | **Automatic Claude Code updates** | Q4 2026 | Droplet pulls the latest Claude Code release automatically; dashboard shows current version and last update time. |
 | **Usage alerts** | Q4 2026 | Email/Discord notification when a session has been idle for > 24 h or when DO billing estimate exceeds a threshold. |
 
@@ -32,16 +32,16 @@
 | **Team accounts** | Shared Droplet pool per team, role-based access, usage attribution per member. |
 | **SSO** | Google Workspace and Okta SAML for team plans. |
 | **Multi-region** | Automatic Droplet placement by customer geography. |
-| **Connector marketplace** | One-click install of additional MCP tools (browser, PDF, database connectors) alongside the Maestro base install. |
+| **Connector marketplace** | One-click install of additional MCP tools (browser, PDF, database connectors) alongside the Concerto base install. |
 
 ---
 
 ## Not Planned (Yet)
 
 - Windows or macOS VMs — Linux-only for now; the installer complexity would multiply.
-- In-browser IDE — claude.ai is the IDE. Maestro is the backend, not a competing frontend.
-- Support for Anthropic competitors — Maestro is built around Claude Code specifically.
+- In-browser IDE — claude.ai is the IDE. Concerto is the backend, not a competing frontend.
+- Support for Anthropic competitors — Concerto is built around Claude Code specifically.
 
 ---
 
-*Roadmap items are targets, not commitments. Join the [Discord](https://discord.gg/maestro) to vote on priorities or ask about specific features.*
+*Roadmap items are targets, not commitments. Join the [Discord](https://discord.gg/concerto) to vote on priorities or ask about specific features.*

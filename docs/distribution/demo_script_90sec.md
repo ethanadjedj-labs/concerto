@@ -6,7 +6,7 @@
 
 ## Beat 1 — Le problème (0:00–0:15)
 
-**VO** : "Faire tourner Claude Code en permanence, depuis n'importe où, sans se battre avec SSH ou des serveurs — c'est exactement ce que Maestro règle."
+**VO** : "Faire tourner Claude Code en permanence, depuis n'importe où, sans se battre avec SSH ou des serveurs — c'est exactement ce que Concerto règle."
 
 **Écran** : Slide ou fond sobre avec le texte : *"Claude Code. Votre cloud. Votre navigateur."*
 
@@ -14,15 +14,15 @@
 
 ## Beat 2 — Le paiement (0:15–0:30)
 
-**VO** : "On commence sur maestro.run. Un paiement unique de $99 via Stripe. Pas d'abonnement, pas de surprise mensuelle."
+**VO** : "On commence sur concerto.run. Un paiement unique de $99 via Stripe. Pas d'abonnement, pas de surprise mensuelle."
 
-**Écran** : Page d'accueil maestro.run → clic "Get started" → Stripe Checkout ($99, one-time) → confirmation de paiement → redirect vers l'onboarding.
+**Écran** : Page d'accueil concerto.run → clic "Get started" → Stripe Checkout ($99, one-time) → confirmation de paiement → redirect vers l'onboarding.
 
 ---
 
 ## Beat 3 — Le provisionnement (0:30–0:55)
 
-**VO** : "Vous entrez votre clé API DigitalOcean. Maestro déploie un Droplet Ubuntu en arrière-plan — cloud-init installe Claude Code, configure le tunnel cloudflared, démarre le terminal web. Ça prend environ trois à cinq minutes."
+**VO** : "Vous entrez votre clé API DigitalOcean. Concerto déploie un Droplet Ubuntu en arrière-plan — cloud-init installe Claude Code, configure le tunnel cloudflared, démarre le terminal web. Ça prend environ trois à cinq minutes."
 
 **Écran** : Page d'onboarding — champ clé DO → clic "Provision" → barre de progression avec statuts en temps réel ("Creating Droplet… Installing Claude Code… Starting terminal…") → message "Your environment is ready."
 
@@ -40,7 +40,7 @@
 
 **VO** : "Copiez le snippet MCP dans claude.ai — et c'est prêt. Votre agent Claude Code est en ligne, il tourne sur votre compte DigitalOcean, accessible depuis n'importe quel onglet. Fermez le laptop — il continue."
 
-**Écran** : Dashboard Maestro → copier le snippet MCP → claude.ai → coller le connecteur → lancer une tâche courte (ex : "Résume ce fichier README") → réponse de l'agent → fermer l'onglet → rouvrir → agent toujours actif, contexte intact.
+**Écran** : Dashboard Concerto → copier le snippet MCP → claude.ai → coller le connecteur → lancer une tâche courte (ex : "Résume ce fichier README") → réponse de l'agent → fermer l'onglet → rouvrir → agent toujours actif, contexte intact.
 
 ---
 

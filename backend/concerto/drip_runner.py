@@ -1,12 +1,12 @@
 """
-Maestro onboarding email drip runner — fires every hour via systemd timer.
+Concerto onboarding email drip runner — fires every hour via systemd timer.
 
 Logic:
   For each buyer with a paid_at timestamp, check which drip emails are due
   (based on elapsed days since paid_at) and send any that haven't been sent yet.
 
 Days schedule: 0, 1, 3, 7, 14 (hosted only), 21, 30
-Tracking: drip_day_N_sent_at columns in maestro_buyers (migration 006)
+Tracking: drip_day_N_sent_at columns in concerto_buyers (migration 006)
 Transport: Resend via arsenal.tools.send_email_resend
 """
 
@@ -17,20 +17,20 @@ import sqlite3
 import time
 from pathlib import Path
 
-DB_PATH = os.getenv("MAESTRO_DB_PATH", "/var/lib/maestro/maestro.db")
+DB_PATH = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "Maestro <noreply@maestro.run>")
-DISCORD_URL = os.getenv("DISCORD_INVITE_URL", "https://discord.gg/maestro")
-FRONTEND_URL = os.getenv("MAESTRO_FRONTEND_URL", "https://maestro.run")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "Concerto <noreply@concerto.run>")
+DISCORD_URL = os.getenv("DISCORD_INVITE_URL", "https://discord.gg/concerto")
+FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 DRIP_SCHEDULE = [
     # (day_offset, column, subject_fn, template_name, hosted_only)
-    (0,  "drip_day_0_sent_at",  lambda b: "Your Maestro workspace is being prepared", "day_0_welcome", False),
+    (0,  "drip_day_0_sent_at",  lambda b: "Your Concerto workspace is being prepared", "day_0_welcome", False),
     (1,  "drip_day_1_sent_at",  lambda b: "Have you tried your first session?", "day_1_first_session", False),
     (3,  "drip_day_3_sent_at",  lambda b: "Try this: spawn 3 sessions in parallel", "day_3_advanced_pattern", False),
     (7,  "drip_day_7_sent_at",  lambda b: "One week in — how's it going?", "day_7_check_in", False),
     (14, "drip_day_14_sent_at", lambda b: "Your subscription renews in 16 days", "day_14_renewal_preview", True),
-    (21, "drip_day_21_sent_at", lambda b: "5 things power users do with Maestro", "day_21_use_case_inspiration", False),
+    (21, "drip_day_21_sent_at", lambda b: "5 things power users do with Concerto", "day_21_use_case_inspiration", False),
     (30, "drip_day_30_sent_at", lambda b: "30 days in — one quick question", "day_30_one_month", False),
 ]
 
@@ -84,7 +84,7 @@ def run() -> None:
     con.row_factory = sqlite3.Row
     try:
         buyers = con.execute(
-            "SELECT * FROM maestro_buyers WHERE paid_at IS NOT NULL AND email IS NOT NULL"
+            "SELECT * FROM concerto_buyers WHERE paid_at IS NOT NULL AND email IS NOT NULL"
         ).fetchall()
     except sqlite3.OperationalError as e:
         print(f"DB error (migration 006 may not be applied): {e}")
@@ -118,7 +118,7 @@ def run() -> None:
             sent = _send(email, subject, html)
             if sent:
                 con.execute(
-                    f"UPDATE maestro_buyers SET {col} = ? WHERE token = ?",
+                    f"UPDATE concerto_buyers SET {col} = ? WHERE token = ?",
                     (now, buyer["token"]),
                 )
                 con.commit()

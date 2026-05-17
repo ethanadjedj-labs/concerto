@@ -28,7 +28,7 @@ function StatusIndicator() {
   })
 
   useEffect(() => {
-    fetch("https://status.maestro.run/status.json", { cache: "no-store" })
+    fetch("https://status.concerto.run/status.json", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         const level: StatusLevel = d?.status ?? "unknown"
@@ -46,13 +46,13 @@ function StatusIndicator() {
 
   return (
     <a
-      href="https://status.maestro.run"
+      href="https://status.concerto.run"
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-[12px] text-white/55 transition-colors hover:border-white/15 hover:text-white/80"
     >
       <StatusDot level={status.level} />
-      <span className="text-white/60">Maestro infrastructure</span>
+      <span className="text-white/60">Concerto infrastructure</span>
       <span className="text-white/25">·</span>
       <span>{status.label}</span>
     </a>
@@ -121,7 +121,7 @@ export function TrustSection() {
             Built by an operator who runs his own infra. Open source.
           </p>
           <a
-            href="https://github.com/ethanadjedj-labs/maestro"
+            href="https://github.com/ethanadjedj-labs/concerto"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-[12px] text-white/60 transition-colors hover:border-white/20 hover:text-white/90"
@@ -130,7 +130,7 @@ export function TrustSection() {
             View on GitHub →
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://img.shields.io/github/stars/ethanadjedj-labs/maestro?style=flat&labelColor=transparent&color=7c3aed&label="
+              src="https://img.shields.io/github/stars/ethanadjedj-labs/concerto?style=flat&labelColor=transparent&color=7c3aed&label="
               alt="GitHub stars"
               className="h-4"
               loading="lazy"
@@ -158,7 +158,7 @@ export function TrustSection() {
           <SecurityBadge
             icon={<Server className="h-3.5 w-3.5" />}
             label="Your data never leaves your VPS"
-            href="https://github.com/ethanadjedj-labs/maestro/blob/main/docs/SECURITY.md"
+            href="https://github.com/ethanadjedj-labs/concerto/blob/main/docs/SECURITY.md"
           />
         </div>
 
@@ -169,7 +169,7 @@ export function TrustSection() {
           </p>
           <p className="text-[12px] leading-relaxed text-white/40">
             Cursor and Devin run agents on their infrastructure — you pay per-token and share
-            compute. Raw Claude Code works locally but stops when you close your laptop. Maestro
+            compute. Raw Claude Code works locally but stops when you close your laptop. Concerto
             gives you persistent remote execution on <em>your</em> VPS: cheaper, always-on, and
             fully under your control.
           </p>

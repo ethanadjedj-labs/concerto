@@ -1,0 +1,12 @@
+[Unit]
+Description=Concerto hosted plan lifecycle reconciler
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/cortex/env
+WorkingDirectory=/opt/concerto/backend
+ExecStart=/opt/concerto/.venv/bin/python -m concerto.hosted_lifecycle
+StandardOutput=journal
+StandardError=journal

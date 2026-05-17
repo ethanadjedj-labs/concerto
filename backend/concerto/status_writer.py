@@ -1,6 +1,6 @@
 """
-Maestro status writer — runs every 5 minutes via systemd timer.
-Checks 4 external services and writes /var/www/maestro-status/status.json.
+Concerto status writer — runs every 5 minutes via systemd timer.
+Checks 4 external services and writes /var/www/concerto-status/status.json.
 """
 
 from __future__ import annotations
@@ -13,14 +13,14 @@ from pathlib import Path
 import urllib.request
 import urllib.error
 
-OUTPUT_PATH = Path(os.getenv("MAESTRO_STATUS_OUTPUT", "/var/www/maestro-status/status.json"))
+OUTPUT_PATH = Path(os.getenv("CONCERTO_STATUS_OUTPUT", "/var/www/concerto-status/status.json"))
 TIMEOUT = 10  # seconds per check
 
 
 def _check(name: str, url: str) -> dict:
     start = time.monotonic()
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "maestro-status-writer/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "concerto-status-writer/1.0"})
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             latency_ms = round((time.monotonic() - start) * 1000)
             if resp.status < 500:
@@ -38,7 +38,7 @@ def _check(name: str, url: str) -> dict:
 
 def collect() -> dict:
     checks = [
-        ("Maestro API", "https://api.maestro.run/healthz"),
+        ("Concerto API", "https://api.concerto.run/healthz"),
         ("DigitalOcean API", "https://api.digitalocean.com/v2/"),
         ("Stripe API", "https://api.stripe.com/v1/"),
         ("Resend API", "https://api.resend.com/"),

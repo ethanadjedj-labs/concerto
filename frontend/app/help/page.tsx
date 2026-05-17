@@ -19,12 +19,12 @@ const SECTIONS: Section[] = [
     title: "Getting started",
     items: [
       {
-        q: "What is Maestro?",
-        a: "Maestro provisions a cloud VPS in your own DigitalOcean account and pre-installs Claude Code, an MCP server, and a cloudflared tunnel. From any claude.ai conversation you can pilot Claude Code agents running on your Droplet — real shell, real filesystem, persistent sessions.",
+        q: "What is Concerto?",
+        a: "Concerto provisions a cloud VPS in your own DigitalOcean account and pre-installs Claude Code, an MCP server, and a cloudflared tunnel. From any claude.ai conversation you can pilot Claude Code agents running on your Droplet — real shell, real filesystem, persistent sessions.",
       },
       {
         q: "What do I need before I can start?",
-        a: "A claude.ai account (any plan), a DigitalOcean account (free to create, you pay DO directly for the Droplet), and your Maestro purchase token. That's it — no SSH client, no terminal, no cloud expertise required.",
+        a: "A claude.ai account (any plan), a DigitalOcean account (free to create, you pay DO directly for the Droplet), and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud expertise required.",
       },
       {
         q: "How long does provisioning take?",
@@ -74,7 +74,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Sessions time out before my task finishes.",
-        a: "Claude Code on Maestro runs on your Droplet — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the Droplet process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
+        a: "Claude Code on Concerto runs on your Droplet — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the Droplet process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
       },
       {
         q: "Can Claude Code install packages, run npm install, or modify system files?",
@@ -91,11 +91,11 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What is the Hosted plan?",
-        a: "The Hosted plan ($39/mo) is a recurring subscription that keeps your Droplet alive and managed. Maestro monitors the tunnel, renews the cloudflared config, and handles updates automatically. The Droplet itself is billed to your DO account separately.",
+        a: "The Hosted plan ($39/mo) is a recurring subscription that keeps your Droplet alive and managed. Concerto monitors the tunnel, renews the cloudflared config, and handles updates automatically. The Droplet itself is billed to your DO account separately.",
       },
       {
         q: "What is the BYOC plan?",
-        a: "BYOC (Bring Your Own Cloud) is a one-time $99 payment. Maestro provisions the Droplet and configures everything, but ongoing monitoring and updates are self-managed. Your Droplet runs indefinitely as long as your DO account is active.",
+        a: "BYOC (Bring Your Own Cloud) is a one-time $99 payment. Concerto provisions the Droplet and configures everything, but ongoing monitoring and updates are self-managed. Your Droplet runs indefinitely as long as your DO account is active.",
       },
       {
         q: "How do I cancel my subscription?",
@@ -103,11 +103,11 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Will my Droplet be deleted if I cancel?",
-        a: "No. Your Droplet lives in your DigitalOcean account — Maestro cannot delete it. Cancelling the Hosted plan stops Maestro's monitoring, but your Droplet and its data remain. You'll need to manage the tunnel and updates yourself after cancellation.",
+        a: "No. Your Droplet lives in your DigitalOcean account — Concerto cannot delete it. Cancelling the Hosted plan stops Concerto's monitoring, but your Droplet and its data remain. You'll need to manage the tunnel and updates yourself after cancellation.",
       },
       {
         q: "I was charged but the setup never completed.",
-        a: "Contact support@maestro.run with your email address. We'll either complete the setup or issue a full refund — no questions asked. Provisioning failures are fully refundable.",
+        a: "Contact support@concerto.run with your email address. We'll either complete the setup or issue a full refund — no questions asked. Provisioning failures are fully refundable.",
       },
     ],
   },
@@ -116,7 +116,7 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "Do I need to keep my DigitalOcean API key stored anywhere?",
-        a: "Once provisioning is complete, your DO API key is no longer needed by Maestro. It's used only during the initial Droplet creation and then discarded (encrypted at rest, deleted after provisioning).",
+        a: "Once provisioning is complete, your DO API key is no longer needed by Concerto. It's used only during the initial Droplet creation and then discarded (encrypted at rest, deleted after provisioning).",
       },
       {
         q: "Can I SSH into my Droplet directly?",
@@ -124,7 +124,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "What's installed on the Droplet?",
-        a: "Ubuntu 24.04, Claude Code (via npm), the Maestro MCP server, cloudflared (tunnel daemon), and ttyd (web terminal). No database, no application server. The Droplet is a clean workspace; Claude Code brings the intelligence.",
+        a: "Ubuntu 24.04, Claude Code (via npm), the Concerto MCP server, cloudflared (tunnel daemon), and ttyd (web terminal). No database, no application server. The Droplet is a clean workspace; Claude Code brings the intelligence.",
       },
     ],
   },
@@ -137,7 +137,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Claude Code says 'tool not available' or 'MCP server unreachable'.",
-        a: "The MCP server process may have crashed. Open the embedded terminal and run: `systemctl restart maestro-mcp` (or the equivalent service name shown in your cloud-init docs). The connector in claude.ai will reconnect automatically within 30 seconds.",
+        a: "The MCP server process may have crashed. Open the embedded terminal and run: `systemctl restart concerto-mcp` (or the equivalent service name shown in your cloud-init docs). The connector in claude.ai will reconnect automatically within 30 seconds.",
       },
       {
         q: "I'm getting rate limit errors from Claude CLI.",
@@ -153,7 +153,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "I can't find the connector config snippet.",
-        a: "It's on Step 3 of your dashboard at maestro.run/dashboard/{your-token}. If you've already completed setup, the full config is still visible — scroll down to the 'Connector config' section on the dashboard home tab.",
+        a: "It's on Step 3 of your dashboard at concerto.run/dashboard/{your-token}. If you've already completed setup, the full config is still visible — scroll down to the 'Connector config' section on the dashboard home tab.",
       },
     ],
   },
@@ -161,8 +161,8 @@ const SECTIONS: Section[] = [
     title: "Privacy + security",
     items: [
       {
-        q: "Does Maestro have access to my Droplet after provisioning?",
-        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Maestro does not have persistent SSH access to your Droplet. Your code, files, and data never pass through Maestro's servers — only the tunnel handshake does.",
+        q: "Does Concerto have access to my Droplet after provisioning?",
+        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not have persistent SSH access to your Droplet. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
       },
       {
         q: "Is my DigitalOcean API key stored securely?",
@@ -173,8 +173,8 @@ const SECTIONS: Section[] = [
         a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your Droplet is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
       },
       {
-        q: "What data does Maestro collect?",
-        a: "Your email address (from Stripe), your DO region preference, provisioning status, and (optionally) your first session timestamp. We do not log MCP tool calls, shell commands, or file contents. Full privacy policy: maestro.run/legal/privacy.",
+        q: "What data does Concerto collect?",
+        a: "Your email address (from Stripe), your DO region preference, provisioning status, and (optionally) your first session timestamp. We do not log MCP tool calls, shell commands, or file contents. Full privacy policy: concerto.run/legal/privacy.",
       },
     ],
   },
@@ -219,11 +219,11 @@ export default function HelpPage() {
         {/* Header */}
         <div className="mb-10 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-6 text-white/40 hover:text-white/70 text-sm transition-colors">
-            ← maestro.run
+            ← concerto.run
           </Link>
           <h1 className="text-3xl font-bold mb-3">Help center</h1>
           <p className="text-white/50 text-base">
-            Answers to common questions about Maestro.
+            Answers to common questions about Concerto.
           </p>
         </div>
 
@@ -248,7 +248,7 @@ export default function HelpPage() {
         {filtered.length === 0 ? (
           <div className="py-12 text-center text-white/30 text-sm">
             No results for &ldquo;{query}&rdquo;.{" "}
-            <a href="mailto:support@maestro.run" className="text-violet-400 hover:text-violet-300">
+            <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
               Email support →
             </a>
           </div>
@@ -306,13 +306,13 @@ export default function HelpPage() {
           <p className="mb-3 text-sm font-medium text-white/70">Still need help?</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
-              href="mailto:support@maestro.run"
+              href="mailto:support@concerto.run"
               className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 transition-colors hover:border-violet-500/40 hover:text-white"
             >
               Email support
             </a>
             <a
-              href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/maestro"}
+              href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/concerto"}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"

@@ -6,7 +6,7 @@
 
 ## Critères de sélection
 
-Un bêta testeur Maestro doit remplir au moins **deux** de ces conditions :
+Un bêta testeur Concerto doit remplir au moins **deux** de ces conditions :
 
 - Abonné Claude Max ou utilisateur régulier de Claude Code
 - Dispose d'un compte DigitalOcean actif (ou prêt à en créer un — ~5 min)
@@ -32,7 +32,7 @@ Pas de call imposé, pas de formulaire long, pas de NDA. Deux paragraphes en deu
 
 ## Template d'invitation (WhatsApp / email court)
 
-> {first_name}, je lance les 10 premiers seats bêta de Maestro — Claude Code sur ton propre VPS DigitalOcean, depuis le navigateur, sans toucher un terminal. $99 à terme ; pour les 10 premiers : gratuit, en échange d'un retour à J+3 et J+14. {why_them} — ça t'intéresse ? Je t'envoie l'accès direct.
+> {first_name}, je lance les 10 premiers seats bêta de Concerto — Claude Code sur ton propre VPS DigitalOcean, depuis le navigateur, sans toucher un terminal. $99 à terme ; pour les 10 premiers : gratuit, en échange d'un retour à J+3 et J+14. {why_them} — ça t'intéresse ? Je t'envoie l'accès direct.
 
 *[~295 car.]*
 

@@ -1,12 +1,12 @@
 # Session Rules — read at the start of every spawned session
 
-This file defines binding conventions for Claude Code sessions running on your Maestro VPS. Read it before doing substantive work.
+This file defines binding conventions for Claude Code sessions running on your Concerto VPS. Read it before doing substantive work.
 
 ## Read first in every session
 
-1. `/opt/maestro-workspace/OPS/MANAGER_STATE.md` — strategic state, decisions, follow-ups
-2. `/opt/maestro-workspace/OPS/SESSION_RULES.md` — this file
-3. `/opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md` — return format
+1. `/opt/concerto-workspace/OPS/MANAGER_STATE.md` — strategic state, decisions, follow-ups
+2. `/opt/concerto-workspace/OPS/SESSION_RULES.md` — this file
+3. `/opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md` — return format
 
 ## Language and communication
 
@@ -16,7 +16,7 @@ This file defines binding conventions for Claude Code sessions running on your M
 
 ## Working directory
 
-- Default working directory for sessions: `/opt/maestro-workspace/` or a subdirectory.
+- Default working directory for sessions: `/opt/concerto-workspace/` or a subdirectory.
 - Do not `cd /root` as working_dir; read from absolute paths if needed.
 - Prefer idempotent operations. Before writing a file, check if it exists and the desired state is already achieved.
 
@@ -36,7 +36,7 @@ This file defines binding conventions for Claude Code sessions running on your M
 
 ## Resource caveats
 
-- Maestro VPS runs on a 2 GiB RAM droplet by default. Max 2 parallel Claude sessions is safe.
+- Concerto VPS runs on a 2 GiB RAM droplet by default. Max 2 parallel Claude sessions is safe.
 - Abort and report if available RAM drops below 200 MiB.
 
 ## Universal abort triggers

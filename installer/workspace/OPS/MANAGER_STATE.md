@@ -1,4 +1,4 @@
-# Manager State — {{ customer_email }}'s Maestro
+# Manager State — {{ customer_email }}'s Concerto
 
 Last updated: <fill on first edit>
 

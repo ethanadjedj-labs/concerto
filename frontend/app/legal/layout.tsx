@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: {
-    template: "%s — Maestro Legal",
-    default: "Legal — Maestro",
+    template: "%s — Concerto Legal",
+    default: "Legal — Concerto",
   },
 }
 
@@ -15,7 +15,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         <div className="mx-auto max-w-3xl px-6 py-4 flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-white hover:opacity-80 transition-opacity">
             <div className="h-5 w-5 rounded bg-gradient-to-br from-violet-500 to-indigo-600" />
-            Maestro
+            Concerto
           </Link>
           <span className="text-white/20">/</span>
           <span className="text-sm text-white/40">Legal</span>
@@ -30,7 +30,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
           <Link href="/legal/privacy" className="hover:text-white/60 transition-colors">Privacy Policy</Link>
           <Link href="/legal/refund" className="hover:text-white/60 transition-colors">Refund Policy</Link>
           <Link href="/legal/aup" className="hover:text-white/60 transition-colors">Acceptable Use</Link>
-          <span className="ml-auto">© {new Date().getFullYear()} Maestro</span>
+          <span className="ml-auto">© {new Date().getFullYear()} Concerto</span>
         </div>
       </footer>
     </div>

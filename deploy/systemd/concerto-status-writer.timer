@@ -1,5 +1,5 @@
 [Unit]
-Description=Maestro status writer — every 5 minutes
+Description=Concerto status writer — every 5 minutes
 
 [Timer]
 OnBootSec=60s

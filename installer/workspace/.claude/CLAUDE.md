@@ -1,6 +1,6 @@
-# Maestro Workspace
+# Concerto Workspace
 
-This is your Maestro workspace root. Claude Code sessions spawned from claude.ai land here.
+This is your Concerto workspace root. Claude Code sessions spawned from claude.ai land here.
 
 ## Read at the start of every session
 
@@ -14,7 +14,7 @@ Update `OPS/MANAGER_STATE.md` with what changed and what is pending before closi
 
 ## Working directory
 
-Stay in `/opt/maestro-workspace/` or subdirectories. Avoid using `/root` as working_dir.
+Stay in `/opt/concerto-workspace/` or subdirectories. Avoid using `/root` as working_dir.
 
 ## Output discipline
 

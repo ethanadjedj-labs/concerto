@@ -3,7 +3,7 @@ import os
 import httpx
 
 _RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-_EMAIL_FROM = os.getenv("MAESTRO_EMAIL_FROM", os.getenv("EMAIL_FROM", "hello@maestro.run"))
+_EMAIL_FROM = os.getenv("CONCERTO_EMAIL_FROM", os.getenv("EMAIL_FROM", "hello@concerto.run"))
 _OPERATOR_EMAIL = os.getenv("OPERATOR_EMAIL", "adjedjethan@gmail.com")
 
 
@@ -25,6 +25,6 @@ async def send_email(to: str, subject: str, html: str) -> bool:
 async def send_operator_alert(subject: str, body: str) -> bool:
     return await send_email(
         _OPERATOR_EMAIL,
-        f"[Maestro Alert] {subject}",
+        f"[Concerto Alert] {subject}",
         f"<pre style='font-family:monospace;white-space:pre-wrap'>{body}</pre>",
     )

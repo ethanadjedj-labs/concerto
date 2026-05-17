@@ -1,6 +1,6 @@
 """Hosted plan lifecycle reconciler — run hourly via systemd timer.
 
-Reconciles Stripe subscription states against maestro_hosted_pool:
+Reconciles Stripe subscription states against concerto_hosted_pool:
 - grace_destroy_at:<ts>: destroy droplet if ts has passed, mark destroyed
 - past_due_suspend_at:<ts>: power-off droplet if ts has passed
 """
@@ -10,26 +10,26 @@ import time
 
 import httpx
 
-from maestro import db
+from concerto import db
 
 _DO_API_BASE = "https://api.digitalocean.com/v2"
-_MAESTRO_DO_API_TOKEN = os.getenv("MAESTRO_DO_API_TOKEN", "")
+_CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 
 
 async def _do_delete_droplet(droplet_id: str) -> bool:
-    if not _MAESTRO_DO_API_TOKEN:
+    if not _CONCERTO_DO_API_TOKEN:
         return False
-    headers = {"Authorization": f"Bearer {_MAESTRO_DO_API_TOKEN}"}
+    headers = {"Authorization": f"Bearer {_CONCERTO_DO_API_TOKEN}"}
     async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
         resp = await client.delete(f"/droplets/{droplet_id}")
         return resp.status_code in (204, 404)
 
 
 async def _do_power_off_droplet(droplet_id: str) -> bool:
-    if not _MAESTRO_DO_API_TOKEN:
+    if not _CONCERTO_DO_API_TOKEN:
         return False
     headers = {
-        "Authorization": f"Bearer {_MAESTRO_DO_API_TOKEN}",
+        "Authorization": f"Bearer {_CONCERTO_DO_API_TOKEN}",
         "Content-Type": "application/json",
     }
     async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
@@ -66,12 +66,12 @@ async def reconcile() -> dict:
                     def _mark(did=droplet_id, ts=now):
                         import sqlite3
                         conn = sqlite3.connect(
-                            os.getenv("MAESTRO_DB_PATH", "/var/lib/maestro/maestro.db"),
+                            os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db"),
                             timeout=10,
                         )
                         try:
                             conn.execute(
-                                "UPDATE maestro_hosted_pool SET status='destroyed', destroyed_at=? WHERE droplet_id=?",
+                                "UPDATE concerto_hosted_pool SET status='destroyed', destroyed_at=? WHERE droplet_id=?",
                                 (ts, did),
                             )
                             conn.commit()

@@ -1,7 +1,7 @@
-"""Maestro monitoring: hourly hosted-pool healthcheck + operator alerting.
+"""Concerto monitoring: hourly hosted-pool healthcheck + operator alerting.
 
-Run as a systemd timer (maestro-monitoring.timer) or directly:
-    python -m maestro.monitoring
+Run as a systemd timer (concerto-monitoring.timer) or directly:
+    python -m concerto.monitoring
 """
 import asyncio
 import os
@@ -9,8 +9,8 @@ import time
 
 import httpx
 
-from maestro import db
-from maestro.email_utils import send_operator_alert
+from concerto import db
+from concerto.email_utils import send_operator_alert
 
 _MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 _MCP_HEALTHCHECK_TIMEOUT = 10
@@ -21,7 +21,7 @@ def _get_active_hosted_buyers() -> list[dict]:
     conn = db._conn()
     try:
         rows = conn.execute(
-            "SELECT * FROM maestro_buyers WHERE status = 'active' AND provider = 'hosted'"
+            "SELECT * FROM concerto_buyers WHERE status = 'active' AND provider = 'hosted'"
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
@@ -45,7 +45,7 @@ async def _check_mcp(mcp_url: str) -> bool:
 def _append_manager_state_alert(msg: str) -> None:
     try:
         entry = (
-            f"\n\n## ALERT — Maestro Hosted Pool ({time.strftime('%Y-%m-%d %H:%M UTC')})\n\n"
+            f"\n\n## ALERT — Concerto Hosted Pool ({time.strftime('%Y-%m-%d %H:%M UTC')})\n\n"
             f"{msg}\n\n"
             "**Action required**: investigate degraded droplets, consider re-provisioning.\n"
         )
@@ -93,7 +93,7 @@ async def check_oauth_reminders() -> None:
     """Send reminder emails for buyers who haven't completed setup."""
     conn = db._conn()
     try:
-        buyers = [dict(r) for r in conn.execute("SELECT * FROM maestro_buyers").fetchall()]
+        buyers = [dict(r) for r in conn.execute("SELECT * FROM concerto_buyers").fetchall()]
     finally:
         conn.close()
 
@@ -116,18 +116,18 @@ async def check_oauth_reminders() -> None:
             and hours_since_paid >= 24
             and not buyer.get("reminder_24h_sent")
         ):
-            from maestro.email_utils import send_email
-            setup_url = f"https://maestro.run/dashboard/{token}"
+            from concerto.email_utils import send_email
+            setup_url = f"https://concerto.run/dashboard/{token}"
             await send_email(
                 to=email,
-                subject="Your Maestro is ready — finish setup",
+                subject="Your Concerto is ready — finish setup",
                 html=(
                     "<p>Hi,</p>"
-                    "<p>Your Maestro remote workspace is ready! "
+                    "<p>Your Concerto remote workspace is ready! "
                     "Click below to access your dashboard and connect Claude:</p>"
                     f'<p><a href="{setup_url}" style="background:#7c3aed;color:white;'
                     f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
-                    f"Open My Maestro</a></p>"
+                    f"Open My Concerto</a></p>"
                     "<p>If you have any questions, reply to this email.</p>"
                 ),
             )
@@ -140,13 +140,13 @@ async def check_oauth_reminders() -> None:
             and hours_since_paid >= 48
             and not buyer.get("reminder_48h_sent")
         ):
-            from maestro.email_utils import send_email
+            from concerto.email_utils import send_email
             await send_email(
                 to=email,
                 subject="Need help with the Claude OAuth step?",
                 html=(
                     "<p>Hi,</p>"
-                    "<p>We noticed you opened your Maestro dashboard but haven't "
+                    "<p>We noticed you opened your Concerto dashboard but haven't "
                     "completed the Claude OAuth step yet.</p>"
                     "<p>In your terminal, run:</p>"
                     "<pre style='background:#1a1a1a;color:#fff;padding:12px;border-radius:6px'>"
@@ -154,7 +154,7 @@ async def check_oauth_reminders() -> None:
                     "<p>A browser window will open — log in to your Claude account. "
                     "That's it!</p>"
                     "<p>Reply to this email or contact "
-                    "<a href='mailto:support@maestro.run'>support@maestro.run</a> "
+                    "<a href='mailto:support@concerto.run'>support@concerto.run</a> "
                     "if you need help.</p>"
                 ),
             )

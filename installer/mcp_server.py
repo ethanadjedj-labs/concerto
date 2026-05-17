@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Maestro MCP server — runs on the customer's VPS.
+"""Concerto MCP server — runs on the customer's VPS.
 
 FastMCP server (streamable HTTP transport, mcp>=1.2) with Bearer auth.
 Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
 
-Auth: Bearer token read from /etc/maestro/token (generated at provision time).
+Auth: Bearer token read from /etc/concerto/token (generated at provision time).
 Session state is in-process memory; sessions are lost on restart.
 """
 from __future__ import annotations
@@ -19,8 +19,8 @@ from typing import Any
 import anyio
 from mcp.server.fastmcp import FastMCP
 
-TOKEN_PATH = Path(os.environ.get("MAESTRO_TOKEN_PATH", "/etc/maestro/token"))
-SESSION_DIR = Path("/var/lib/maestro/sessions")
+TOKEN_PATH = Path(os.environ.get("CONCERTO_TOKEN_PATH", "/etc/concerto/token"))
+SESSION_DIR = Path("/var/lib/concerto/sessions")
 
 _sessions: dict[str, dict[str, Any]] = {}
 
@@ -29,7 +29,7 @@ def _read_token() -> str:
     return TOKEN_PATH.read_text().strip()
 
 
-mcp = FastMCP("maestro", stateless_http=True)
+mcp = FastMCP("concerto", stateless_http=True)
 
 
 @mcp.tool()

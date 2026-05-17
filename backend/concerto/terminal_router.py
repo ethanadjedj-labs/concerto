@@ -15,7 +15,7 @@ import httpx
 import websockets
 from fastapi import APIRouter, Response, WebSocket, WebSocketDisconnect
 
-from maestro import db
+from concerto import db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ _WS_PING_TIMEOUT = 10
 _UPSTREAM_CONNECT_TIMEOUT = 30.0
 
 _CSP_FRAME_ANCESTORS = (
-    "frame-ancestors https://maestro.run https://*.vercel.app"
+    "frame-ancestors https://concerto.run https://*.vercel.app"
 )
 
 
@@ -37,7 +37,7 @@ def _ttyd_ws_url(ttyd_public_url: str) -> str:
 
 
 def _basic_auth_header(ttyd_password: str) -> str:
-    cred = base64.b64encode(f"maestro:{ttyd_password}".encode()).decode()
+    cred = base64.b64encode(f"concerto:{ttyd_password}".encode()).decode()
     return f"Basic {cred}"
 
 

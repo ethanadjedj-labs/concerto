@@ -1,4 +1,4 @@
-"""Refund automation for Maestro buyers.
+"""Refund automation for Concerto buyers.
 
 Eligibility rules:
   - Provisioning never succeeded (status in provisioning_failed, failed_install, api_key_invalid,
@@ -6,7 +6,7 @@ Eligibility rules:
   - Within 14 days of purchase → automatic
   - Beyond 14 days AND provisioning succeeded → requires operator review (queued in MANAGER_STATE)
 
-BYOC: customer keeps their DigitalOcean droplet (Maestro never owned it).
+BYOC: customer keeps their DigitalOcean droplet (Concerto never owned it).
 Hosted: destroy droplet via DO API on refund.
 """
 import asyncio
@@ -16,8 +16,8 @@ import time
 import httpx
 import stripe
 
-from maestro import db
-from maestro.email_utils import send_email, send_operator_alert
+from concerto import db
+from concerto.email_utils import send_email, send_operator_alert
 
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
@@ -109,7 +109,7 @@ async def refund(buyer_token: str, reason: str, full_amount: bool = True) -> dic
                 refund_obj = stripe.Refund.create(
                     payment_intent=payment_intent_id,
                     reason="requested_by_customer",
-                    metadata={"maestro_token": buyer_token, "reason": reason[:500]},
+                    metadata={"concerto_token": buyer_token, "reason": reason[:500]},
                 )
         except stripe.StripeError as exc:
             raise RefundError(f"Stripe refund failed: {exc}") from exc
@@ -130,14 +130,14 @@ async def refund(buyer_token: str, reason: str, full_amount: bool = True) -> dic
     if email:
         await send_email(
             to=email,
-            subject="Your Maestro refund has been processed",
+            subject="Your Concerto refund has been processed",
             html=(
                 "<p>Hi,</p>"
-                "<p>Your Maestro refund has been processed. "
+                "<p>Your Concerto refund has been processed. "
                 "Please allow 5–10 business days for the amount to appear on your statement.</p>"
                 "<p>If you have questions, reply to this email or contact "
-                "<a href='mailto:support@maestro.run'>support@maestro.run</a>.</p>"
-                "<p>Thank you for trying Maestro.</p>"
+                "<a href='mailto:support@concerto.run'>support@concerto.run</a>.</p>"
+                "<p>Thank you for trying Concerto.</p>"
             ),
         )
 

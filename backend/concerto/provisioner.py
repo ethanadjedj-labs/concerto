@@ -8,15 +8,15 @@ from typing import Literal
 import httpx
 from jinja2 import Template
 
-from maestro import db
+from concerto import db
 
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _DEFAULT_IMAGE = "ubuntu-22-04-x64"
-_KEYS_DIR = os.getenv("MAESTRO_KEYS_DIR", "/var/lib/maestro/keys")
+_KEYS_DIR = os.getenv("CONCERTO_KEYS_DIR", "/var/lib/concerto/keys")
 _CLOUD_INIT_TEMPLATE = os.path.join(
     os.path.dirname(__file__), "..", "..", "installer", "cloud_init.yaml.j2"
 )
-_MAESTRO_API_BASE = os.getenv("MAESTRO_API_BASE", "https://api.maestro.run")
+_CONCERTO_API_BASE = os.getenv("CONCERTO_API_BASE", "https://api.concerto.run")
 
 # Region fallback order: if chosen region is unavailable (422), try these.
 _REGION_FALLBACK: dict[str, list[str]] = {
@@ -48,10 +48,10 @@ runcmd:
     TTYD_VER=$(curl -sf https://api.github.com/repos/tsl0922/ttyd/releases/latest | jq -r '.tag_name' || echo "1.7.4")
     wget -qO /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VER}/ttyd.x86_64"
     chmod +x /usr/local/bin/ttyd
-  - nohup ttyd --port 7681 --interface 127.0.0.1 --credential maestro:{{ ttyd_password }} bash >/var/log/ttyd.log 2>&1 &
+  - nohup ttyd --port 7681 --interface 127.0.0.1 --credential concerto:{{ ttyd_password }} bash >/var/log/ttyd.log 2>&1 &
   - |
     sleep 15
-    curl -sf -X POST {{ maestro_api_base }}/api/internal/droplet-ready \\
+    curl -sf -X POST {{ concerto_api_base }}/api/internal/droplet-ready \\
       -H 'Content-Type: application/json' \\
       -d '{"token":"{{ token }}","mcp_url":"stub://pending","bearer_token":"stub","ttyd_url":"stub://pending/terminal"}' || true
 """
@@ -87,7 +87,7 @@ async def _generate_ssh_keypair(token: str) -> tuple[str, str]:
 
     proc = await asyncio.create_subprocess_exec(
         "ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "",
-        "-C", f"maestro-{token[:8]}",
+        "-C", f"concerto-{token[:8]}",
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
     )
@@ -163,9 +163,9 @@ async def provision_droplet(
 ) -> tuple[str, str, str, str]:
     """Returns (droplet_id, ipv4, ssh_private_key_path, ttyd_password).
 
-    mode='hosted': Ethan's DO account, s-2vcpu-4gb, tagged maestro-hosted-<prefix>,
-                   registered in maestro_hosted_pool.
-    mode='byoc':   customer's DO key, customer-chosen size, tagged maestro.
+    mode='hosted': Ethan's DO account, s-2vcpu-4gb, tagged concerto-hosted-<prefix>,
+                   registered in concerto_hosted_pool.
+    mode='byoc':   customer's DO key, customer-chosen size, tagged concerto.
 
     Raises:
         DOAuthError: DO API token is invalid (401).
@@ -180,21 +180,21 @@ async def provision_droplet(
         token=token,
         ssh_public_key=public_key,
         ssh_authorized_key=public_key,
-        maestro_api_base=_MAESTRO_API_BASE,
-        maestro_token=token,
-        maestro_callback_url=f"{_MAESTRO_API_BASE}/api/internal/droplet-ready",
+        concerto_api_base=_CONCERTO_API_BASE,
+        concerto_token=token,
+        concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
         customer_email=customer_email,
         ttyd_password=ttyd_password,
     )
 
-    tag = f"maestro-hosted-{token[:8]}" if mode == "hosted" else "maestro"
+    tag = f"concerto-hosted-{token[:8]}" if mode == "hosted" else "concerto"
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(
         base_url=_DO_API_BASE, headers=headers, timeout=30
     ) as client:
         droplet_id = await _create_droplet_with_fallback(
-            client, f"maestro-{token[:8]}", region, size, cloud_init, tag
+            client, f"concerto-{token[:8]}", region, size, cloud_init, tag
         )
 
         # Register hosted droplets immediately in the pool

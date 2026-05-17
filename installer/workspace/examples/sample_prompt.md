@@ -7,7 +7,7 @@ A well-formed session prompt gives the spawned Claude Code session everything it
 ## Template
 
 ```
-Read /opt/maestro-workspace/OPS/MANAGER_STATE.md and /opt/maestro-workspace/OPS/SESSION_RULES.md before starting.
+Read /opt/concerto-workspace/OPS/MANAGER_STATE.md and /opt/concerto-workspace/OPS/SESSION_RULES.md before starting.
 
 ## Goal
 
@@ -25,7 +25,7 @@ Read /opt/maestro-workspace/OPS/MANAGER_STATE.md and /opt/maestro-workspace/OPS/
 
 ## Working directory
 
-/opt/maestro-workspace/<subdirectory>
+/opt/concerto-workspace/<subdirectory>
 
 ## Abort conditions
 
@@ -35,7 +35,7 @@ Read /opt/maestro-workspace/OPS/MANAGER_STATE.md and /opt/maestro-workspace/OPS/
 
 ## Return format
 
-Print a JSON envelope as the final stdout line per /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md.
+Print a JSON envelope as the final stdout line per /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md.
 ```
 
 ---

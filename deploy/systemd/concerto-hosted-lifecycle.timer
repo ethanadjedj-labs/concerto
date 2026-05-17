@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Concerto hosted lifecycle reconciler every hour
+Requires=concerto-hosted-lifecycle.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=concerto-hosted-lifecycle.service
+
+[Install]
+WantedBy=timers.target

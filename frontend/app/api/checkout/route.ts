@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     apiVersion: "2025-02-24.acacia",
   })
 
-  const origin = request.headers.get("origin") ?? "https://maestro.run"
+  const origin = request.headers.get("origin") ?? "https://concerto.run"
 
   // Accept plan from JSON body or query param
   let plan = "byoc"
@@ -29,8 +29,8 @@ export async function POST(request: Request) {
   const isHosted = plan === "hosted"
 
   const priceId = isHosted
-    ? process.env.STRIPE_MAESTRO_HOSTED_PRICE_ID!
-    : process.env.STRIPE_MAESTRO_PRICE_ID!
+    ? process.env.STRIPE_CONCERTO_HOSTED_PRICE_ID!
+    : process.env.STRIPE_CONCERTO_PRICE_ID!
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     mode: isHosted ? "subscription" : "payment",
     automatic_tax: { enabled: true },
     metadata: {
-      product: "maestro",
+      product: "concerto",
       plan,
       region,
     },

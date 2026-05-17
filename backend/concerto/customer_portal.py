@@ -4,12 +4,12 @@ import stripe
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from maestro import db
+from concerto import db
 
 router = APIRouter()
 
 _STRIPE_SECRET      = os.getenv("STRIPE_SECRET_KEY", "")
-_PORTAL_RETURN_BASE = "https://maestro.run/dashboard"
+_PORTAL_RETURN_BASE = "https://concerto.run/dashboard"
 
 
 class _PortalRequest(BaseModel):
@@ -33,7 +33,7 @@ async def create_customer_portal_session(req: _PortalRequest):
             status_code=400,
             detail=(
                 "No Stripe customer ID on file yet — your subscription may still be "
-                "activating. Wait a few seconds and retry, or contact support@maestro.run."
+                "activating. Wait a few seconds and retry, or contact support@concerto.run."
             ),
         )
 

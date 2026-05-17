@@ -4,8 +4,8 @@ import time
 import stripe
 from fastapi import APIRouter, HTTPException
 
-from maestro import db
-from maestro.refunds import RefundError, RefundNotEligible, is_eligible_auto
+from concerto import db
+from concerto.refunds import RefundError, RefundNotEligible, is_eligible_auto
 
 router = APIRouter()
 
@@ -28,7 +28,7 @@ async def buyer_status(token: str):
     if buyer.get("bearer_token"):
         resp["bearer_token"] = buyer["bearer_token"]
     if status == "awaiting_oauth":
-        resp["dashboard_ready_url"] = f"https://maestro.run/dashboard/{token}"
+        resp["dashboard_ready_url"] = f"https://concerto.run/dashboard/{token}"
 
     # Hosted-only subscription fields
     if buyer.get("plan") == "hosted":
@@ -85,7 +85,7 @@ async def request_refund(token: str):
     if not buyer:
         raise HTTPException(status_code=404, detail="Buyer not found")
 
-    from maestro.refunds import refund
+    from concerto.refunds import refund
     try:
         result = await refund(token, reason="Customer requested via dashboard")
         return result
