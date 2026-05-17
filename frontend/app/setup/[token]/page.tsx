@@ -28,7 +28,7 @@ const REGIONS = [
 
 const STATUS_STEPS = [
   { key: "paid",            label: "Payment confirmed" },
-  { key: "provisioning",   label: "Setting up workspace" },
+  { key: "provisioning",   label: "Setting up your remote machine" },
   { key: "installing",     label: "Installing Claude Code" },
   { key: "awaiting_oauth", label: "Awaiting Claude OAuth" },
   { key: "ready",          label: "Ready!" },
@@ -58,7 +58,7 @@ const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
     title: "Provisioning failed",
     titleFr: "Échec du provisionnement",
     description:
-      "The workspace encountered an error during setup. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
+      "The remote machine encountered an error during setup. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
     descriptionFr:
       "Le serveur a rencontré une erreur. Un remboursement intégral a été initié automatiquement.",
     retryable: false,
@@ -67,7 +67,7 @@ const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
     title: "Provisioning timed out",
     titleFr: "Délai de provisionnement dépassé",
     description:
-      "The workspace took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
+      "The remote machine took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
     descriptionFr:
       "Le serveur a mis trop longtemps à démarrer. Un remboursement a été initié. Veuillez réessayer.",
     retryable: false,
@@ -210,7 +210,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
     ? "8GB memory, up to 6–8 parallel sessions"
     : "4GB memory, up to 2 parallel sessions"
 
-  const setupSubtitle = `Pick a region — we'll provision your dedicated workspace automatically. (${planSpec})`
+  const setupSubtitle = `Pick a region — we'll provision your dedicated remote machine automatically. (${planSpec})`
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b] px-6 py-16 text-white">
@@ -246,7 +246,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                 <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
                   <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
                   <p className="text-[13px] text-violet-300">
-                    Dedicated workspace — {planSpec}. No account setup needed.
+                    Dedicated remote machine — {planSpec}. No account setup needed.
                   </p>
                 </div>
 
@@ -290,7 +290,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   ) : retrying ? (
                     "Retry Provisioning"
                   ) : (
-                    "Provision My Workspace"
+                    "Provision My Remote Machine"
                   )}
                 </Button>
               </form>
@@ -299,7 +299,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             /* ── Provisioning stepper ──────────────────────────── */
             <div className="p-7">
               <div className="mb-5">
-                <h2 className="text-[15px] font-semibold text-white">Setting up your workspace</h2>
+                <h2 className="text-[15px] font-semibold text-white">Setting up your remote machine</h2>
                 <p className="mt-1 text-[13px] text-white/40">This takes about 3–5 minutes. Don&apos;t close this tab.</p>
               </div>
 

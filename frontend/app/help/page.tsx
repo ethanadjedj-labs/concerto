@@ -20,15 +20,15 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What is Concerto?",
-        a: "Concerto gives you a dedicated remote workspace with Claude Code, an MCP server, and a cloudflared tunnel pre-installed. From any claude.ai conversation you can pilot Claude Code agents running on your workspace — real shell, real filesystem, persistent sessions.",
+        a: "Concerto gives you a dedicated remote machine with Claude Code, an MCP server, and a cloudflared tunnel pre-installed. From any claude.ai conversation you can pilot Claude Code agents running on your remote machine — real shell, real filesystem, persistent sessions.",
       },
       {
         q: "What do I need before I can start?",
-        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud account required. Concerto provisions and manages the workspace for you.",
+        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud account required. Concerto provisions and manages the remote machine for you.",
       },
       {
         q: "How long does provisioning take?",
-        a: "Typically 3–5 minutes from purchase to workspace ready. The dashboard polls automatically and advances each step when it completes.",
+        a: "Typically 3–5 minutes from purchase to remote machine ready. The dashboard polls automatically and advances each step when it completes.",
       },
       {
         q: "Which regions are available?",
@@ -57,7 +57,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Can I use the connector from multiple claude.ai conversations at the same time?",
-        a: "Yes. The MCP server on your workspace handles concurrent connections. Each claude.ai conversation gets its own session context, but they share the same filesystem and running processes on the workspace.",
+        a: "Yes. The MCP server on your remote machine handles concurrent connections. Each claude.ai conversation gets its own session context, but they share the same filesystem and running processes on your remote machine.",
       },
     ],
   },
@@ -70,14 +70,14 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Sessions time out before my task finishes.",
-        a: "Claude Code on Concerto runs on your workspace — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the workspace process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
+        a: "Claude Code on Concerto runs on your remote machine — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the remote machine process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
       },
       {
         q: "Can Claude Code install packages, run npm install, or modify system files?",
-        a: "Yes. The workspace runs with full system access. Claude Code can install packages, write to any path, configure cron jobs, and start background services.",
+        a: "Yes. Your remote machine runs with full system access. Claude Code can install packages, write to any path, configure cron jobs, and start background services.",
       },
       {
-        q: "How do I check what's running on my workspace?",
+        q: "How do I check what's running on my remote machine?",
         a: "Ask Claude Code to run `tmux ls` (active sessions), `ps aux | grep python` (running processes), or `systemctl list-units --state=running` (system services). You can also use the embedded terminal on your dashboard.",
       },
     ],
@@ -87,15 +87,15 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What's the difference between Solo and Pro?",
-        a: "Solo ($49/mo) includes a 4GB workspace and up to 2 parallel sessions. Pro ($99/mo) includes an 8GB workspace and up to 6–8 parallel sessions. Both include email support and cancel anytime.",
+        a: "Solo ($49/mo) includes a 4GB remote machine and up to 2 parallel sessions. Pro ($99/mo) includes an 8GB remote machine and up to 6–8 parallel sessions. Both include email support and cancel anytime.",
       },
       {
         q: "How do I cancel my subscription?",
         a: "Open your dashboard → Billing tab → Manage Subscription. This opens the Stripe customer portal where you can cancel, change plan, or download invoices. Cancellation takes effect at the end of your current billing period.",
       },
       {
-        q: "What happens to my workspace if I cancel?",
-        a: "Your workspace and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
+        q: "What happens to my remote machine if I cancel?",
+        a: "Your remote machine and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
       },
       {
         q: "I was charged but the setup never completed.",
@@ -128,16 +128,16 @@ const SECTIONS: Section[] = [
     title: "Privacy + security",
     items: [
       {
-        q: "Does Concerto have access to my workspace after provisioning?",
-        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not retain persistent access to your workspace. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
+        q: "Does Concerto have access to my remote machine after provisioning?",
+        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not retain persistent access to your remote machine. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
       },
       {
-        q: "Is my workspace isolated from other customers?",
-        a: "Yes. Every Concerto subscription is a dedicated workspace. There is no shared compute or shared filesystem between customers.",
+        q: "Is my remote machine isolated from other customers?",
+        a: "Yes. Every Concerto subscription is a dedicated remote machine. There is no shared compute or shared filesystem between customers.",
       },
       {
-        q: "Can Anthropic see what runs on my workspace?",
-        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your workspace is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
+        q: "Can Anthropic see what runs on my remote machine?",
+        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your remote machine is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
       },
       {
         q: "What data does Concerto collect?",
