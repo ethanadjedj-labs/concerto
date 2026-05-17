@@ -4,9 +4,13 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Copy, Check, ExternalLink, Terminal, Zap, CalendarClock, AlertTriangle, Loader2 } from "lucide-react"
+import {
+  Copy, Check, ExternalLink, Terminal, Zap,
+  CalendarClock, AlertTriangle, Loader2,
+  CreditCard, Ban, RefreshCw, RotateCcw,
+} from "lucide-react"
 
-/* ─── Copy field with flash feedback ─────────────────────────── */
+/* ─── Copy field ──────────────────────────────────────────────── */
 
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied]   = useState(false)
@@ -59,32 +63,198 @@ function CopyField({ label, value }: { label: string; value: string }) {
               : "text-white/35 hover:bg-white/10 hover:text-white"
           }`}
         >
-          {copied ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
-      {copied && (
-        <p className="text-[11px] text-green-400">Copied to clipboard</p>
-      )}
+      {copied && <p className="text-[11px] text-green-400">Copied to clipboard</p>}
     </div>
   )
 }
 
-/* ─── Dashboard page ─────────────────────────────────────────── */
+/* ─── Status banners ────────────────────────────────────────────── */
+
+function PastDueBanner() {
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-xl border border-yellow-500/25 bg-yellow-500/[0.07] px-5 py-4">
+      <CreditCard className="mt-0.5 h-4.5 w-4.5 shrink-0 text-yellow-400" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-semibold text-yellow-300">Payment past due</p>
+        <p className="mt-1 text-[13px] text-yellow-200/60 leading-relaxed">
+          Your subscription payment failed. Update your payment method to avoid suspension.
+        </p>
+      </div>
+      <a
+        href="https://billing.stripe.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 mt-0.5 inline-flex items-center gap-1.5 rounded-lg bg-yellow-500/15 px-3 py-1.5 text-[13px] font-medium text-yellow-300 hover:bg-yellow-500/25 transition-colors"
+      >
+        Update billing <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  )
+}
+
+function SuspendedBanner() {
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-500/25 bg-orange-500/[0.07] px-5 py-4">
+      <Ban className="mt-0.5 h-4.5 w-4.5 shrink-0 text-orange-400" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-semibold text-orange-300">Workspace suspended</p>
+        <p className="mt-1 text-[13px] text-orange-200/60 leading-relaxed">
+          Your workspace is paused due to a failed payment. Your data is safe.
+          Update your payment method to resume instantly.
+        </p>
+      </div>
+      <a
+        href="https://billing.stripe.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 mt-0.5 inline-flex items-center gap-1.5 rounded-lg bg-orange-500/15 px-3 py-1.5 text-[13px] font-medium text-orange-300 hover:bg-orange-500/25 transition-colors"
+      >
+        Resume billing <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  )
+}
+
+function RefundedBanner() {
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-xl border border-blue-500/25 bg-blue-500/[0.07] px-5 py-4">
+      <RotateCcw className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-400" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-semibold text-blue-300">Refund processed</p>
+        <p className="mt-1 text-[13px] text-blue-200/60 leading-relaxed">
+          Your refund has been issued. Allow 5–10 business days.
+          Questions? <a href="mailto:support@maestro.run" className="underline hover:text-blue-300">support@maestro.run</a>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Terminal fallback panel ───────────────────────────────────── */
+
+function TerminalFallback({ vpsIp }: { vpsIp: string }) {
+  return (
+    <div className="p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 text-yellow-400" />
+        <span className="text-[13px] font-medium text-white/70">Terminal unavailable</span>
+      </div>
+      <p className="text-[13px] text-white/45 leading-relaxed">
+        The browser terminal is temporarily unreachable. Connect via SSH while it recovers:
+      </p>
+      {vpsIp && (
+        <pre className="rounded-lg bg-black/40 p-3 text-[12px] font-mono text-green-300 overflow-x-auto">
+          {`ssh root@${vpsIp}`}
+        </pre>
+      )}
+      <p className="text-[12px] text-white/30">
+        Or{" "}
+        <a href="mailto:support@maestro.run" className="text-violet-400 hover:text-violet-300">
+          contact support
+        </a>{" "}
+        if the issue persists.
+      </p>
+    </div>
+  )
+}
+
+/* ─── Refund button ─────────────────────────────────────────────── */
+
+function RefundButton({ token, backendUrl, eligible }: {
+  token: string
+  backendUrl: string
+  eligible: boolean
+}) {
+  const [step, setStep]       = useState<"idle" | "confirming" | "done" | "error">("idle")
+  const [loading, setLoading] = useState(false)
+  const [errMsg, setErrMsg]   = useState("")
+
+  async function doRefund() {
+    setLoading(true)
+    try {
+      const res = await fetch(`${backendUrl}/api/buyer/${token}/refund`, { method: "POST" })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.detail?.message ?? body?.detail ?? "Refund request failed")
+      }
+      setStep("done")
+    } catch (err: unknown) {
+      setStep("error")
+      setErrMsg(err instanceof Error ? err.message : "Unexpected error")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!eligible) return null
+
+  if (step === "done") {
+    return <p className="text-[12px] text-green-400">✓ Refund initiated — allow 5–10 business days.</p>
+  }
+
+  if (step === "confirming") {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className="text-[12px] text-white/50">Are you sure? This cannot be undone.</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={doRefund}
+          disabled={loading}
+          className="h-7 px-3 text-[12px] text-red-400 hover:bg-red-500/10 hover:text-red-300"
+        >
+          {loading ? "Processing..." : "Yes, refund"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setStep("idle")}
+          disabled={loading}
+          className="h-7 px-3 text-[12px] text-white/30 hover:bg-white/5"
+        >
+          Cancel
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setStep("confirming")}
+        className="h-7 gap-1.5 px-3 text-[12px] text-white/25 hover:bg-white/5 hover:text-white/50"
+      >
+        <RotateCcw className="h-3 w-3" />
+        Request refund
+      </Button>
+      {step === "error" && <p className="text-[11px] text-red-400">{errMsg}</p>}
+    </div>
+  )
+}
+
+/* ─── Dashboard page ─────────────────────────────────────────────── */
 
 export default function DashboardPage({ params }: { params: { token: string } }) {
   const [dashData, setDashData] = useState<{
     mcp_url?: string
     bearer_token?: string
     plan?: string
+    status?: string
+    vps_ip?: string
     subscription_status?: string
     next_renewal_at?: number
+    refund_eligible?: boolean
+    refund_window_open?: boolean
   } | null>(null)
-  const [cancelling, setCancelling] = useState(false)
-  const [cancelDone, setCancelDone] = useState(false)
+  const [cancelling, setCancelling]     = useState(false)
+  const [cancelDone, setCancelDone]     = useState(false)
+  const [terminalError, setTerminalError] = useState(false)
+  const [terminalRetry, setTerminalRetry] = useState(0)
 
   const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
   const terminalUrl = `${backendUrl}/terminal/${params.token}`
@@ -96,8 +266,12 @@ export default function DashboardPage({ params }: { params: { token: string } })
         mcp_url: d.mcp_url,
         bearer_token: d.bearer_token,
         plan: d.plan,
+        status: d.status,
+        vps_ip: d.vps_ip,
         subscription_status: d.subscription_status,
         next_renewal_at: d.next_renewal_at,
+        refund_eligible: d.refund_eligible,
+        refund_window_open: d.refund_window_open,
       }))
       .catch(() => {})
   }, [backendUrl, params.token])
@@ -105,6 +279,14 @@ export default function DashboardPage({ params }: { params: { token: string } })
   const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
   const isHosted    = dashData?.plan === "hosted"
+  const status      = dashData?.status ?? "active"
+  const vpsIp       = dashData?.vps_ip ?? ""
+
+  const isSuspended = status === "suspended"
+  const isRefunded  = status === "refunded"
+  const isPastDue   = status === "subscription_past_due" || dashData?.subscription_status === "past_due"
+  const isBanned    = isSuspended || isRefunded
+
   const nextRenewal = dashData?.next_renewal_at
     ? new Date(dashData.next_renewal_at * 1000).toLocaleDateString("en-US", {
         year: "numeric", month: "long", day: "numeric",
@@ -120,6 +302,18 @@ export default function DashboardPage({ params }: { params: { token: string } })
     } finally {
       setCancelling(false)
     }
+  }
+
+  function getBadge() {
+    if (isRefunded)  return <Badge className="shrink-0 border-blue-500/25 bg-blue-500/12 text-[12px] text-blue-400">Refunded</Badge>
+    if (isSuspended) return <Badge className="shrink-0 border-orange-500/25 bg-orange-500/12 text-[12px] text-orange-400"><span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-orange-400" />Suspended</Badge>
+    if (isPastDue)   return <Badge className="shrink-0 border-yellow-500/25 bg-yellow-500/12 text-[12px] text-yellow-400">Payment due</Badge>
+    return (
+      <Badge className="shrink-0 border-green-500/25 bg-green-500/12 text-[12px] text-green-400">
+        <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
+        Online
+      </Badge>
+    )
   }
 
   return (
@@ -139,103 +333,120 @@ export default function DashboardPage({ params }: { params: { token: string } })
               {params.token}
             </span>
           </div>
-
-          <Badge className="shrink-0 border-green-500/25 bg-green-500/12 text-[12px] text-green-400">
-            <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
-            Online
-          </Badge>
+          {getBadge()}
         </div>
       </header>
 
       {/* ── Main ─────────────────────────────────────────────── */}
-      <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-5xl space-y-4 px-6 py-8">
 
-        {/* Connect card */}
-        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-white/[0.025]">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/45 to-transparent" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(124,58,237,0.07)_0%,transparent_70%)]" />
+        {/* Status banners */}
+        {isPastDue   && <PastDueBanner />}
+        {isSuspended && <SuspendedBanner />}
+        {isRefunded  && <RefundedBanner />}
 
-          <div className="relative p-6 md:p-8">
-            <div className="mb-5 flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15">
-                <Zap className="h-4.5 w-4.5 text-violet-400" />
+        {/* Connect card — hidden if workspace is dead */}
+        {!isBanned && (
+          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-white/[0.025]">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/45 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(124,58,237,0.07)_0%,transparent_70%)]" />
+
+            <div className="relative p-6 md:p-8">
+              <div className="mb-5 flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15">
+                  <Zap className="h-4.5 w-4.5 text-violet-400" />
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-semibold text-white">Connect to claude.ai</h2>
+                  <p className="text-[13px] text-white/40">Settings → Connectors → Add custom connector.</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-[15px] font-semibold text-white">Connect to claude.ai</h2>
-                <p className="text-[13px] text-white/40">
-                  Settings → Connectors → Add custom connector.
-                </p>
+
+              <div className="space-y-4">
+                <CopyField label="MCP URL"        value={mcpUrl} />
+                <CopyField label="Bearer Token"   value={bearerToken} />
+                <CopyField label="Connector Name" value="Maestro" />
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <CopyField label="MCP URL"       value={mcpUrl} />
-              <CopyField label="Bearer Token"  value={bearerToken} />
-              <CopyField label="Connector Name" value="Maestro" />
-            </div>
+              <Separator className="my-6 bg-white/[0.06]" />
 
-            <Separator className="my-6 bg-white/[0.06]" />
-
-            <div className="space-y-3">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-white/30">
-                Step-by-step
-              </p>
-              <ol className="space-y-3">
-                {[
-                  <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-violet-400 hover:text-violet-300">claude.ai <ExternalLink className="h-3 w-3" /></a> → your avatar → <strong className="font-medium text-white/70">Settings</strong></>,
-                  <>Navigate to <strong className="font-medium text-white/70">Connectors</strong> → <strong className="font-medium text-white/70">Add custom connector</strong></>,
-                  <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Maestro</strong>, and click Save</>,
-                ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3 text-[13px]">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/18 text-[11px] font-medium text-violet-300">
-                      {i + 1}
-                    </span>
-                    <span className="leading-relaxed text-white/45">{step}</span>
-                  </li>
-                ))}
-              </ol>
+              <div className="space-y-3">
+                <p className="text-[11px] font-medium uppercase tracking-widest text-white/30">Step-by-step</p>
+                <ol className="space-y-3">
+                  {[
+                    <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-violet-400 hover:text-violet-300">claude.ai <ExternalLink className="h-3 w-3" /></a> → your avatar → <strong className="font-medium text-white/70">Settings</strong></>,
+                    <>Navigate to <strong className="font-medium text-white/70">Connectors</strong> → <strong className="font-medium text-white/70">Add custom connector</strong></>,
+                    <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Maestro</strong>, and click Save</>,
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[13px]">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/18 text-[11px] font-medium text-violet-300">{i + 1}</span>
+                      <span className="leading-relaxed text-white/45">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Terminal card */}
-        <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.02]">
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-            <div className="flex items-center gap-2 text-white/50">
-              <Terminal className="h-4 w-4" />
-              <span className="text-[14px] font-medium">Browser Terminal</span>
+        {!isBanned && (
+          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.02]">
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
+              <div className="flex items-center gap-2 text-white/50">
+                <Terminal className="h-4 w-4" />
+                <span className="text-[14px] font-medium">Browser Terminal</span>
+                {terminalError && <span className="ml-1 text-[12px] text-yellow-400">— unavailable</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                {terminalError && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setTerminalError(false); setTerminalRetry(r => r + 1) }}
+                    className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
+                  >
+                    <RefreshCw className="h-3 w-3" /> Retry
+                  </Button>
+                )}
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
+                >
+                  <a href={terminalUrl} target="_blank" rel="noopener noreferrer">
+                    Open in new tab <ExternalLink className="h-3 w-3" />
+                  </a>
+                </Button>
+              </div>
             </div>
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
-            >
-              <a href={terminalUrl} target="_blank" rel="noopener noreferrer">
-                Open in new tab <ExternalLink className="h-3 w-3" />
-              </a>
-            </Button>
-          </div>
 
-          <div className="bg-[#0d0d10]">
-            {/* Fake terminal titlebar */}
-            <div className="flex items-center gap-2 border-b border-white/[0.04] bg-black/20 px-4 py-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500/55" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/55" />
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500/55" />
-              <span className="ml-2 font-mono text-[11px] text-white/20">maestro · shell</span>
+            <div className="bg-[#0d0d10]">
+              <div className="flex items-center gap-2 border-b border-white/[0.04] bg-black/20 px-4 py-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500/55" />
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/55" />
+                <span className="h-2.5 w-2.5 rounded-full bg-green-500/55" />
+                <span className="ml-2 font-mono text-[11px] text-white/20">maestro · shell</span>
+              </div>
+              {terminalError ? (
+                <TerminalFallback vpsIp={vpsIp} />
+              ) : (
+                <iframe
+                  key={terminalRetry}
+                  src={terminalUrl}
+                  className="h-[500px] w-full border-0 md:h-[560px]"
+                  title="Maestro Terminal"
+                  allow="clipboard-read; clipboard-write"
+                  onError={() => setTerminalError(true)}
+                />
+              )}
             </div>
-            <iframe
-              src={terminalUrl}
-              className="h-[500px] w-full border-0 md:h-[560px]"
-              title="Maestro Terminal"
-              allow="clipboard-read; clipboard-write"
-            />
           </div>
-        </div>
+        )}
 
         {/* Hosted: subscription panel */}
-        {isHosted && (
+        {isHosted && !isBanned && (
           <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 space-y-4">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-violet-400" />
@@ -278,13 +489,22 @@ export default function DashboardPage({ params }: { params: { token: string } })
           </div>
         )}
 
-        {/* Support */}
-        <p className="pb-4 text-center text-[13px] text-white/25">
-          Need help?{" "}
-          <a href="mailto:support@maestro.run" className="text-violet-400 transition-colors hover:text-violet-300">
-            support@maestro.run
-          </a>
-        </p>
+        {/* Refund + Support */}
+        <div className="flex flex-col items-center gap-2 pb-4">
+          {dashData?.refund_window_open && (
+            <RefundButton
+              token={params.token}
+              backendUrl={backendUrl}
+              eligible={dashData?.refund_eligible ?? false}
+            />
+          )}
+          <p className="text-center text-[13px] text-white/25">
+            Need help?{" "}
+            <a href="mailto:support@maestro.run" className="text-violet-400 transition-colors hover:text-violet-300">
+              support@maestro.run
+            </a>
+          </p>
+        </div>
       </main>
     </div>
   )
