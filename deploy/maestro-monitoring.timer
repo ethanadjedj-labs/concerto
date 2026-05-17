@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Maestro monitoring every hour
+Requires=maestro-monitoring.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=maestro-monitoring.service
+
+[Install]
+WantedBy=timers.target
