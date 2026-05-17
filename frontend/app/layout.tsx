@@ -17,27 +17,124 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Concerto — Remote Workshop for Claude Code Agents",
-  description:
-    "Pilot Claude Code workers from your browser. Never open a terminal. Parallel AI agents running 24/7 in your own cloud — one-time $99.",
   metadataBase: new URL("https://concerto.run"),
+  title: {
+    default: "Concerto — Remote Workshop for Claude Code Agents",
+    template: "%s — Concerto",
+  },
+  description:
+    "Pilot Claude Code agents from your browser. Parallel AI workers running 24/7 in your own cloud — no terminal required. Hosted at $39/mo or bring your own cloud for a one-time $99.",
+  keywords: [
+    "Claude Code",
+    "AI agents",
+    "remote workshop",
+    "Claude Code agents",
+    "AI automation",
+    "developer tools",
+    "parallel AI workers",
+    "cloud AI",
+  ],
   openGraph: {
     title: "Concerto — Remote Workshop for Claude Code Agents",
     description:
-      "Pilot Claude Code workers from your browser. Never open a terminal. Parallel agents 24/7, your cloud, your billing.",
-    type: "website",
+      "Pilot Claude Code agents from your browser. Parallel AI workers running 24/7 in your own cloud — no terminal required.",
     url: "https://concerto.run",
     siteName: "Concerto",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Concerto — Remote Workshop for Claude Code Agents",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Concerto — Remote Workshop for Claude Code Agents",
-    description: "Pilot Claude Code workers from your browser. One-time $99.",
+    description:
+      "Pilot Claude Code agents from your browser. Parallel AI workers 24/7, your cloud, your billing.",
+    images: ["/twitter-image"],
+    creator: "@ethanadjedj",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
+  icons: {
+    icon: "/icon",
+    apple: "/apple-icon",
+  },
+}
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://concerto.run/#organization",
+      name: "Concerto",
+      url: "https://concerto.run",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://concerto.run/icon",
+      },
+      sameAs: ["https://github.com/ethanadjedj-labs/concerto"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://concerto.run/#website",
+      url: "https://concerto.run",
+      name: "Concerto",
+      publisher: { "@id": "https://concerto.run/#organization" },
+    },
+    {
+      "@type": "Product",
+      "@id": "https://concerto.run/#product-hosted",
+      name: "Concerto Hosted",
+      description:
+        "Fully managed Claude Code agent workshop — provisioned VPS, managed updates, zero ops.",
+      url: "https://concerto.run",
+      brand: { "@id": "https://concerto.run/#organization" },
+      offers: {
+        "@type": "Offer",
+        price: "39.00",
+        priceCurrency: "USD",
+        priceSpecification: {
+          "@type": "RecurringCharge",
+          price: "39.00",
+          priceCurrency: "USD",
+          billingDuration: "P1M",
+        },
+        availability: "https://schema.org/InStock",
+        url: "https://concerto.run/#checkout-hosted",
+      },
+    },
+    {
+      "@type": "Product",
+      "@id": "https://concerto.run/#product-byoc",
+      name: "Concerto BYOC",
+      description:
+        "Bring Your Own Cloud — one-time license to run Concerto on your own DigitalOcean droplet.",
+      url: "https://concerto.run",
+      brand: { "@id": "https://concerto.run/#organization" },
+      offers: {
+        "@type": "Offer",
+        price: "99.00",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+        url: "https://concerto.run/#checkout-byoc",
+      },
+    },
+  ],
 }
 
 export default function RootLayout({
@@ -48,7 +145,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c3aed'/><circle cx='16' cy='16' r='6' fill='none' stroke='white' stroke-width='1.5'/><circle cx='16' cy='16' r='2.5' fill='white'/></svg>" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className={`${inter.className} antialiased`}>{children}</body>
     </html>

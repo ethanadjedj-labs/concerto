@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { getLegalContent } from "@/lib/legal"
 
-export const metadata: Metadata = { title: "Refund Policy" }
+export const metadata: Metadata = {
+  title: "Refund Policy",
+  description: "Concerto Refund Policy — our commitment to fair refunds on BYOC and Hosted plans.",
+  openGraph: { title: "Refund Policy — Concerto", url: "https://concerto.run/legal/refund" },
+}
 
 export default function RefundPage() {
   const html = getLegalContent("REFUND.md")

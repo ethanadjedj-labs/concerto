@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { getLegalContent } from "@/lib/legal"
 
-export const metadata: Metadata = { title: "Acceptable Use Policy" }
+export const metadata: Metadata = {
+  title: "Acceptable Use Policy",
+  description: "Concerto Acceptable Use Policy — permitted and prohibited uses of the platform.",
+  openGraph: { title: "Acceptable Use Policy — Concerto", url: "https://concerto.run/legal/aup" },
+}
 
 export default function AupPage() {
   const html = getLegalContent("AUP.md")

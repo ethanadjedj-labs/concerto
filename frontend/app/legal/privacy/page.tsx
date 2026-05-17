@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { getLegalContent } from "@/lib/legal"
 
-export const metadata: Metadata = { title: "Privacy Policy" }
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Concerto Privacy Policy — how we collect, use, and protect your data.",
+  openGraph: { title: "Privacy Policy — Concerto", url: "https://concerto.run/legal/privacy" },
+}
 
 export default function PrivacyPage() {
   const html = getLegalContent("PRIVACY.md")
