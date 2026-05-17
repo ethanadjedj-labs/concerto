@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { HeroClaudeDemo } from "@/components/HeroClaudeDemo"
+import { MobileStickyCTA } from "@/components/MobileStickyCTA"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -90,10 +91,10 @@ export default function LandingPage() {
 
       {/* ── Nav ─────────────────────────────────────────────────── */}
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-[rgba(25,25,25,0.07)] bg-[#faf9f5]/88 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <LogoMark size={22} />
-            <span className="font-medium tracking-tight text-[#191919]">Concerto</span>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-3">
+            <LogoMark size={36} />
+            <span className="text-[26px] font-medium leading-none tracking-tight text-[#191919]">Concerto</span>
           </div>
 
           <div className="flex items-center gap-5">
@@ -119,7 +120,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="pb-16 pt-36 md:pb-20 md:pt-40">
+      <section id="hero" className="pb-16 pt-36 md:pb-20 md:pt-40">
         <div className="mx-auto max-w-6xl px-6">
 
           {/* Desktop: two-column | Mobile: stacked */}
@@ -147,7 +148,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="mb-3 text-lg leading-relaxed text-[#555049]">
-                Talk to Claude. Claude runs Claude Code on a remote workspace.
+                Talk to Claude. Claude runs Claude Code on a dedicated remote workspace.
                 No terminal. No GitHub juggling. No sandbox.
               </p>
 
@@ -165,12 +166,15 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
-                <p className="text-sm text-[#8a847b]">
-                  Or{" "}
-                  <a href="#pricing" className="text-[#555049] underline underline-offset-2 hover:text-[#191919]">
-                    use your own cloud — $129 once
-                  </a>
-                </p>
+                <form action="/api/checkout?plan=pro" method="POST">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 rounded-[6px] border-[rgba(25,25,25,0.15)] px-6 text-base font-medium text-[#191919] hover:bg-[#f3efe5]"
+                  >
+                    Start with Pro — $99/month
+                  </Button>
+                </form>
               </div>
               <p className="mt-2 text-sm text-[#a09890]">
                 Not sure?{" "}
@@ -187,6 +191,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Sentinel for mobile CTA IntersectionObserver */}
+      <div id="hero-section-end" aria-hidden="true" />
 
       {/* ── Problem block ───────────────────────────────────────── */}
       <section className="px-6 py-24 bg-[#f3efe5]">
@@ -217,7 +224,7 @@ export default function LandingPage() {
               icon={<Shield className="h-5 w-5 text-[#555049]" />}
               iconBg="bg-[rgba(25,25,25,0.05)]"
               title="No more sandbox limits"
-              description="Sandboxed environments cap what Claude Code can do. Your own VPS runs real git, real tests, real deploys."
+              description="Sandboxed environments cap what Claude Code can do. Your dedicated workspace runs real git, real tests, real deploys."
             />
           </div>
         </div>
@@ -237,7 +244,7 @@ export default function LandingPage() {
               {
                 n: "01",
                 title: "Pick a plan",
-                desc: "Solo ($49/mo) or Pro ($99/mo) — we spin up your workspace. BYOC ($129 once) if you have DigitalOcean. Provisioning takes about 3 minutes.",
+                desc: "Solo ($49/mo) or Pro ($99/mo) — we provision a dedicated remote workspace for you. Takes about 3 minutes.",
               },
               {
                 n: "02",
@@ -247,7 +254,7 @@ export default function LandingPage() {
               {
                 n: "03",
                 title: "Chat normally.",
-                desc: "Claude does the rest. Tell it what to build. It writes code, runs tests, opens PRs — on your workspace.",
+                desc: "Claude does the rest. Tell it what to build. It writes code, runs it, opens PRs — on your workspace.",
               },
             ].map((step, i) => (
               <div
@@ -283,39 +290,42 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {[
               {
-                prompt: "“Refactor my auth module to JWT. Run tests. Open a PR.”",
-                result: "Concerto spawns a session, edits files, runs pytest, opens a GitHub PR. You read the result in chat.",
+                label: "Start from scratch",
+                prompt: "Make me a landing page for my coffee shop with online ordering.",
+                prose: "Claude spins up a workspace, builds the site, wires up payments, and shows it to you running. You see real code being written, then a real link you can share.",
                 delay: "reveal-d1",
-                iconBg: "bg-[rgba(204,120,92,0.10)]",
-                icon: <MessageSquare className="h-5 w-5 text-[#cc785c]" />,
               },
               {
-                prompt: "“Run a 3-hour migration script on my staging database overnight.”",
-                result: "Concerto launches it, monitors the run, kills it if stuck, and reports back when done.",
+                label: "Work on existing project",
+                prompt: "Add a contact form to my existing website (here's the GitHub link) and connect it to my email.",
+                prose: "Your repo is cloned into the workspace, the change is made and tested, then handed back to you to review before anything is committed.",
                 delay: "reveal-d2",
-                iconBg: "bg-[rgba(25,25,25,0.05)]",
-                icon: <Cloud className="h-5 w-5 text-[#555049]" />,
               },
               {
-                prompt: "“Try 3 different implementations of this feature in parallel.”",
-                result: "Concerto spawns 3 sessions side-by-side. You read each result in chat and pick the best one.",
+                label: "Long-running work",
+                prompt: "Read all 60 episodes of my podcast transcripts and write me summaries with key quotes.",
+                prose: "Long tasks that timeout in regular Claude run for hours on your workspace. You can close the tab and come back to the result.",
                 delay: "reveal-d3",
-                iconBg: "bg-[rgba(25,25,25,0.05)]",
-                icon: <Zap className="h-5 w-5 text-[#555049]" />,
               },
-            ].map(({ prompt, result, delay, iconBg, icon }) => (
+              {
+                label: "Multiple things at once",
+                prompt: "Start three things in parallel: build the prototype, draft the copy, and outline the launch plan.",
+                prose: "Concerto runs several sessions side by side. Each works independently, you watch them all from the same conversation.",
+                delay: "reveal-d4",
+              },
+            ].map(({ label, prompt, prose, delay }) => (
               <div
-                key={prompt}
+                key={label}
                 className={`reveal ${delay} rounded-lg border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)] transition-colors duration-300 hover:border-[rgba(204,120,92,0.25)]`}
               >
-                <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
-                  {icon}
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#cc785c]">{label}</p>
+                <div className="mb-4 rounded-md border border-[rgba(25,25,25,0.08)] bg-[rgba(25,25,25,0.03)] px-4 py-3">
+                  <p className="font-mono text-[13px] leading-snug text-[#555049]">&ldquo;{prompt}&rdquo;</p>
                 </div>
-                <p className="mb-3 font-mono text-[13px] leading-snug text-[#cc785c]">{prompt}</p>
-                <p className="text-sm leading-relaxed text-[#8a847b]">{result}</p>
+                <p className="text-sm leading-relaxed text-[#8a847b]">{prose}</p>
               </div>
             ))}
           </div>
@@ -333,18 +343,18 @@ export default function LandingPage() {
               Pick your plan.
             </h2>
             <p className="text-[#8a847b]">
-              Not sure? Most users start with Solo and upgrade to Pro when they hit the session limit.
+              Both plans include a dedicated workspace. Start with Solo, upgrade when you need more sessions.
             </p>
           </div>
 
-          <div className="reveal mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="reveal mx-auto grid max-w-2xl grid-cols-1 gap-6 md:grid-cols-2">
 
-                        {/* Solo */}
+            {/* Solo */}
             <div className="relative overflow-hidden rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
+              <p className="mb-1 text-sm text-[#8a847b]">Dedicated workspace, 4GB memory</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -352,9 +362,9 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "We provision the 4GB droplet",
+                  "Dedicated workspace, 4GB memory",
                   "Up to 2 parallel sessions",
-                  "30-day email support",
+                  "Email support included",
                   "Cancel anytime",
                 ].map((feature) => (
                   <CheckItem key={feature}>{feature}</CheckItem>
@@ -377,7 +387,7 @@ export default function LandingPage() {
                   <Star className="h-3 w-3 fill-current" /> Most popular
                 </span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
+              <p className="mb-1 text-sm text-[#8a847b]">Dedicated workspace, 8GB memory</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -385,9 +395,9 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "We provision the 8GB droplet",
+                  "Dedicated workspace, 8GB memory",
                   "Up to 6–8 parallel sessions",
-                  "30-day email support",
+                  "Email support included",
                   "Cancel anytime",
                 ].map((feature) => (
                   <CheckItem key={feature}>{feature}</CheckItem>
@@ -402,44 +412,12 @@ export default function LandingPage() {
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
             </div>
 
-            {/* BYOC */}
-            <div className="relative overflow-hidden rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="text-lg font-medium text-[#191919]">BYOC</span>
-                <span className="rounded bg-[rgba(25,25,25,0.05)] px-2.5 py-1 text-xs font-medium text-[#8a847b]">One-time</span>
-              </div>
-              <p className="mb-1 text-sm text-[#8a847b]">Bring your DigitalOcean account</p>
-              <div className="mt-5 flex items-baseline gap-2">
-                <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$129</span>
-                <span className="text-sm text-[#8a847b]">once</span>
-              </div>
-              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-              <ul className="space-y-3.5">
-                {[
-                  "Your DigitalOcean account",
-                  "As many sessions as your droplet handles",
-                  "30-day email support",
-                  "One-time, no subscription",
-                ].map((feature) => (
-                  <CheckItem key={feature}>{feature}</CheckItem>
-                ))}
-              </ul>
-              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-              <form action="/api/checkout?plan=byoc" method="POST">
-                <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
-                  Start with BYOC
-                </Button>
-              </form>
-              <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · 30-day refund policy</p>
-            </div>
-
           </div>
 
-          <div className="reveal mx-auto mt-8 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4">
-            <p className="text-sm leading-relaxed text-[#8a847b]">
-              Not sure which? <span className="text-[#555049]">Most users start with Solo.</span> Upgrade to Pro for more parallel sessions. BYOC if you already have DigitalOcean.
-            </p>
-          </div>
+          <p className="reveal mt-8 text-center text-sm font-medium text-[#555049]">
+            We recommend <strong>Claude Max</strong> — Claude Pro hits token limits fast with agentic work.
+          </p>
+
           <div className="reveal mx-auto mt-4 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4 text-center">
             <p className="text-sm text-[#8a847b]">
               Real human email support in every plan. <span className="text-[#555049]">No community forums.</span> Write to support@concerto.run — reply within 24 hours.
@@ -468,48 +446,28 @@ export default function LandingPage() {
           <Accordion type="single" collapsible className="reveal space-y-1">
             {[
               {
-                q: "Do I need Claude Pro or Max?",
-                a: "Yes. Concerto uses your Anthropic subscription via the MCP connector. Pro ($20/mo) or Max ($200/mo) both work. You keep paying Anthropic directly — Concerto is a separate charge.",
+                q: "What is Concerto?",
+                a: "A dedicated remote workspace where Claude Code runs your projects. You talk to Claude in chat (or via voice), Claude spawns sessions on your workspace to do the actual work — write code, run it, fetch files, anything Claude Code can do. You see the progress in your conversation.",
               },
               {
-                q: "Which plan should I pick?",
-                a: "Most users start with Solo ($49/mo). If you often run 3+ parallel sessions, upgrade to Pro ($99/mo). Choose BYOC ($129 once) if you already have DigitalOcean.",
+                q: "Do I need to know how to code?",
+                a: "No. Concerto is most useful for people who have a project in mind but don't want to set up a development environment. You describe what you want, Claude builds it.",
               },
               {
-                q: "Can I upgrade from Solo to Pro?",
-                a: "Yes. Email support@concerto.run and we'll migrate your droplet to 8GB — no downtime, prorated billing.",
+                q: "Should I use Claude Pro or Max with Concerto?",
+                a: "We strongly recommend Max. Claude Pro's token limits get exhausted quickly with the kind of agentic work Concerto enables. Max ($200/month) gives you 5× the usage. Pro works for light experimentation but you'll hit walls fast.",
               },
               {
-                q: "What if I already use DigitalOcean?",
-                a: "Pick BYOC. You bring your DO account, we set up the workspace on a droplet in it, and you pay DigitalOcean directly. One-time $129 setup fee to Concerto.",
+                q: "Is my workspace dedicated to me?",
+                a: "Yes. Every Concerto subscription is a dedicated remote workspace isolated from other customers. Your code, files, and history stay yours.",
+              },
+              {
+                q: "What can I run on it?",
+                a: "Anything Claude Code can do: build websites, scripts, prototypes, automations, data processing, document generation, file conversions. Long tasks run for hours. Parallel sessions run several things at once.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. Solo and Pro: cancel anytime, workspace is destroyed after a 72-hour data grace period. BYOC is a one-time purchase — no subscription to cancel, and the droplet stays in your account.",
-              },
-              {
-                q: "Where is my code?",
-                a: "On your workspace VPS. With Solo/Pro, that's a VPS we provision on our account but dedicate entirely to you. With BYOC, it's in your own DigitalOcean account. We never see or store your code.",
-              },
-              {
-                q: "Where are my Claude conversations?",
-                a: "In your Claude chat history, with Anthropic. Concerto only receives tool calls — it never sees the conversation itself.",
-              },
-              {
-                q: "What can Claude Code do via Concerto that it can't do otherwise?",
-                a: "Run multi-hour tasks without you watching, work on real repos with real git history, deploy to staging, run actual test suites, and run 3–5 sessions in parallel. Claude Code's built-in sandbox can't do any of this.",
-              },
-              {
-                q: "How fast is '5 minutes setup'?",
-                a: "About 3 minutes for provisioning to complete, then about 2 minutes to copy-paste the connector config into claude.ai. Total: typically 5 minutes.",
-              },
-              {
-                q: "What is the refund policy?",
-                a: "14-day full refund if provisioning fails on our end. After successful provisioning, no refund — you've used the service (Solo/Pro) or own the setup (BYOC).",
-              },
-              {
-                q: "Who built this?",
-                a: "Solo operator. No funding, no VCs, no telemetry beyond what's needed to provision your workspace. View the project on GitHub.",
+                a: "Yes, instantly. Cancel from your dashboard, workspace gets cleaned up at the end of the billing period. No questions, no contracts.",
               },
             ].map(({ q, a }) => (
               <AccordionItem key={q} value={q} className="border-b border-[rgba(25,25,25,0.08)]">
@@ -547,11 +505,6 @@ export default function LandingPage() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
-            <form action="/api/checkout?plan=byoc" method="POST">
-              <Button type="submit" size="lg" variant="outline" className="h-12 rounded-[6px] border-[rgba(250,249,245,0.25)] px-8 text-base font-medium text-[#faf9f5] hover:bg-white/10">
-                BYOC ($129 once)
-              </Button>
-            </form>
           </div>
         </div>
       </section>
@@ -587,16 +540,7 @@ export default function LandingPage() {
       </footer>
 
       {/* ── Mobile sticky CTA (hidden on md+) ───────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgba(25,25,25,0.10)] bg-[#faf9f5]/95 px-4 py-3 backdrop-blur-xl [padding-bottom:max(12px,env(safe-area-inset-bottom))] md:hidden">
-        <form action="/api/checkout?plan=solo" method="POST">
-          <Button
-            type="submit"
-            className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
-          >
-            Start with Solo — $49/mo
-          </Button>
-        </form>
-      </div>
+      <MobileStickyCTA />
     </div>
   )
 }

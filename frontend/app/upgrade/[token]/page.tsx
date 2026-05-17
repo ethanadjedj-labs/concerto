@@ -35,9 +35,8 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
       .catch(() => {})
   }, [backendUrl, params.token])
 
-  // Pre-fill trial token so the checkout webhook can upgrade the existing row
-  const checkoutHosted = `/api/checkout?plan=hosted&trial_token=${params.token}`
-  const checkoutByoc   = `/api/checkout?plan=byoc&trial_token=${params.token}`
+  const checkoutSolo = `/api/checkout?plan=solo&trial_token=${params.token}`
+  const checkoutPro  = `/api/checkout?plan=pro&trial_token=${params.token}`
 
   const expired = status?.status === "trial_expired"
 
@@ -79,79 +78,74 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
 
         {/* Pricing */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Hosted — recommended */}
+          {/* Solo — recommended */}
           <div className="relative overflow-hidden rounded-2xl border border-[rgba(217,119,87,0.35)] bg-[#1a161c] p-8 shadow-[0_0_0_1px_rgba(217,119,87,0.15),0_8px_40px_rgba(217,119,87,0.10)]">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(217,119,87,0.55)] to-transparent" />
             <div className="relative">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-lg font-medium text-[#f5f0e9]">Hosted</span>
+                <span className="text-lg font-medium text-[#f5f0e9]">Solo</span>
                 <Badge className="border-[rgba(217,119,87,0.35)] bg-[rgba(217,119,87,0.12)] text-xs text-[#e48a62]">
                   Recommended
                 </Badge>
               </div>
-              <p className="mb-1 text-sm text-[#877c70]">We host the workspace</p>
+              <p className="mb-1 text-sm text-[#877c70]">Dedicated workspace, 4GB memory</p>
               <div className="mt-5 flex items-baseline gap-2">
-                <span className="font-display text-5xl font-[400] tracking-tight text-[#f5f0e9]">$39</span>
+                <span className="font-display text-5xl font-[400] tracking-tight text-[#f5f0e9]">$49</span>
                 <span className="text-sm text-[#877c70]">/month</span>
               </div>
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
               <ul className="space-y-3">
                 {[
-                  "Zero setup — we provision the VPS",
-                  "3–5 parallel Claude Code sessions",
+                  "Dedicated workspace, 4GB memory",
+                  "Up to 2 parallel sessions",
+                  "Email support included",
                   "Cancel anytime",
-                  "30-day support",
                 ].map((f) => <CheckItem key={f}>{f}</CheckItem>)}
               </ul>
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
-              <form action={checkoutHosted} method="POST">
+              <form action={checkoutSolo} method="POST">
                 <Button type="submit" className="h-12 w-full rounded-xl text-base font-medium">
-                  Start Hosted <ArrowRight className="ml-2 h-4 w-4" />
+                  Start with Solo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#877c70]">Secure via Stripe · Cancel anytime</p>
             </div>
           </div>
 
-          {/* BYOC */}
+          {/* Pro */}
           <div className="relative overflow-hidden rounded-2xl border border-[rgba(245,240,233,0.08)] bg-[#1a161c] p-8">
             <div className="relative">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-lg font-medium text-[#f5f0e9]">BYOC</span>
-                <Badge className="border-[rgba(245,240,233,0.12)] bg-[rgba(245,240,233,0.07)] text-xs text-[#877c70]">
-                  One-time
-                </Badge>
+                <span className="text-lg font-medium text-[#f5f0e9]">Pro</span>
               </div>
-              <p className="mb-1 text-sm text-[#877c70]">Bring your DigitalOcean account</p>
+              <p className="mb-1 text-sm text-[#877c70]">Dedicated workspace, 8GB memory</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#f5f0e9]">$99</span>
-                <span className="text-sm text-[#877c70]">once</span>
+                <span className="text-sm text-[#877c70]">/month</span>
               </div>
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
               <ul className="space-y-3">
                 {[
-                  "Workspace lives in your DigitalOcean account",
-                  "You pay DO directly (~$24/month)",
-                  "Full control over the VPS",
-                  "30-day support",
+                  "Dedicated workspace, 8GB memory",
+                  "Up to 6–8 parallel sessions",
+                  "Email support included",
+                  "Cancel anytime",
                 ].map((f) => <CheckItem key={f}>{f}</CheckItem>)}
               </ul>
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
-              <form action={checkoutByoc} method="POST">
+              <form action={checkoutPro} method="POST">
                 <Button type="submit" variant="outline" className="h-12 w-full rounded-xl text-base font-medium">
-                  Start BYOC
+                  Start with Pro
                 </Button>
               </form>
-              <p className="mt-3 text-center text-xs text-[#877c70]">Secure via Stripe · 30-day refund</p>
+              <p className="mt-3 text-center text-xs text-[#877c70]">Secure via Stripe · Cancel anytime</p>
             </div>
           </div>
         </div>
 
         <div className="mt-8 rounded-xl border border-[rgba(245,240,233,0.07)] bg-[#1a161c] px-6 py-4 text-center">
           <p className="text-sm text-[#877c70]">
-            Not sure?{" "}
-            <span className="text-[#c4b8aa]">→ Pick Hosted.</span>{" "}
-            Zero setup, cancel anytime.
+            We recommend <strong className="text-[#c4b8aa]">Claude Max</strong> — Pro&apos;s token limits run out fast with agentic work.
           </p>
         </div>
       </div>

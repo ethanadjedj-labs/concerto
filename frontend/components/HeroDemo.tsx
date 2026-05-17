@@ -130,7 +130,7 @@ export function HeroDemo() {
 
   return (
     <div
-      aria-label="Concerto demo: Claude Code agent running on your VPS"
+      aria-label="Concerto demo: Claude Code agent running on your workspace"
       role="img"
       className="relative mx-auto w-full max-w-2xl select-none"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
@@ -282,7 +282,7 @@ export function HeroDemo() {
                   className="text-xs font-mono"
                   style={{ color: "#475569" }}
                 >
-                  concerto — sess_abc123 — droplet-nyc1
+                  concerto — sess_abc123 — workspace-nyc
                 </span>
               </div>
 
@@ -355,7 +355,7 @@ export function HeroDemo() {
 function StaticFallback() {
   return (
     <div
-      aria-label="Concerto: Claude Code agent running on your VPS"
+      aria-label="Concerto: Claude Code agent running on your workspace"
       role="img"
       className="relative mx-auto w-full max-w-2xl"
     >
@@ -371,7 +371,7 @@ function StaticFallback() {
           style={{ background: "#080b10", color: "#94a3b8" }}
         >
           <div style={{ color: "#22d3ee" }}>
-            [concerto] spawning session sess_abc123 on droplet-nyc1
+            [concerto] spawning session sess_abc123 on workspace-nyc
           </div>
           <div style={{ color: "#facc15" }}>[claude] reading src/auth/...</div>
           <div style={{ color: "#facc15" }}>[claude] writing src/auth/jwt.py</div>

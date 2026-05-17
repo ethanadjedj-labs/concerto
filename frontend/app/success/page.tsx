@@ -30,7 +30,7 @@ export default function SuccessPage() {
                 <div>
                   <p className="text-[14px] font-medium text-white">Check your email</p>
                   <p className="mt-1 text-[13px] leading-relaxed text-white/40">
-                    Your setup link has been sent. It contains your unique token to provision your Concerto droplet.
+                    Your setup link has been sent. It contains your unique token to provision your Concerto workspace.
                   </p>
                 </div>
               </div>
@@ -44,8 +44,8 @@ export default function SuccessPage() {
               <ol className="space-y-2.5">
                 {[
                   "Open the setup link in your email",
-                  "Enter your DigitalOcean API key",
-                  "Concerto provisions your droplet (~3 min)",
+                  "Pick your region",
+                  "Concerto sets up your workspace (~3 min)",
                   "Connect to claude.ai in 3 steps",
                 ].map((step, i) => (
                   <li key={i} className="flex items-center gap-3 text-[13px]">
