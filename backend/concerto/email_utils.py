@@ -1,23 +1,16 @@
 import os
 
-import httpx
+from concerto.transactional import get_client
 
-_RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-_EMAIL_FROM = os.getenv("CONCERTO_EMAIL_FROM", os.getenv("EMAIL_FROM", "hello@concerto.run"))
 _OPERATOR_EMAIL = os.getenv("OPERATOR_EMAIL", "adjedjethan@gmail.com")
 
 
-async def send_email(to: str, subject: str, html: str) -> bool:
-    if not _RESEND_API_KEY or not to:
+async def send_email(to: str, subject: str, html: str, text: str | None = None) -> bool:
+    if not to:
         return False
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {_RESEND_API_KEY}"},
-                json={"from": _EMAIL_FROM, "to": [to], "subject": subject, "html": html},
-            )
-            return resp.status_code in (200, 201)
+        await get_client().send_async(to, subject, html, text)
+        return True
     except Exception:
         return False
 
@@ -27,4 +20,5 @@ async def send_operator_alert(subject: str, body: str) -> bool:
         _OPERATOR_EMAIL,
         f"[Concerto Alert] {subject}",
         f"<pre style='font-family:monospace;white-space:pre-wrap'>{body}</pre>",
+        text=body,
     )
