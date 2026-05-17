@@ -1,5 +1,5 @@
+import type { ReactNode } from "react"
 import Link from "next/link"
-import { HeroOrbital } from "@/components/HeroOrbital"
 import { HeroClaudeDemo } from "@/components/HeroClaudeDemo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,39 +23,59 @@ import {
   MessageSquare,
 } from "lucide-react"
 
+/* ─── Logo mark — works on cream background ──────────────────── */
+
+function LogoMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 200 200" fill="none" aria-hidden="true">
+      <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#cc785c" strokeWidth={13} strokeLinecap="round"/>
+      <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#2a2925" strokeWidth={13} strokeLinecap="round" opacity={0.55}/>
+      <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#2a2925" strokeWidth={13} strokeLinecap="round" opacity={0.35}/>
+      <circle cx="115.56" cy="115.56" r={14} fill="#cc785c"/>
+      <circle cx="61.36"  cy="89.65"  r={14} fill="#2a2925" opacity={0.55}/>
+      <circle cx="150.23" cy="71.00"  r={14} fill="#2a2925" opacity={0.35}/>
+      <circle cx="100"    cy="100"    r={20} fill="#191919"/>
+    </svg>
+  )
+}
+
 /* ─── Feature card ────────────────────────────────────────────── */
 
-interface FeatureCardProps {
-  icon: React.ReactNode
+function FeatureCard({
+  icon,
+  iconBg,
+  title,
+  description,
+  revealDelay,
+}: {
+  icon: ReactNode
   iconBg: string
   title: string
   description: string
   revealDelay?: string
-}
-
-function FeatureCard({ icon, iconBg, title, description, revealDelay }: FeatureCardProps) {
+}) {
   return (
     <div
-      className={`reveal ${revealDelay ?? ""} group rounded-xl border border-[rgba(245,240,233,0.08)] bg-[#1a161c] p-8 shadow-[inset_0_1px_0_rgba(245,240,233,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgba(217,119,87,0.2)] hover:bg-[#221c25]`}
+      className={`reveal ${revealDelay ?? ""} rounded-lg border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)] transition-colors duration-300 hover:border-[rgba(204,120,92,0.25)]`}
     >
       <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
         {icon}
       </div>
-      <h3 className="mb-2.5 text-[15px] font-medium tracking-tight text-[#f5f0e9]">{title}</h3>
-      <p className="text-sm leading-relaxed text-[#877c70]">{description}</p>
+      <h3 className="mb-2.5 text-[15px] font-medium tracking-tight text-[#191919]">{title}</h3>
+      <p className="text-sm leading-relaxed text-[#8a847b]">{description}</p>
     </div>
   )
 }
 
 /* ─── Pricing check item ──────────────────────────────────────── */
 
-function CheckItem({ children }: { children: React.ReactNode }) {
+function CheckItem({ children }: { children: ReactNode }) {
   return (
     <li className="flex items-start gap-3 text-sm">
-      <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[rgba(217,119,87,0.15)]">
-        <Check className="h-3 w-3 text-[#d97757]" />
+      <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[rgba(204,120,92,0.12)]">
+        <Check className="h-3 w-3 text-[#cc785c]" />
       </span>
-      <span className="text-[#c4b8aa]">{children}</span>
+      <span className="text-[#555049]">{children}</span>
     </li>
   )
 }
@@ -64,39 +84,31 @@ function CheckItem({ children }: { children: React.ReactNode }) {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0f0d10] text-[#f5f0e9]">
+    <div className="min-h-screen bg-[#faf9f5] text-[#191919]">
       <ScrollReveal />
 
       {/* ── Nav ─────────────────────────────────────────────────── */}
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-[rgba(245,240,233,0.05)] bg-[#0f0d10]/80 backdrop-blur-xl">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-[rgba(25,25,25,0.07)] bg-[#faf9f5]/88 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <svg width="22" height="22" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-              <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" strokeWidth={13} strokeLinecap="round"/>
-              <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#b483ff" strokeWidth={13} strokeLinecap="round"/>
-              <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" strokeWidth={13} strokeLinecap="round"/>
-              <circle cx="115.56" cy="115.56" r={16} fill="#d97757"/>
-              <circle cx="61.36"  cy="89.65"  r={16} fill="#b483ff"/>
-              <circle cx="150.23" cy="71.00"  r={16} fill="#8b7fff"/>
-              <circle cx="100"    cy="100"    r={22} fill="#f5f0e9"/>
-            </svg>
-            <span className="font-medium tracking-tight text-[#f5f0e9]">Concerto</span>
+            <LogoMark size={22} />
+            <span className="font-medium tracking-tight text-[#191919]">Concerto</span>
           </div>
 
           <div className="flex items-center gap-5">
-            <Link href="#how-it-works" className="hidden text-sm text-[#877c70] transition-colors hover:text-[#f5f0e9] md:block">
+            <Link href="#how-it-works" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               How it works
             </Link>
-            <Link href="#pricing" className="hidden text-sm text-[#877c70] transition-colors hover:text-[#f5f0e9] md:block">
+            <Link href="#pricing" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               Pricing
             </Link>
-            <Link href="#faq" className="hidden text-sm text-[#877c70] transition-colors hover:text-[#f5f0e9] md:block">
+            <Link href="#faq" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               FAQ
             </Link>
             <form action="/api/checkout?plan=hosted" method="POST">
               <Button
                 size="sm"
-                className="h-8 rounded-md px-4 text-xs"
+                className="h-8 rounded-[6px] bg-[#cc785c] px-4 text-xs font-medium text-[#faf9f5] hover:bg-[#b86747]"
               >
                 Start in 5 minutes
               </Button>
@@ -105,70 +117,75 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pb-16 pt-36 md:pb-24 md:pt-40">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <HeroOrbital />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(139,127,255,0.08)_0%,transparent_70%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0f0d10]/50 to-[#0f0d10]" />
-        </div>
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <section className="pb-16 pt-36 md:pb-20 md:pt-40">
+        <div className="mx-auto max-w-6xl px-6">
 
-        <div className="relative mx-auto max-w-4xl px-6 text-center">
-          <div className="animate-fade-up mb-6 flex justify-center">
-            <Badge
-              variant="outline"
-              className="border-[rgba(217,119,87,0.30)] bg-[rgba(217,119,87,0.08)] px-4 py-1.5 text-xs font-medium text-[#e48a62]"
-            >
-              <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#d97757] animate-dot-blink" />
-              Works with Claude Pro and Max
-            </Badge>
-          </div>
+          {/* Desktop: two-column | Mobile: stacked */}
+          <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16">
 
-          <h1 className="animate-fade-up delay-100 font-display mb-6 text-5xl font-[400] leading-[1.04] tracking-[-0.02em] sm:text-6xl md:text-7xl">
-            Run Claude Code{" "}
-            <span className="bg-gradient-to-r from-[#d97757] via-[#e09070] to-[#8b7fff] bg-clip-text text-transparent">
-              from Claude chat.
-            </span>
-          </h1>
+            {/* Left column — ~45% width on desktop */}
+            <div className="animate-fade-up flex-shrink-0 lg:w-[44%]">
 
-          <p className="animate-fade-up delay-200 mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-[#c4b8aa] md:text-xl">
-            Talk to Claude. Claude runs Claude Code on a remote workspace.
-            No terminal. No GitHub juggling. No sandbox.
-          </p>
+              {/* Editorial peach line — book/manifesto mark */}
+              <div className="mb-8 h-px w-[60px] bg-[#cc785c]" />
 
-          <p className="animate-fade-up delay-200 mb-8 text-sm text-[#877c70]">
-            Works with your Claude Pro or Max subscription.
-          </p>
+              <div className="mb-5 flex">
+                <Badge
+                  variant="outline"
+                  className="border-[rgba(204,120,92,0.30)] bg-[rgba(204,120,92,0.07)] px-4 py-1.5 text-xs font-medium text-[#b86747]"
+                >
+                  <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#cc785c] animate-dot-blink" />
+                  Works with Claude Pro and Max
+                </Badge>
+              </div>
 
-          <div className="animate-fade-up delay-300 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <form action="/api/checkout?plan=hosted" method="POST">
-              <Button
-                size="lg"
-                className="h-12 rounded-md px-8 text-base font-medium"
-              >
-                Start in 5 minutes — $39/month
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
-            <p className="text-sm text-[#877c70]">
-              Or{" "}
-              <a href="#pricing" className="text-[#c4b8aa] underline underline-offset-2 hover:text-[#f5f0e9]">
-                use your own cloud — $99 once
-              </a>
-            </p>
-          </div>
+              <h1 className="font-display mb-5 text-[2.75rem] font-[450] leading-[1.06] tracking-[-0.02em] text-[#191919] sm:text-5xl md:text-[3.25rem]">
+                Run Claude Code{" "}
+                <span className="text-[#cc785c]">from Claude chat.</span>
+              </h1>
 
-          <div className="animate-fade-up delay-500 mt-16 px-2">
-            <HeroClaudeDemo />
+              <p className="mb-3 text-lg leading-relaxed text-[#555049]">
+                Talk to Claude. Claude runs Claude Code on a remote workspace.
+                No terminal. No GitHub juggling. No sandbox.
+              </p>
+
+              <p className="mb-10 text-sm text-[#8a847b]">
+                Works with your Claude Pro or Max subscription.
+              </p>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <form action="/api/checkout?plan=hosted" method="POST">
+                  <Button
+                    size="lg"
+                    className="h-12 rounded-[6px] bg-[#cc785c] px-8 text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
+                  >
+                    Start in 5 minutes — $39/month
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </form>
+                <p className="text-sm text-[#8a847b]">
+                  Or{" "}
+                  <a href="#pricing" className="text-[#555049] underline underline-offset-2 hover:text-[#191919]">
+                    use your own cloud — $99 once
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            {/* Right column — flex-1 (~55%) on desktop */}
+            <div className="animate-fade-up delay-200 min-w-0 flex-1">
+              <HeroClaudeDemo />
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Problem block ───────────────────────────────────────── */}
-      <section className="px-6 py-24">
+      <section className="px-6 py-24 bg-[#f3efe5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
-            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight md:text-4xl">
+            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
               Claude Code is powerful. Running it is not.
             </h2>
           </div>
@@ -176,22 +193,22 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <FeatureCard
               revealDelay="reveal-d1"
-              icon={<Terminal className="h-5 w-5 text-orange-400" />}
-              iconBg="bg-orange-500/15"
+              icon={<Terminal className="h-5 w-5 text-[#cc785c]" />}
+              iconBg="bg-[rgba(204,120,92,0.10)]"
               title="No more terminal"
               description="Claude Code lives in a CLI. Forget that. Concerto puts it inside Claude chat — you type, Claude acts."
             />
             <FeatureCard
               revealDelay="reveal-d2"
-              icon={<GitBranch className="h-5 w-5 text-blue-400" />}
-              iconBg="bg-blue-500/15"
+              icon={<GitBranch className="h-5 w-5 text-[#555049]" />}
+              iconBg="bg-[rgba(25,25,25,0.05)]"
               title="No more GitHub juggling"
               description="Cloning, branches, PRs handled on the remote workspace. You stay in Claude chat the whole time."
             />
             <FeatureCard
               revealDelay="reveal-d3"
-              icon={<Shield className="h-5 w-5 text-emerald-400" />}
-              iconBg="bg-emerald-500/15"
+              icon={<Shield className="h-5 w-5 text-[#555049]" />}
+              iconBg="bg-[rgba(25,25,25,0.05)]"
               title="No more sandbox limits"
               description="Sandboxed environments cap what Claude Code can do. Your own VPS runs real git, real tests, real deploys."
             />
@@ -200,10 +217,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ────────────────────────────────────────── */}
-      <section id="how-it-works" className="px-6 py-24">
+      <section id="how-it-works" className="px-6 py-24 bg-[#faf9f5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
-            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight md:text-4xl">
+            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
               Three steps, then you&apos;re done.
             </h2>
           </div>
@@ -226,14 +243,17 @@ export default function LandingPage() {
                 desc: "Claude does the rest. Tell it what to build. It writes code, runs tests, opens PRs — on your workspace.",
               },
             ].map((step, i) => (
-              <div key={step.n} className={`reveal reveal-d${i + 1} relative rounded-xl border border-[rgba(245,240,233,0.08)] bg-[#1a161c] p-8 shadow-[inset_0_1px_0_rgba(245,240,233,0.06)]`}>
-                <div className="mb-4 font-mono text-[11px] font-medium tracking-widest text-[#d97757]">{step.n}</div>
-                <h3 className="mb-2 text-[15px] font-medium text-[#f5f0e9]">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-[#877c70]">{step.desc}</p>
+              <div
+                key={step.n}
+                className={`reveal reveal-d${i + 1} relative rounded-lg border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]`}
+              >
+                <div className="mb-4 font-mono text-[11px] font-medium tracking-widest text-[#cc785c]">{step.n}</div>
+                <h3 className="mb-2 text-[15px] font-medium text-[#191919]">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-[#8a847b]">{step.desc}</p>
                 {i < 2 && (
                   <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-1/2 sm:block">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(245,240,233,0.08)] bg-[#0f0d10]">
-                      <ArrowRight className="h-3 w-3 text-[#877c70]" />
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(25,25,25,0.10)] bg-[#faf9f5]">
+                      <ArrowRight className="h-3 w-3 text-[#8a847b]" />
                     </div>
                   </div>
                 )}
@@ -241,17 +261,17 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="reveal mt-6 text-center text-sm text-[#877c70]">
+          <p className="reveal mt-6 text-center text-sm text-[#8a847b]">
             Average setup time: 5 minutes. Most of it is automatic.
           </p>
         </div>
       </section>
 
       {/* ── What you'll actually do ──────────────────────────────── */}
-      <section className="px-6 py-24">
+      <section className="px-6 py-24 bg-[#f3efe5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
-            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight md:text-4xl">
+            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
               What you&apos;ll actually do.
             </h2>
           </div>
@@ -262,33 +282,33 @@ export default function LandingPage() {
                 prompt: "“Refactor my auth module to JWT. Run tests. Open a PR.”",
                 result: "Concerto spawns a session, edits files, runs pytest, opens a GitHub PR. You read the result in chat.",
                 delay: "reveal-d1",
-                iconBg: "bg-[rgba(139,127,255,0.12)]",
-                icon: <MessageSquare className="h-5 w-5 text-[#8b7fff]" />,
+                iconBg: "bg-[rgba(204,120,92,0.10)]",
+                icon: <MessageSquare className="h-5 w-5 text-[#cc785c]" />,
               },
               {
                 prompt: "“Run a 3-hour migration script on my staging database overnight.”",
                 result: "Concerto launches it, monitors the run, kills it if stuck, and reports back when done.",
                 delay: "reveal-d2",
-                iconBg: "bg-blue-500/15",
-                icon: <Cloud className="h-5 w-5 text-blue-400" />,
+                iconBg: "bg-[rgba(25,25,25,0.05)]",
+                icon: <Cloud className="h-5 w-5 text-[#555049]" />,
               },
               {
                 prompt: "“Try 3 different implementations of this feature in parallel.”",
                 result: "Concerto spawns 3 sessions side-by-side. You read each result in chat and pick the best one.",
                 delay: "reveal-d3",
-                iconBg: "bg-emerald-500/15",
-                icon: <Zap className="h-5 w-5 text-emerald-400" />,
+                iconBg: "bg-[rgba(25,25,25,0.05)]",
+                icon: <Zap className="h-5 w-5 text-[#555049]" />,
               },
             ].map(({ prompt, result, delay, iconBg, icon }) => (
               <div
                 key={prompt}
-                className={`reveal ${delay} group rounded-xl border border-[rgba(245,240,233,0.08)] bg-[#1a161c] p-8 shadow-[inset_0_1px_0_rgba(245,240,233,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgba(217,119,87,0.2)] hover:bg-[#221c25]`}
+                className={`reveal ${delay} rounded-lg border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)] transition-colors duration-300 hover:border-[rgba(204,120,92,0.25)]`}
               >
                 <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
                   {icon}
                 </div>
-                <p className="mb-3 font-mono text-[13px] leading-snug text-[#d97757]">{prompt}</p>
-                <p className="text-sm leading-relaxed text-[#877c70]">{result}</p>
+                <p className="mb-3 font-mono text-[13px] leading-snug text-[#cc785c]">{prompt}</p>
+                <p className="text-sm leading-relaxed text-[#8a847b]">{result}</p>
               </div>
             ))}
           </div>
@@ -299,36 +319,34 @@ export default function LandingPage() {
       <TrustSection />
 
       {/* ── Pricing ─────────────────────────────────────────────── */}
-      <section id="pricing" className="px-6 py-24">
+      <section id="pricing" className="px-6 py-24 bg-[#faf9f5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
-            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight md:text-4xl">
+            <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
               Two ways to start.
             </h2>
-            <p className="text-[#877c70]">
+            <p className="text-[#8a847b]">
               Don&apos;t have a cloud account? Pick Hosted. We handle everything.
             </p>
           </div>
 
           <div className="reveal mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
 
-            {/* Hosted — featured */}
-            <div className="relative overflow-hidden rounded-2xl border border-[rgba(217,119,87,0.35)] bg-[#1a161c] p-8 shadow-[0_0_0_1px_rgba(217,119,87,0.15),0_8px_40px_rgba(217,119,87,0.10)]">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(217,119,87,0.55)] to-transparent" />
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(217,119,87,0.08)_0%,transparent_70%)]" />
+            {/* Hosted — featured with peach border */}
+            <div className="relative overflow-hidden rounded-xl border border-[rgba(204,120,92,0.45)] bg-white p-8 shadow-[0_2px_12px_rgba(204,120,92,0.08)]">
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-medium text-[#f5f0e9]">Hosted</span>
-                  <Badge className="border-[rgba(217,119,87,0.35)] bg-[rgba(217,119,87,0.12)] text-xs text-[#e48a62]">
+                  <span className="text-lg font-medium text-[#191919]">Hosted</span>
+                  <span className="rounded bg-[rgba(204,120,92,0.10)] px-2.5 py-1 text-xs font-medium text-[#cc785c]">
                     Most popular
-                  </Badge>
+                  </span>
                 </div>
-                <p className="mb-1 text-sm text-[#877c70]">We host the workspace</p>
+                <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
                 <div className="mt-5 flex items-baseline gap-2">
-                  <span className="font-display text-6xl font-[400] tracking-tight text-[#f5f0e9]">$39</span>
-                  <span className="text-sm text-[#877c70]">/month</span>
+                  <span className="font-display text-6xl font-[400] tracking-tight text-[#191919]">$39</span>
+                  <span className="text-sm text-[#8a847b]">/month</span>
                 </div>
-                <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
+                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
                 <ul className="space-y-3.5">
                   {[
                     "Zero setup. We provision the VPS.",
@@ -339,36 +357,36 @@ export default function LandingPage() {
                     <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
                 </ul>
-                <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
+                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
                 <form action="/api/checkout?plan=hosted" method="POST">
                   <Button
                     type="submit"
-                    className="h-12 w-full rounded-md text-base font-medium"
+                    className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
                   >
                     Start with Hosted
                   </Button>
                 </form>
-                <p className="mt-3 text-center text-xs text-[#877c70]">
+                <p className="mt-3 text-center text-xs text-[#8a847b]">
                   Secure payment via Stripe · Cancel anytime
                 </p>
               </div>
             </div>
 
             {/* BYOC */}
-            <div className="relative overflow-hidden rounded-2xl border border-[rgba(245,240,233,0.08)] bg-[#1a161c] p-8 shadow-[inset_0_1px_0_rgba(245,240,233,0.05)]">
+            <div className="relative overflow-hidden rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-medium text-[#f5f0e9]">BYOC</span>
-                  <Badge className="border-[rgba(245,240,233,0.12)] bg-[rgba(245,240,233,0.07)] text-xs text-[#877c70]">
+                  <span className="text-lg font-medium text-[#191919]">BYOC</span>
+                  <span className="rounded bg-[rgba(25,25,25,0.05)] px-2.5 py-1 text-xs font-medium text-[#8a847b]">
                     One-time
-                  </Badge>
+                  </span>
                 </div>
-                <p className="mb-1 text-sm text-[#877c70]">Bring your DigitalOcean account</p>
+                <p className="mb-1 text-sm text-[#8a847b]">Bring your DigitalOcean account</p>
                 <div className="mt-5 flex items-baseline gap-2">
-                  <span className="font-display text-6xl font-[400] tracking-tight text-[#f5f0e9]">$99</span>
-                  <span className="text-sm text-[#877c70]">once</span>
+                  <span className="font-display text-6xl font-[400] tracking-tight text-[#191919]">$99</span>
+                  <span className="text-sm text-[#8a847b]">once</span>
                 </div>
-                <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
+                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
                 <ul className="space-y-3.5">
                   {[
                     "Workspace lives in your DigitalOcean account",
@@ -379,17 +397,17 @@ export default function LandingPage() {
                     <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
                 </ul>
-                <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
+                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
                 <form action="/api/checkout?plan=byoc" method="POST">
                   <Button
                     type="submit"
                     variant="outline"
-                    className="h-12 w-full rounded-md text-base font-medium"
+                    className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]"
                   >
                     Start with BYOC
                   </Button>
                 </form>
-                <p className="mt-3 text-center text-xs text-[#877c70]">
+                <p className="mt-3 text-center text-xs text-[#8a847b]">
                   Secure payment via Stripe · 30-day refund policy
                 </p>
               </div>
@@ -397,10 +415,10 @@ export default function LandingPage() {
 
           </div>
 
-          <div className="reveal mx-auto mt-8 max-w-xl rounded-xl border border-[rgba(245,240,233,0.07)] bg-[#1a161c] px-6 py-4">
-            <p className="text-sm leading-relaxed text-[#877c70]">
+          <div className="reveal mx-auto mt-8 max-w-xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4">
+            <p className="text-sm leading-relaxed text-[#8a847b]">
               Not sure which?{" "}
-              <span className="text-[#c4b8aa]">&rarr; Pick Hosted.</span>{" "}
+              <span className="text-[#555049]">&rarr; Pick Hosted.</span>{" "}
               You can always switch later.
             </p>
           </div>
@@ -409,10 +427,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ─────────────────────────────────────────────────── */}
-      <section id="faq" className="px-6 py-24">
+      <section id="faq" className="px-6 py-24 bg-[#f3efe5]">
         <div className="mx-auto max-w-2xl">
           <div className="reveal mb-12 text-center">
-            <h2 className="font-display text-3xl font-[450] tracking-tight md:text-4xl">
+            <h2 className="font-display text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
               Frequently asked questions
             </h2>
           </div>
@@ -460,11 +478,11 @@ export default function LandingPage() {
                 a: "Solo operator. No funding, no VCs, no telemetry beyond what's needed to provision your workspace. View the project on GitHub.",
               },
             ].map(({ q, a }) => (
-              <AccordionItem key={q} value={q} className="border-[rgba(245,240,233,0.07)]">
-                <AccordionTrigger className="py-5 text-left text-[15px] text-[#f5f0e9] hover:text-[#f5f0e9] hover:no-underline [&[data-state=open]]:text-[#d97757]">
+              <AccordionItem key={q} value={q} className="border-b border-[rgba(25,25,25,0.08)]">
+                <AccordionTrigger className="py-5 text-left text-[15px] text-[#191919] hover:text-[#191919] hover:no-underline [&[data-state=open]]:text-[#cc785c]">
                   {q}
                 </AccordionTrigger>
-                <AccordionContent className="pb-5 text-[14px] leading-relaxed text-[#877c70]">
+                <AccordionContent className="pb-5 text-[14px] leading-relaxed text-[#8a847b]">
                   {a}
                 </AccordionContent>
               </AccordionItem>
@@ -473,64 +491,50 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Bottom CTA ──────────────────────────────────────────── */}
-      <section className="px-6 pb-24 pt-4">
-        <div className="reveal mx-auto max-w-3xl">
-          <div className="relative overflow-hidden rounded-2xl border border-[rgba(217,119,87,0.18)] p-10 text-center md:p-16">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(217,119,87,0.07)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[rgba(217,119,87,0.35)] to-transparent" />
-
-            <div className="relative">
-              <h2 className="font-display mb-4 text-3xl font-[450] tracking-tight md:text-4xl">
-                Stop juggling tools. Let Claude do it.
-              </h2>
-              <p className="mx-auto mb-8 max-w-md text-[#877c70]">
-                Setup takes 5 minutes. You&apos;ll wonder why you didn&apos;t do this sooner.
-              </p>
-              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                <form action="/api/checkout?plan=hosted" method="POST">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-12 rounded-md px-10 text-base font-medium"
-                  >
-                    Start with Hosted ($39/mo)
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </form>
-                <form action="/api/checkout?plan=byoc" method="POST">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    variant="outline"
-                    className="h-12 rounded-md px-10 text-base font-medium"
-                  >
-                    Use my own cloud ($99 once)
-                  </Button>
-                </form>
-              </div>
-            </div>
+      {/* ── Bottom CTA — inverted dark section ───────────────────── */}
+      <section className="px-6 py-24 bg-[#2a2925]">
+        <div className="reveal mx-auto max-w-3xl text-center">
+          <div className="mx-auto mb-2 h-px w-[60px] bg-[#cc785c] opacity-60" />
+          <h2 className="font-display mt-8 mb-4 text-3xl font-[450] tracking-tight text-[#faf9f5] md:text-4xl">
+            Stop juggling tools. Let Claude do it.
+          </h2>
+          <p className="mx-auto mb-10 max-w-md text-[#8a847b]">
+            Setup takes 5 minutes. You&apos;ll wonder why you didn&apos;t do this sooner.
+          </p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <form action="/api/checkout?plan=hosted" method="POST">
+              <Button
+                type="submit"
+                size="lg"
+                className="h-12 rounded-[6px] bg-[#faf9f5] px-10 text-base font-medium text-[#2a2925] hover:bg-[#e9b8a4]"
+              >
+                Start with Hosted ($39/mo)
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+            <form action="/api/checkout?plan=byoc" method="POST">
+              <Button
+                type="submit"
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-[6px] border-[rgba(250,249,245,0.25)] px-10 text-base font-medium text-[#faf9f5] hover:bg-white/10"
+              >
+                Use my own cloud ($99 once)
+              </Button>
+            </form>
           </div>
         </div>
       </section>
 
       {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer className="border-t border-[rgba(245,240,233,0.05)] px-6 py-10">
+      <footer className="border-t border-[rgba(250,249,245,0.07)] bg-[#2a2925] px-6 py-10">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2.5">
-              <svg width="18" height="18" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-                <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" strokeWidth={13} strokeLinecap="round"/>
-                <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#b483ff" strokeWidth={13} strokeLinecap="round"/>
-                <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" strokeWidth={13} strokeLinecap="round"/>
-                <circle cx="115.56" cy="115.56" r={16} fill="#d97757"/>
-                <circle cx="61.36"  cy="89.65"  r={16} fill="#b483ff"/>
-                <circle cx="150.23" cy="71.00"  r={16} fill="#8b7fff"/>
-                <circle cx="100"    cy="100"    r={22} fill="#f5f0e9"/>
-              </svg>
-              <span className="text-sm font-medium text-[#877c70]">Concerto</span>
+              <LogoMark size={18} />
+              <span className="text-sm font-medium text-[rgba(250,249,245,0.55)]">Concerto</span>
             </div>
-            <p className="text-sm text-[#6e645a]">&copy; {new Date().getFullYear()} Concerto. All rights reserved.</p>
+            <p className="text-sm text-[rgba(250,249,245,0.30)]">&copy; {new Date().getFullYear()} Concerto. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
               {[
                 { href: "/legal/terms",   label: "Terms" },
@@ -539,28 +543,27 @@ export default function LandingPage() {
                 { href: "/legal/aup",     label: "Acceptable Use" },
                 { href: "/help",          label: "Help" },
               ].map(({ href, label }) => (
-                <Link key={href} href={href} className="text-xs text-[#6e645a] transition-colors hover:text-[#c4b8aa]">
+                <Link key={href} href={href} className="text-xs text-[rgba(250,249,245,0.35)] transition-colors hover:text-[rgba(250,249,245,0.65)]">
                   {label}
                 </Link>
               ))}
-              <a href="mailto:support@concerto.run" className="text-xs text-[#6e645a] transition-colors hover:text-[#c4b8aa]">
+              <a href="mailto:support@concerto.run" className="text-xs text-[rgba(250,249,245,0.35)] transition-colors hover:text-[rgba(250,249,245,0.65)]">
                 support@concerto.run
               </a>
             </div>
           </div>
-          <p className="mt-6 text-center text-xs text-[#6e645a]">Built by an operator in Almaty.</p>
+          <p className="mt-6 text-center text-xs text-[rgba(250,249,245,0.25)]">Built by an operator in Almaty.</p>
         </div>
       </footer>
 
       {/* ── Mobile sticky CTA (hidden on md+) ───────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgba(245,240,233,0.06)] bg-[#0f0d10]/95 px-4 py-3 backdrop-blur-xl [padding-bottom:max(12px,env(safe-area-inset-bottom))] md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgba(25,25,25,0.10)] bg-[#faf9f5]/95 px-4 py-3 backdrop-blur-xl [padding-bottom:max(12px,env(safe-area-inset-bottom))] md:hidden">
         <form action="/api/checkout?plan=hosted" method="POST">
           <Button
             type="submit"
-            className="h-12 w-full rounded-md text-base font-medium"
+            className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
           >
             Start in 5 minutes — $39/mo
-            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
       </div>

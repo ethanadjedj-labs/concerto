@@ -365,8 +365,8 @@ function DemoShell({ children, fading }: { children: React.ReactNode; fading: bo
       <div
         className="rounded-xl overflow-hidden"
         style={{
-          border: "1px solid rgba(139,127,255,0.18)",
-          boxShadow: "0 0 0 1px rgba(245,240,233,0.04), 0 0 40px rgba(139,127,255,0.07), 0 0 80px rgba(217,119,87,0.05), 0 24px 48px rgba(0,0,0,0.45)",
+          border: "1px solid rgba(25,25,25,0.12)",
+          boxShadow: "0 0 0 1px rgba(25,25,25,0.04), 0 8px 32px rgba(25,25,25,0.12), 0 24px 48px rgba(25,25,25,0.08)",
         }}
       >
         <div
