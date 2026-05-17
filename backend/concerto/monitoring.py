@@ -21,7 +21,7 @@ def _get_active_hosted_buyers() -> list[dict]:
     conn = db._conn()
     try:
         rows = conn.execute(
-            "SELECT * FROM concerto_buyers WHERE status = 'active' AND provider = 'hosted'"
+            "SELECT * FROM concerto_buyers WHERE status = 'active' AND plan = 'hosted'"
         ).fetchall()
         return [dict(r) for r in rows]
     finally:

@@ -52,7 +52,7 @@ def is_eligible_auto(buyer: dict) -> bool:
 
 
 async def _destroy_hosted_droplet(droplet_id: str) -> None:
-    do_key = os.getenv("DO_PROVISIONER_API_KEY", "")
+    do_key = os.getenv("CONCERTO_DO_API_TOKEN", "")
     if not do_key or not droplet_id:
         return
     try:
@@ -114,8 +114,7 @@ async def refund(buyer_token: str, reason: str, full_amount: bool = True) -> dic
         except stripe.StripeError as exc:
             raise RefundError(f"Stripe refund failed: {exc}") from exc
 
-    provider = buyer.get("provider", "byoc")
-    if provider == "hosted" and buyer.get("vps_id"):
+    if buyer.get("plan") == "hosted" and buyer.get("vps_id"):
         await _destroy_hosted_droplet(buyer["vps_id"])
 
     await db.update_buyer(

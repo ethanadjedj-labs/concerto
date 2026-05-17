@@ -182,6 +182,7 @@ async def provision_droplet(
         ssh_authorized_key=public_key,
         concerto_api_base=_CONCERTO_API_BASE,
         concerto_token=token,
+        concerto_token_prefix=token[:8],
         concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
         customer_email=customer_email,
         ttyd_password=ttyd_password,
