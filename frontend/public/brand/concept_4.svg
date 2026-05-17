@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#0f0d10"/>
+  <!-- Serif C with Orbital Tail: letterform conducted by an orbital arc -->
+  <!-- C body: r=44, centered at (88,100), 315deg to 45deg CCW = 270deg sweep -->
+  <path d="M 119.11 68.89 A 44 44 0 1 0 119.11 131.11"
+        fill="none" stroke="#d97757" stroke-width="14" stroke-linecap="round"/>
+  <!-- Serif caps at terminals -->
+  <line x1="106" y1="68.89"  x2="126" y2="68.89"  stroke="#d97757" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="106" y1="131.11" x2="126" y2="131.11" stroke="#d97757" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Orbital tail: r=62, 45deg to 318deg CW = 273deg sweep -->
+  <path d="M 131.84 143.84 A 62 62 0 1 1 134.07 58.51"
+        fill="none" stroke="#8b7fff" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="134.07" cy="58.51" r="3.5" fill="#8b7fff"/>
+  <circle cx="134.07" cy="58.51" r="6"   fill="#8b7fff" opacity="0.15"/>
+</svg>

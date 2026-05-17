@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#d97757"/>
+      <stop offset="100%" stop-color="#8b7fff"/>
+    </linearGradient>
+    <linearGradient id="g2echo" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#d97757" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#8b7fff" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="#0f0d10"/>
+  <!-- Conductor gesture: fluid downbeat arc, echo shadow, baton tip -->
+  <path d="M 38 155 C 60 62 154 47 174 90"
+        fill="none" stroke="url(#g2echo)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 32 148 C 52 55 148 40 168 82"
+        fill="none" stroke="url(#g2)" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="168" cy="82" r="4.5" fill="#d97757" opacity="0.9"/>
+  <circle cx="168" cy="82" r="7"   fill="#d97757" opacity="0.15"/>
+  <circle cx="32"  cy="148" r="2.5" fill="#8b7fff" opacity="0.6"/>
+</svg>

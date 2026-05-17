@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="7" fill="#0f0d10"/>
+  <!-- Inner arc: peach, gap at 45deg (300deg sweep) -->
+  <path d="M 18.07 23.73 A 8 8 0 1 1 23.73 18.07"
+        fill="none" stroke="#d97757" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Outer arc: violet, gap at 225deg (300deg sweep) -->
+  <path d="M 12.64 3.44 A 13 13 0 1 1 3.44 12.64"
+        fill="none" stroke="#8b7fff" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Hub -->
+  <circle cx="16" cy="16" r="2.5" fill="#f5f0e9"/>
+</svg>
