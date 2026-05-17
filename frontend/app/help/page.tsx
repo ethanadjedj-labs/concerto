@@ -20,15 +20,15 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What is Concerto?",
-        a: "Concerto gives you a dedicated remote machine with Claude Code, an MCP server, and a cloudflared tunnel pre-installed. From any claude.ai conversation you can pilot Claude Code agents running on your remote machine — real shell, real filesystem, persistent sessions.",
+        a: "Concerto gives Claude the tools to orchestrate Claude Code sessions on your behalf. From any claude.ai conversation you can ask Claude to build, deploy, test, or automate — Claude handles the sessions, reads the logs, and reports back.",
       },
       {
         q: "What do I need before I can start?",
-        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud account required. Concerto provisions and manages the remote machine for you.",
+        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no terminal, no cloud account required. Concerto provisions and manages everything for you.",
       },
       {
         q: "How long does provisioning take?",
-        a: "Typically 3–5 minutes from purchase to remote machine ready. The dashboard polls automatically and advances each step when it completes.",
+        a: "Typically 3–5 minutes from purchase to ready. The dashboard polls automatically and advances each step when it completes.",
       },
       {
         q: "Which regions are available?",
@@ -37,7 +37,7 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "OAuth + connector setup",
+    title: "Connecting to Claude",
     items: [
       {
         q: "The OAuth step is stuck / spinning forever.",
@@ -53,11 +53,11 @@ const SECTIONS: Section[] = [
       },
       {
         q: "I get 'connection refused' when claude.ai tries to use the connector.",
-        a: "The cloudflared tunnel may have restarted. Check your dashboard status — if it shows 'reconnecting', wait 30 seconds and refresh. The tunnel recovers automatically. If it shows 'down' for more than 2 minutes, contact support.",
+        a: "The connection may have restarted. Check your dashboard status — if it shows 'reconnecting', wait 30 seconds and refresh. The connection recovers automatically. If it shows 'down' for more than 2 minutes, contact support.",
       },
       {
         q: "Can I use the connector from multiple claude.ai conversations at the same time?",
-        a: "Yes. The MCP server on your remote machine handles concurrent connections. Each claude.ai conversation gets its own session context, but they share the same filesystem and running processes on your remote machine.",
+        a: "Yes. The MCP server handles concurrent connections. Each claude.ai conversation gets its own session context.",
       },
     ],
   },
@@ -66,19 +66,19 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "How do I run multiple tasks in parallel?",
-        a: "Ask Claude Code to spawn background tmux sessions: `tmux new-session -d -s task1 'python myscript.py'`. Each session runs independently. Claude Code can attach to any session, read its output, and report back to you.",
+        a: "Just ask Claude to work on multiple things at once. Claude will launch separate Claude Code sessions for each task, run them in parallel, and report back with the combined result.",
       },
       {
-        q: "Sessions time out before my task finishes.",
-        a: "Claude Code on Concerto runs on your remote machine — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the remote machine process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
+        q: "Sessions seem to stop before my task finishes.",
+        a: "Long-running tasks keep working even after a claude.ai conversation times out. Reconnect via a new claude.ai message and ask Claude to check on progress — Claude will read the latest output and resume from where it left off.",
       },
       {
-        q: "Can Claude Code install packages, run npm install, or modify system files?",
-        a: "Yes. Your remote machine runs with full system access. Claude Code can install packages, write to any path, configure cron jobs, and start background services.",
+        q: "Can Claude install packages or modify files?",
+        a: "Yes. Claude Code has full access to your workspace. It can install packages, write files, run build scripts, and start services.",
       },
       {
-        q: "How do I check what's running on my remote machine?",
-        a: "Ask Claude Code to run `tmux ls` (active sessions), `ps aux | grep python` (running processes), or `systemctl list-units --state=running` (system services). You can also use the embedded terminal on your dashboard.",
+        q: "How do I check what's happening in a session?",
+        a: "Ask Claude to check on progress — Claude will read the session output and summarize what's running, what's done, and what needs your input. You can also use the embedded terminal on your dashboard for a direct view.",
       },
     ],
   },
@@ -87,19 +87,19 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What's the difference between Solo and Pro?",
-        a: "Solo ($49/mo) includes a 4GB remote machine and up to 2 parallel sessions. Pro ($99/mo) includes an 8GB remote machine and up to 6–8 parallel sessions. Both include email support and cancel anytime.",
+        a: "Solo ($49/mo) lets Claude launch and monitor up to 2 Claude Code sessions in parallel. Pro ($99/mo) lets Claude launch and monitor up to 6 Claude Code sessions in parallel. Both include email support and cancel anytime.",
       },
       {
         q: "How do I cancel my subscription?",
         a: "Open your dashboard → Billing tab → Manage Subscription. This opens the Stripe customer portal where you can cancel, change plan, or download invoices. Cancellation takes effect at the end of your current billing period.",
       },
       {
-        q: "What happens to my remote machine if I cancel?",
-        a: "Your remote machine and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
+        q: "What happens to my data if I cancel?",
+        a: "Your workspace and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
       },
       {
         q: "I was charged but the setup never completed.",
-        a: "Contact support@concerto.run with your email address. We'll either complete the setup or issue a full refund — no questions asked. Provisioning failures are fully refundable.",
+        a: "Contact support@concerto.run with your email address. We'll either complete the setup or issue a full refund — no questions asked.",
       },
     ],
   },
@@ -108,19 +108,19 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "The embedded terminal shows a blank screen.",
-        a: "This usually means the ttyd process restarted. Hard-refresh the dashboard (Ctrl+Shift+R). If still blank after 30 seconds, the cloudflared tunnel may have dropped — wait 1 minute and try again. The tunnel auto-reconnects.",
+        a: "Hard-refresh the dashboard (Ctrl+Shift+R). If still blank after 30 seconds, wait 1 minute and try again — the connection auto-reconnects.",
       },
       {
         q: "Claude Code says 'tool not available' or 'MCP server unreachable'.",
-        a: "The MCP server process may have crashed. Open the embedded terminal and run: `systemctl restart concerto-mcp`. The connector in claude.ai will reconnect automatically within 30 seconds.",
+        a: "Open the embedded terminal and run: `systemctl restart concerto-mcp`. The connector in claude.ai will reconnect automatically within 30 seconds.",
       },
       {
-        q: "I'm getting rate limit errors from Claude CLI.",
-        a: "Claude CLI uses your Claude plan credits. If you're hitting limits frequently, consider upgrading to Claude Max — Pro's token limits run out fast with agentic work. Space out parallel sessions or wait for the rate limit window to reset (typically 1 minute).",
+        q: "I'm getting rate limit errors from Claude.",
+        a: "Rate limits come from your Claude plan. If you're hitting limits frequently, consider upgrading to Claude Max — Pro's token limits run out fast with agentic work. Space out parallel sessions or wait for the rate limit window to reset (typically 1 minute).",
       },
       {
         q: "I can't find the connector config snippet.",
-        a: "It's on Step 3 of your dashboard at concerto.run/dashboard/{your-token}. If you've already completed setup, the full config is still visible — scroll down to the 'Connector config' section on the dashboard home tab.",
+        a: "It's on Step 3 of your dashboard. If you've already completed setup, the full config is still visible — scroll down to the 'Connector config' section on the dashboard home tab.",
       },
     ],
   },
@@ -128,20 +128,16 @@ const SECTIONS: Section[] = [
     title: "Privacy + security",
     items: [
       {
-        q: "Does Concerto have access to my remote machine after provisioning?",
-        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not retain persistent access to your remote machine. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
+        q: "Is my workspace isolated from other customers?",
+        a: "Yes. Every Concerto subscription is a dedicated, isolated workspace. There is no shared compute or shared filesystem between customers.",
       },
       {
-        q: "Is my remote machine isolated from other customers?",
-        a: "Yes. Every Concerto subscription is a dedicated remote machine. There is no shared compute or shared filesystem between customers.",
-      },
-      {
-        q: "Can Anthropic see what runs on my remote machine?",
-        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your remote machine is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
+        q: "Can Anthropic see what runs in my workspace?",
+        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. Your workspace content is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
       },
       {
         q: "What data does Concerto collect?",
-        a: "Your email address (from Stripe), your region preference, provisioning status, and (optionally) your first session timestamp. We do not log MCP tool calls, shell commands, or file contents. Full privacy policy: concerto.run/legal/privacy.",
+        a: "Your email address (from Stripe), your region preference, provisioning status, and (optionally) your first session timestamp. We do not log tool calls, shell commands, or file contents.",
       },
     ],
   },
@@ -153,7 +149,7 @@ function highlightMatch(text: string, query: string): string {
   if (idx === -1) return text
   return (
     text.slice(0, idx) +
-    `<mark class="bg-violet-500/30 text-violet-200 rounded px-0.5">${text.slice(idx, idx + query.length)}</mark>` +
+    `<mark class="bg-[rgba(204,120,92,0.20)] text-[#b86747] rounded px-0.5">${text.slice(idx, idx + query.length)}</mark>` +
     text.slice(idx + query.length)
   )
 }
@@ -181,31 +177,36 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080810] text-white">
+    <div className="min-h-screen bg-[#faf9f5] text-[#191919]">
+      <nav className="border-b border-[rgba(25,25,25,0.07)] bg-[#faf9f5]/88 backdrop-blur-xl">
+        <div className="mx-auto max-w-2xl px-4 py-4 flex items-center gap-4">
+          <Link href="/" className="text-sm text-[#8a847b] hover:text-[#191919] transition-colors">
+            ← concerto.run
+          </Link>
+        </div>
+      </nav>
+
       <div className="mx-auto max-w-2xl px-4 py-16">
         {/* Header */}
         <div className="mb-10 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6 text-white/40 hover:text-white/70 text-sm transition-colors">
-            ← concerto.run
-          </Link>
-          <h1 className="text-3xl font-bold mb-3">Help center</h1>
-          <p className="text-white/50 text-base">
+          <h1 className="font-display text-3xl font-[450] tracking-tight text-[#191919] mb-3">Help center</h1>
+          <p className="text-[#8a847b] text-base">
             Answers to common questions about Concerto.
           </p>
         </div>
 
         {/* Search */}
         <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8a847b]" />
           <input
             type="search"
             placeholder="Search questions…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 pl-11 pr-4 text-sm text-white placeholder-white/25 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
+            className="w-full rounded-xl border border-[rgba(25,25,25,0.12)] bg-white py-3 pl-11 pr-4 text-sm text-[#191919] placeholder-[#8a847b] outline-none focus:border-[#cc785c] focus:ring-1 focus:ring-[rgba(204,120,92,0.20)]"
           />
           {query && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-white/30">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#8a847b]">
               {totalResults} result{totalResults !== 1 ? "s" : ""}
             </span>
           )}
@@ -213,16 +214,16 @@ export default function HelpPage() {
 
         {/* Sections */}
         {filtered.length === 0 ? (
-          <div className="py-12 text-center text-white/30 text-sm">
+          <div className="py-12 text-center text-[#8a847b] text-sm">
             No results for &ldquo;{query}&rdquo;.{" "}
-            <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
+            <a href="mailto:support@concerto.run" className="text-[#cc785c] hover:text-[#b86747]">
               Email support →
             </a>
           </div>
         ) : (
           filtered.map((sec) => (
             <div key={sec.title} className="mb-8">
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/30">
+              <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[#8a847b]">
                 {sec.title}
               </h2>
               <div className="space-y-1.5">
@@ -232,28 +233,28 @@ export default function HelpPage() {
                   return (
                     <div
                       key={key}
-                      className="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden"
+                      className="rounded-xl border border-[rgba(25,25,25,0.08)] bg-white overflow-hidden"
                     >
                       <button
                         onClick={() => toggle(key)}
                         className="flex w-full items-center justify-between px-4 py-3.5 text-left"
                       >
                         <span
-                          className="text-sm font-medium text-white/80 pr-4"
+                          className="text-sm font-medium text-[#191919] pr-4"
                           dangerouslySetInnerHTML={{
                             __html: highlightMatch(item.q, query),
                           }}
                         />
                         {isOpen ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-white/30" />
+                          <ChevronDown className="h-4 w-4 shrink-0 text-[#8a847b]" />
                         ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[#8a847b]" />
                         )}
                       </button>
                       {isOpen && (
-                        <div className="border-t border-white/6 px-4 py-3.5">
+                        <div className="border-t border-[rgba(25,25,25,0.06)] px-4 py-3.5">
                           <p
-                            className="text-sm leading-relaxed text-white/50"
+                            className="text-sm leading-relaxed text-[#555049]"
                             dangerouslySetInnerHTML={{
                               __html: highlightMatch(item.a, query),
                             }}
@@ -269,17 +270,17 @@ export default function HelpPage() {
         )}
 
         {/* Footer CTA */}
-        <div className="mt-12 rounded-2xl border border-white/8 bg-white/[0.02] p-6 text-center">
-          <p className="mb-3 text-sm font-medium text-white/70">Still need help?</p>
+        <div className="mt-12 rounded-2xl border border-[rgba(25,25,25,0.08)] bg-white p-6 text-center">
+          <p className="mb-3 text-sm font-medium text-[#191919]">Still need help?</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
               href="mailto:support@concerto.run"
-              className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              className="rounded-xl bg-[#cc785c] px-4 py-2 text-sm font-medium text-[#faf9f5] transition-opacity hover:opacity-90"
             >
               Email support@concerto.run →
             </a>
           </div>
-          <p className="mt-3 text-xs text-white/30">Human reply within 24 hours. No community forums.</p>
+          <p className="mt-3 text-xs text-[#8a847b]">Human reply within 24 hours.</p>
         </div>
       </div>
     </div>

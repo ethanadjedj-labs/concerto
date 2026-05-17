@@ -31,12 +31,11 @@ export const metadata: Metadata = {
     template: "%s — Concerto",
   },
   description:
-    "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat. Claude launches sessions, monitors progress, reads logs, compares results, and reports back. Solo $49/mo · Pro $99/mo.",
+    "Concerto gives Claude the tools to orchestrate Claude Code sessions. Claude launches sessions, monitors progress, reads logs, compares results, and reports back. Solo $49/mo · Pro $99/mo.",
   keywords: [
     "Claude Code",
     "Claude chat",
     "Claude Code sessions",
-    "remote machine",
     "parallel Claude Code",
     "developer tools",
     "AI orchestration",
@@ -45,7 +44,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Concerto — Talk to Claude. Claude runs Claude Code.",
     description:
-      "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat.",
+      "Concerto gives Claude the tools to orchestrate Claude Code sessions — you stay in the normal Claude chat.",
     url: "https://concerto.run",
     siteName: "Concerto",
     images: [
@@ -63,9 +62,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Concerto — Talk to Claude. Claude runs Claude Code.",
     description:
-      "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat.",
+      "Concerto gives Claude the tools to orchestrate Claude Code sessions — you stay in the normal Claude chat.",
     images: ["/twitter-image"],
-    creator: "@ethanadjedj",
+    creator: "@concerto_run",
   },
   robots: {
     index: true,
@@ -95,7 +94,7 @@ const jsonLd = {
         "@type": "ImageObject",
         url: "https://concerto.run/icon",
       },
-      sameAs: ["https://github.com/ethanadjedj-labs/concerto"],
+      sameAs: ["https://concerto.run"],
     },
     {
       "@type": "WebSite",

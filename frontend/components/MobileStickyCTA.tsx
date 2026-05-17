@@ -1,11 +1,10 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 
 export function MobileStickyCTA() {
   const [visible, setVisible] = useState(false)
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const sentinel = document.getElementById("hero-section-end")
@@ -27,14 +26,15 @@ export function MobileStickyCTA() {
         transition: "transform 0.3s ease",
       }}
     >
-      <form action="/api/checkout?plan=solo" method="POST">
+      <form action="/api/checkout?plan=pro" method="POST">
         <Button
           type="submit"
           className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
         >
-          Start with Solo — $49/mo
+          Start with Pro — $99/mo
         </Button>
       </form>
+      <p className="mt-1.5 text-center text-xs text-[#8a847b]">Solo plan also available at $49/mo</p>
     </div>
   )
 }

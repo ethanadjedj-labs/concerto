@@ -696,7 +696,7 @@ function ConceptDetail({
             color: "#9b9490",
           }}
         >
-          Ethan selects → team executes
+          Operator selects → team executes
         </span>
       </div>
     </div>

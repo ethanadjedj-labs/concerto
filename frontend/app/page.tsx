@@ -198,7 +198,7 @@ export default function LandingPage() {
               Pick your plan.
             </h2>
             <p className="text-[#8a847b]">
-              Both plans include a dedicated remote machine. Start with Solo, upgrade when you need more sessions.
+              Start with Solo, upgrade to Pro when your work scales up.
             </p>
           </div>
 
@@ -209,7 +209,6 @@ export default function LandingPage() {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">Dedicated remote machine, 4GB</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -217,8 +216,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Dedicated remote machine, 4GB",
-                  "Up to 2 parallel sessions",
+                  "Claude can launch and monitor up to 2 Claude Code sessions in parallel",
                   "Email support included",
                   "Cancel anytime",
                 ].map((feature) => (
@@ -232,6 +230,7 @@ export default function LandingPage() {
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
+              <p className="mt-2 text-center text-xs text-[rgba(25,25,25,0.30)]">Dedicated workspace, 4 GB memory · email support</p>
             </div>
 
             {/* Pro — FEATURED */}
@@ -242,7 +241,6 @@ export default function LandingPage() {
                   <Star className="h-3 w-3 fill-current" /> Most popular
                 </span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">Dedicated remote machine, 8GB</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -250,8 +248,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Dedicated remote machine, 8GB",
-                  "Up to 6–8 parallel sessions",
+                  "Claude can launch and monitor up to 6 Claude Code sessions in parallel",
                   "Email support included",
                   "Cancel anytime",
                 ].map((feature) => (
@@ -265,6 +262,7 @@ export default function LandingPage() {
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
+              <p className="mt-2 text-center text-xs text-[rgba(25,25,25,0.30)]">Dedicated workspace, 8 GB memory · email support</p>
             </div>
 
           </div>
@@ -275,7 +273,7 @@ export default function LandingPage() {
 
           <div className="reveal mx-auto mt-4 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4 text-center">
             <p className="text-sm text-[#8a847b]">
-              Real human email support in every plan. <span className="text-[#555049]">No community forums.</span> Write to support@concerto.run — reply within 24 hours.
+              Real human email support in every plan. Write to support@concerto.run — reply within 24 hours.
             </p>
           </div>
 
@@ -295,7 +293,7 @@ export default function LandingPage() {
             {[
               {
                 q: "What is Concerto?",
-                a: "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat. You describe what to build, Claude decides which sessions to launch, starts them, monitors progress, reads logs, and reports back with a summary of what was done.",
+                a: "Concerto gives Claude the tools to orchestrate Claude Code sessions. You describe what to build, Claude decides which sessions to launch, starts them, monitors progress, reads logs, and reports back with a summary of what was done — all from your normal Claude chat.",
               },
               {
                 q: "Do I need to know how to code?",
@@ -303,11 +301,11 @@ export default function LandingPage() {
               },
               {
                 q: "Should I use Claude Pro or Max with Concerto?",
-                a: "We strongly recommend Max. Claude Pro's token limits get exhausted quickly with the kind of work Concerto enables — launching and monitoring multiple sessions, reading logs, comparing outputs. Max ($200/month) gives you 5× the usage. Pro works for light experimentation but you'll hit limits fast.",
+                a: "We strongly recommend Max. Claude Pro's token limits get exhausted quickly with the kind of work Concerto enables — launching and monitoring multiple sessions, reading logs, comparing outputs. Max ($200/month) gives you 20× the usage. Pro works for light experimentation but you'll hit limits fast.",
               },
               {
-                q: "Is my machine dedicated to me?",
-                a: "Yes. Every Concerto subscription is a dedicated remote machine isolated from other customers. Your code, files, and history stay yours.",
+                q: "Is my workspace dedicated to me?",
+                a: "Yes. Every Concerto subscription gives Claude its own isolated workspace, separate from other customers. Your code, files, and history stay yours.",
               },
               {
                 q: "What can I run on it?",
@@ -345,11 +343,8 @@ export default function LandingPage() {
             <p className="text-sm text-[rgba(250,249,245,0.30)]">&copy; {new Date().getFullYear()} Concerto. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
               {[
-                { href: "/legal/terms",   label: "Terms" },
-                { href: "/legal/privacy", label: "Privacy" },
-                { href: "/legal/refund",  label: "Refund" },
-                { href: "/legal/aup",     label: "Acceptable Use" },
-                { href: "/help",          label: "Help" },
+                { href: "/legal/terms", label: "Terms" },
+                { href: "/help",        label: "Help" },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} className="text-xs text-[rgba(250,249,245,0.35)] transition-colors hover:text-[rgba(250,249,245,0.65)]">
                   {label}
@@ -360,7 +355,12 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
-          <p className="mt-6 text-center text-xs text-[rgba(250,249,245,0.25)]">Built by an operator in Almaty.</p>
+          <p className="mt-6 text-center text-xs text-[rgba(250,249,245,0.25)]">
+            Built by an operator in Almaty.{" "}
+            <a href="https://www.anthropic.com/legal/aup" target="_blank" rel="noopener noreferrer" className="hover:text-[rgba(250,249,245,0.50)] transition-colors">
+              Subject to Anthropic&apos;s Acceptable Use Policy.
+            </a>
+          </p>
         </div>
       </footer>
 

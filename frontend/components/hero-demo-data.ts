@@ -15,7 +15,7 @@ export type DemoScript = {
 
 export const DEMO_SCRIPT: DemoScript = {
   userPrompt: "Refactor my auth module to use JWT, run tests, open PR",
-  claudeResponse: "Spawning Concerto session on your remote machine...",
+  claudeResponse: "Spawning Claude Code sessions via Concerto...",
   typingSpeedMs: 50,
   loopIntervalMs: 12000,
   terminalLines: [
@@ -57,7 +57,7 @@ export const DEMO_SCRIPT: DemoScript = {
     },
     {
       prefix: "[gh]",
-      text: "opening PR #142 to ethanadjedj-labs/myrepo",
+      text: "opening PR #142 to yourname/myproject",
       color: "magenta",
       delay: 3600,
     },

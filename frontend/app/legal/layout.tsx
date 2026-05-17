@@ -27,9 +27,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <footer className="border-t border-white/5 mt-16">
         <div className="mx-auto max-w-3xl px-6 py-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/30">
           <Link href="/legal/terms" className="hover:text-white/60 transition-colors">Terms of Service</Link>
-          <Link href="/legal/privacy" className="hover:text-white/60 transition-colors">Privacy Policy</Link>
-          <Link href="/legal/refund" className="hover:text-white/60 transition-colors">Refund Policy</Link>
-          <Link href="/legal/aup" className="hover:text-white/60 transition-colors">Acceptable Use</Link>
+          <a href="https://www.anthropic.com/legal/aup" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition-colors">Acceptable Use (Anthropic)</a>
           <span className="ml-auto">© {new Date().getFullYear()} Concerto</span>
         </div>
       </footer>
