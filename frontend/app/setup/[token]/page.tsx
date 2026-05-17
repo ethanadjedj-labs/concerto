@@ -12,9 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ExternalLink, Eye, EyeOff, Loader2, CheckCircle, AlertCircle, Server } from "lucide-react"
+import {
+  ExternalLink, Eye, EyeOff, Loader2, CheckCircle, AlertCircle,
+  Server, RefreshCw, CreditCard,
+} from "lucide-react"
 
-/* DO Personal Access Token: dop_v1_ + 64 hex chars */
 const DO_TOKEN_RE = /^dop_v1_[0-9a-f]{64}$/i
 
 const REGIONS = [
@@ -44,18 +46,147 @@ const STATUS_STEPS = [
 
 type ProvisionStatus =
   | "idle" | "submitting" | "paid" | "provisioning"
-  | "installing" | "awaiting_oauth" | "ready" | "error"
+  | "installing" | "awaiting_oauth" | "ready"
+  | "provisioning_failed" | "provisioning_timeout"
+  | "api_key_invalid" | "account_no_credit" | "failed_install"
+  | "error"
+
+const ERROR_STATES: ProvisionStatus[] = [
+  "provisioning_failed", "provisioning_timeout",
+  "api_key_invalid", "account_no_credit", "failed_install", "error",
+]
+
+/* ─── Bilingual error cards ─────────────────────────────────────── */
+
+interface ErrorCardDef {
+  title: string
+  titleFr: string
+  description: string
+  descriptionFr: string
+  extraAction?: React.ReactNode
+  retryable?: boolean
+}
+
+const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
+  api_key_invalid: {
+    title: "Invalid API key",
+    titleFr: "Clé API invalide",
+    description:
+      "Your DigitalOcean API token was rejected (401). Check that the token is correct, has write permissions, and hasn't expired.",
+    descriptionFr:
+      "Votre token DigitalOcean a été refusé. Vérifiez qu'il est correct et dispose des permissions d'écriture.",
+    extraAction: (
+      <a
+        href="https://cloud.digitalocean.com/account/api/tokens"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-400 hover:text-violet-300"
+      >
+        Get a new API token <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    ),
+    retryable: true,
+  },
+  account_no_credit: {
+    title: "Insufficient DigitalOcean credit",
+    titleFr: "Crédit DigitalOcean insuffisant",
+    description:
+      "Your DigitalOcean account has insufficient credit. Top up your balance, then retry.",
+    descriptionFr:
+      "Votre compte DigitalOcean n'a pas assez de crédit. Rechargez votre solde, puis réessayez.",
+    extraAction: (
+      <a
+        href="https://cloud.digitalocean.com/account/billing"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-400 hover:text-violet-300"
+      >
+        <CreditCard className="h-3.5 w-3.5" />
+        Top up at DigitalOcean billing <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    ),
+    retryable: true,
+  },
+  provisioning_failed: {
+    title: "Provisioning failed",
+    titleFr: "Échec du provisionnement",
+    description:
+      "The droplet encountered an error during boot. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
+    descriptionFr:
+      "Le serveur a rencontré une erreur. Un remboursement intégral a été initié automatiquement.",
+    retryable: false,
+  },
+  provisioning_timeout: {
+    title: "Provisioning timed out",
+    titleFr: "Délai de provisionnement dépassé",
+    description:
+      "The droplet took too long to become active. A full refund has been issued. Please retry or contact support@maestro.run.",
+    descriptionFr:
+      "Le serveur a mis trop longtemps à démarrer. Un remboursement a été initié. Veuillez réessayer.",
+    retryable: false,
+  },
+  failed_install: {
+    title: "Installation timed out",
+    titleFr: "Délai d'installation dépassé",
+    description:
+      "The Maestro installer did not complete within 8 minutes. A full refund has been issued. Please retry or contact support@maestro.run.",
+    descriptionFr:
+      "L'installateur n'a pas terminé dans les 8 minutes. Un remboursement a été initié.",
+    retryable: false,
+  },
+}
+
+function ErrorCard({
+  def,
+  onRetry,
+}: {
+  def: ErrorCardDef
+  onRetry: () => void
+}) {
+  return (
+    <div role="alert" className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-5 space-y-3">
+      <div className="flex items-start gap-2.5">
+        <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-red-400" />
+        <div>
+          <p className="text-[14px] font-semibold text-red-300">{def.title}</p>
+          <p className="text-[12px] text-red-300/60 italic mt-0.5">{def.titleFr}</p>
+        </div>
+      </div>
+      <p className="text-[13px] text-white/55 leading-relaxed">{def.description}</p>
+      <p className="text-[12px] text-white/35 italic leading-relaxed">{def.descriptionFr}</p>
+      <div className="flex flex-col gap-2 pt-1">
+        {def.extraAction}
+        {def.retryable && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            className="gap-2 border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry / Réessayer
+          </Button>
+        )}
+        <a href="mailto:support@maestro.run" className="text-[12px] text-white/30 hover:text-white/50">
+          Contact support@maestro.run
+        </a>
+      </div>
+    </div>
+  )
+}
 
 export default function SetupPage({ params }: { params: { token: string } }) {
   const router = useRouter()
-  const [plan, setPlan]         = useState<"hosted" | "byoc" | null>(null)
-  const [doKey, setDoKey]       = useState("")
-  const [doKeyErr, setDoKeyErr] = useState("")
-  const [showKey, setShowKey]   = useState(false)
-  const [region, setRegion]     = useState("nyc1")
-  const [size, setSize]         = useState("s-2vcpu-4gb")
-  const [status, setStatus]     = useState<ProvisionStatus>("idle")
+  const [plan, setPlan]           = useState<"hosted" | "byoc" | null>(null)
+  const [doKey, setDoKey]         = useState("")
+  const [doKeyErr, setDoKeyErr]   = useState("")
+  const [showKey, setShowKey]     = useState(false)
+  const [region, setRegion]       = useState("nyc1")
+  const [size, setSize]           = useState("s-2vcpu-4gb")
+  const [status, setStatus]       = useState<ProvisionStatus>("idle")
   const [serverErr, setServerErr] = useState("")
+  const [retrying, setRetrying]   = useState(false)
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
 
@@ -80,8 +211,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
     const poll = async () => {
       attempts++
       if (attempts > MAX) {
-        setStatus("error")
-        setServerErr("Provisioning timed out. Please contact support@maestro.run.")
+        setStatus("provisioning_timeout")
         return
       }
       try {
@@ -90,8 +220,11 @@ export default function SetupPage({ params }: { params: { token: string } }) {
         const data = await res.json()
         const s = data.status as ProvisionStatus
         setStatus(s)
-        if (s === "ready") { setTimeout(() => router.push(`/dashboard/${token}`), 1200); return }
-        if (s !== "error") setTimeout(poll, 5000)
+        if (s === "ready" || s === "awaiting_oauth") {
+          setTimeout(() => router.push(`/dashboard/${token}`), 1200)
+          return
+        }
+        if (!ERROR_STATES.includes(s)) setTimeout(poll, 5000)
       } catch {
         setTimeout(poll, 5000)
       }
@@ -107,6 +240,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
     setDoKeyErr("")
     setServerErr("")
     setStatus("submitting")
+    setRetrying(false)
 
     try {
       const res = await fetch(`${backendUrl}/api/provision`, {
@@ -131,8 +265,11 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   }
 
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === status)
-  const isProvisioning   = !["idle", "submitting", "error"].includes(status)
+  const isErrorState     = ERROR_STATES.includes(status)
+  const isProvisioning   = !["idle", "submitting", "error"].includes(status) && !isErrorState
   const selectedSize     = SIZES.find((s) => s.value === size)
+  const errorDef         = ERROR_CARD_DEFS[status]
+  const showForm         = !isProvisioning || retrying
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b] px-6 py-16 text-white">
@@ -148,15 +285,23 @@ export default function SetupPage({ params }: { params: { token: string } }) {
           <h1 className="mt-3 text-2xl font-bold tracking-tight">Set up your Maestro</h1>
           <p className="text-sm text-white/40">
             {plan === "hosted"
-              ? "Pick a region — we\'ll provision your 4 GB / 2-vCPU droplet automatically."
+              ? "Pick a region — we'll provision your 4 GB / 2-vCPU droplet automatically."
               : "Enter your DigitalOcean API key to provision your dedicated droplet."}
           </p>
         </div>
 
+        {/* Bilingual error card */}
+        {isErrorState && errorDef && (
+          <ErrorCard
+            def={errorDef}
+            onRetry={() => { setStatus("idle"); setRetrying(true) }}
+          />
+        )}
+
         {/* ── Form or Stepper ─────────────────────────────────── */}
         <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025]">
 
-          {!isProvisioning ? (
+          {showForm ? (
             <div className="p-7">
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
@@ -173,56 +318,55 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
                 {/* BYOC: DO API Key */}
                 {plan !== "hosted" && (
-                <div className="space-y-2">
-                  <Label htmlFor="do-key" className="text-[13px] font-medium text-white/60">
-                    DigitalOcean API Key
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="do-key"
-                      type={showKey ? "text" : "password"}
-                      value={doKey}
-                      onChange={(e) => {
-                        setDoKey(e.target.value)
-                        if (doKeyErr) setDoKeyErr(validateKey(e.target.value))
-                      }}
-                      onBlur={() => setDoKeyErr(validateKey(doKey))}
-                      placeholder="dop_v1_..."
-                      aria-describedby={doKeyErr ? "do-key-err" : undefined}
-                      aria-invalid={!!doKeyErr}
-                      className={`h-11 bg-white/[0.04] pr-10 font-mono text-[13px] placeholder:text-white/20 focus-visible:ring-violet-500/50 ${
-                        doKeyErr
-                          ? "border-red-500/40 focus-visible:ring-red-500/40"
-                          : "border-white/[0.08]"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowKey(!showKey)}
-                      aria-label={showKey ? "Hide API key" : "Show API key"}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/60"
-                    >
-                      {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-
-                  {/* Inline validation error */}
-                  {doKeyErr && (
-                    <div id="do-key-err" role="alert" className="flex items-start gap-1.5 text-[12px] text-red-400">
-                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      {doKeyErr}
+                  <div className="space-y-2">
+                    <Label htmlFor="do-key" className="text-[13px] font-medium text-white/60">
+                      DigitalOcean API Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="do-key"
+                        type={showKey ? "text" : "password"}
+                        value={doKey}
+                        onChange={(e) => {
+                          setDoKey(e.target.value)
+                          if (doKeyErr) setDoKeyErr(validateKey(e.target.value))
+                        }}
+                        onBlur={() => setDoKeyErr(validateKey(doKey))}
+                        placeholder="dop_v1_..."
+                        aria-describedby={doKeyErr ? "do-key-err" : undefined}
+                        aria-invalid={!!doKeyErr}
+                        className={`h-11 bg-white/[0.04] pr-10 font-mono text-[13px] placeholder:text-white/20 focus-visible:ring-violet-500/50 ${
+                          doKeyErr
+                            ? "border-red-500/40 focus-visible:ring-red-500/40"
+                            : "border-white/[0.08]"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKey(!showKey)}
+                        aria-label={showKey ? "Hide API key" : "Show API key"}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/60"
+                      >
+                        {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
-                  )}
 
-                  <a
-                    href="https://cloud.digitalocean.com/account/api/tokens"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[12px] text-violet-400 transition-colors hover:text-violet-300"
-                  >
-                    Get your API token <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
+                    {doKeyErr && (
+                      <div id="do-key-err" role="alert" className="flex items-start gap-1.5 text-[12px] text-red-400">
+                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        {doKeyErr}
+                      </div>
+                    )}
+
+                    <a
+                      href="https://cloud.digitalocean.com/account/api/tokens"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[12px] text-violet-400 transition-colors hover:text-violet-300"
+                    >
+                      Get your API token <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 )}
 
                 {/* Region picker */}
@@ -250,39 +394,38 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
                 {/* Size picker — BYOC only */}
                 {plan !== "hosted" && (
-                <div className="space-y-2">
-                  <Label className="text-[13px] font-medium text-white/60">VPS Size</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {SIZES.map((s) => (
-                      <button
-                        key={s.value}
-                        type="button"
-                        onClick={() => setSize(s.value)}
-                        className={`relative rounded-lg border p-3 text-left transition-all ${
-                          size === s.value
-                            ? "border-violet-500/50 bg-violet-500/10 ring-1 ring-violet-500/30"
-                            : "border-white/[0.07] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        {s.recommended && (
-                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white">
-                            Best
-                          </span>
-                        )}
-                        <div className="text-[12px] font-semibold text-white">{s.label}</div>
-                        <div className="mt-0.5 text-[11px] text-white/35">{s.spec}</div>
-                        <div className="mt-1.5 text-[12px] font-medium text-violet-400">{s.price}</div>
-                      </button>
-                    ))}
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-white/60">VPS Size</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {SIZES.map((s) => (
+                        <button
+                          key={s.value}
+                          type="button"
+                          onClick={() => setSize(s.value)}
+                          className={`relative rounded-lg border p-3 text-left transition-all ${
+                            size === s.value
+                              ? "border-violet-500/50 bg-violet-500/10 ring-1 ring-violet-500/30"
+                              : "border-white/[0.07] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                          }`}
+                        >
+                          {s.recommended && (
+                            <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                              Best
+                            </span>
+                          )}
+                          <div className="text-[12px] font-semibold text-white">{s.label}</div>
+                          <div className="mt-0.5 text-[11px] text-white/35">{s.spec}</div>
+                          <div className="mt-1.5 text-[12px] font-medium text-violet-400">{s.price}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[12px] text-white/25">
+                      Billed directly by DigitalOcean to your account.
+                      Selected: <span className="text-white/50">{selectedSize?.spec} — {selectedSize?.price}</span>
+                    </p>
                   </div>
-                  <p className="text-[12px] text-white/25">
-                    Billed directly by DigitalOcean to your account.
-                    Selected: <span className="text-white/50">{selectedSize?.spec} — {selectedSize?.price}</span>
-                  </p>
-                </div>
                 )}
 
-                {/* Server error */}
                 {serverErr && (
                   <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/8 px-4 py-3 text-[13px] text-red-300">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -297,6 +440,8 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                 >
                   {status === "submitting" ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Provisioning…</>
+                  ) : retrying ? (
+                    "Retry Provisioning"
                   ) : (
                     "Provision My Maestro"
                   )}
@@ -319,7 +464,6 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
                   return (
                     <div key={step.key} className="flex gap-4">
-                      {/* Left column: icon + connector line */}
                       <div className="flex flex-col items-center">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center">
                           {isDone ? (
@@ -330,13 +474,11 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                             <div className="h-5 w-5 rounded-full border-2 border-white/15" />
                           )}
                         </div>
-                        {/* Vertical connector */}
                         {!isLast && (
                           <div className={`mt-0.5 w-px flex-1 ${isDone ? "bg-green-500/30" : "bg-white/8"}`} style={{ minHeight: "24px" }} />
                         )}
                       </div>
 
-                      {/* Right column: label */}
                       <div className="pb-6 pt-1">
                         <span
                           className={`text-[14px] ${
@@ -358,13 +500,6 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   )
                 })}
               </div>
-
-              {serverErr && (
-                <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/8 px-4 py-3 text-[13px] text-red-300">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {serverErr}
-                </div>
-              )}
             </div>
           )}
         </div>

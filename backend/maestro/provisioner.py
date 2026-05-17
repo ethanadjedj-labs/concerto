@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import secrets
 import time
@@ -16,6 +17,19 @@ _CLOUD_INIT_TEMPLATE = os.path.join(
     os.path.dirname(__file__), "..", "..", "installer", "cloud_init.yaml.j2"
 )
 _MAESTRO_API_BASE = os.getenv("MAESTRO_API_BASE", "https://api.maestro.run")
+
+# Region fallback order: if chosen region is unavailable (422), try these.
+_REGION_FALLBACK: dict[str, list[str]] = {
+    "nyc1": ["nyc3", "sfo3"],
+    "nyc3": ["nyc1", "sfo3"],
+    "sfo3": ["nyc3", "nyc1"],
+    "fra1": ["ams3", "lon1"],
+    "ams3": ["fra1", "lon1"],
+    "lon1": ["fra1", "ams3"],
+    "sgp1": ["blr1", "syd1"],
+    "blr1": ["sgp1", "syd1"],
+    "syd1": ["sgp1", "blr1"],
+}
 
 _STUB_CLOUD_INIT = """\
 #cloud-config
@@ -41,6 +55,20 @@ runcmd:
       -H 'Content-Type: application/json' \\
       -d '{"token":"{{ token }}","mcp_url":"stub://pending","bearer_token":"stub","ttyd_url":"stub://pending/terminal"}' || true
 """
+
+logger = logging.getLogger(__name__)
+
+
+class DOAuthError(Exception):
+    """DO API returned 401 — invalid or expired API token."""
+
+
+class DOCreditError(Exception):
+    """DO API returned 402 — account has insufficient credit."""
+
+
+class DropletBootError(Exception):
+    """Droplet created but entered error status during boot."""
 
 
 def _load_cloud_init_template() -> str:
@@ -72,6 +100,59 @@ async def _generate_ssh_keypair(token: str) -> tuple[str, str]:
     return key_path, pub_key
 
 
+async def _create_droplet_with_fallback(
+    client: httpx.AsyncClient,
+    name: str,
+    region: str,
+    size: str,
+    cloud_init: str,
+    tag: str,
+) -> str:
+    """Create a droplet, handling 401/402/422 errors and auto-fallback on 422."""
+    regions_to_try = [region] + _REGION_FALLBACK.get(region, [])
+    last_error: Exception | None = None
+
+    for r in regions_to_try:
+        resp = await client.post(
+            "/droplets",
+            json={
+                "name": name,
+                "region": r,
+                "size": size,
+                "image": _DEFAULT_IMAGE,
+                "user_data": cloud_init,
+                "tags": [tag],
+            },
+        )
+        if resp.status_code == 401:
+            raise DOAuthError("DigitalOcean API returned 401 — check your API token")
+        if resp.status_code == 402:
+            raise DOCreditError("DigitalOcean account has insufficient credit")
+        if resp.status_code == 422:
+            last_error = Exception(f"Region/size unavailable: {r}/{size}")
+            continue
+        resp.raise_for_status()
+        droplet_id = str(resp.json()["droplet"]["id"])
+        if r != region:
+            logger.warning(
+                "Region %s unavailable; provisioned in fallback region %s (droplet %s)",
+                region, r, droplet_id,
+            )
+        return droplet_id
+
+    raise last_error or Exception("All regions unavailable for this size")
+
+
+async def destroy_droplet(do_api_key: str, droplet_id: str) -> None:
+    """Destroy a droplet. Silently ignores errors (404 = already gone)."""
+    headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
+    try:
+        async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
+            await client.delete(f"/droplets/{droplet_id}")
+    except Exception:
+        pass
+
+
 async def provision_droplet(
     do_api_key: str,
     region: str,
@@ -85,6 +166,12 @@ async def provision_droplet(
     mode='hosted': Ethan's DO account, s-2vcpu-4gb, tagged maestro-hosted-<prefix>,
                    registered in maestro_hosted_pool.
     mode='byoc':   customer's DO key, customer-chosen size, tagged maestro.
+
+    Raises:
+        DOAuthError: DO API token is invalid (401).
+        DOCreditError: DO account has insufficient credit (402).
+        DropletBootError: Droplet entered error state during boot.
+        TimeoutError: Droplet did not become active within 5 minutes.
     """
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
@@ -101,28 +188,14 @@ async def provision_droplet(
     )
 
     tag = f"maestro-hosted-{token[:8]}" if mode == "hosted" else "maestro"
-
-    headers = {
-        "Authorization": f"Bearer {do_api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(
         base_url=_DO_API_BASE, headers=headers, timeout=30
     ) as client:
-        resp = await client.post(
-            "/droplets",
-            json={
-                "name": f"maestro-{token[:8]}",
-                "region": region,
-                "size": size,
-                "image": _DEFAULT_IMAGE,
-                "user_data": cloud_init,
-                "tags": [tag],
-            },
+        droplet_id = await _create_droplet_with_fallback(
+            client, f"maestro-{token[:8]}", region, size, cloud_init, tag
         )
-        resp.raise_for_status()
-        droplet_id = str(resp.json()["droplet"]["id"])
 
         # Register hosted droplets immediately in the pool
         if mode == "hosted":
@@ -140,6 +213,10 @@ async def provision_droplet(
             r = await client.get(f"/droplets/{droplet_id}")
             r.raise_for_status()
             d = r.json()["droplet"]
+            if d["status"] == "error":
+                raise DropletBootError(
+                    f"Droplet {droplet_id} entered error state during boot"
+                )
             if d["status"] == "active":
                 for net in d.get("networks", {}).get("v4", []):
                     if net["type"] == "public":
