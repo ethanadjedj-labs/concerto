@@ -17,7 +17,13 @@ async def run_migration(sql: str) -> None:
     def _run():
         conn = _conn()
         try:
-            conn.executescript(sql)
+            for stmt in (s.strip() for s in sql.split(";") if s.strip()):
+                try:
+                    conn.execute(stmt)
+                except sqlite3.OperationalError as exc:
+                    # Skip "duplicate column name" so ADD COLUMN is idempotent.
+                    if "duplicate column name" not in str(exc).lower():
+                        raise
             conn.commit()
         finally:
             conn.close()

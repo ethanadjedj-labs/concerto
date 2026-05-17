@@ -1,5 +1,6 @@
 import asyncio
 import os
+import secrets
 
 import httpx
 from jinja2 import Template
@@ -29,13 +30,12 @@ runcmd:
     TTYD_VER=$(curl -sf https://api.github.com/repos/tsl0922/ttyd/releases/latest | jq -r '.tag_name' || echo "1.7.4")
     wget -qO /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VER}/ttyd.x86_64"
     chmod +x /usr/local/bin/ttyd
-  - nohup ttyd --port 7681 --interface 127.0.0.1 bash >/var/log/ttyd.log 2>&1 &
+  - nohup ttyd --port 7681 --interface 127.0.0.1 --credential maestro:{{ ttyd_password }} bash >/var/log/ttyd.log 2>&1 &
   - |
     sleep 15
-    BEARER=$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32)
     curl -sf -X POST {{ maestro_api_base }}/api/internal/droplet-ready \\
       -H 'Content-Type: application/json' \\
-      -d "{\"token\":\"{{ token }}\",\"mcp_url\":\"stub://pending\",\"bearer_token\":\"${BEARER}\"}" || true
+      -d "{\"token\":\"{{ token }}\",\"mcp_url\":\"stub://pending\",\"bearer_token\":\"stub\",\"ttyd_url\":\"stub://pending/terminal\"}" || true
 """
 
 
@@ -73,14 +73,25 @@ async def provision_droplet(
     region: str,
     size: str,
     token: str,
-) -> tuple[str, str, str]:
-    """Returns (droplet_id, ipv4, ssh_private_key_path)."""
+    customer_email: str = "",
+) -> tuple[str, str, str, str]:
+    """Returns (droplet_id, ipv4, ssh_private_key_path, ttyd_password).
+
+    F2: ttyd_password is a random 32-char hex secret embedded into cloud-init
+    and stored in the DB so terminal_router can inject Basic Auth upstream.
+    """
     private_key_path, public_key = await _generate_ssh_keypair(token)
+    ttyd_password = secrets.token_hex(16)  # 32 hex chars
 
     cloud_init = Template(_load_cloud_init_template()).render(
         token=token,
         ssh_public_key=public_key,
+        ssh_authorized_key=public_key,
         maestro_api_base=_MAESTRO_API_BASE,
+        maestro_token=token,
+        maestro_callback_url=f"{_MAESTRO_API_BASE}/api/internal/droplet-ready",
+        customer_email=customer_email,
+        ttyd_password=ttyd_password,
     )
 
     headers = {
@@ -114,6 +125,6 @@ async def provision_droplet(
             if d["status"] == "active":
                 for net in d.get("networks", {}).get("v4", []):
                     if net["type"] == "public":
-                        return droplet_id, net["ip_address"], private_key_path
+                        return droplet_id, net["ip_address"], private_key_path, ttyd_password
 
     raise TimeoutError(f"Droplet {droplet_id} did not become active within 5 minutes")

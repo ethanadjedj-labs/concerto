@@ -10,13 +10,15 @@ from maestro.provision_router import router as provision_router
 from maestro.status_router import router as status_router
 from maestro.terminal_router import router as terminal_router
 
-_MIGRATION_PATH = os.path.join(os.path.dirname(__file__), "..", "migrations", "001_init.sql")
+_MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
+_MIGRATIONS = ["001_init.sql", "002_ttyd_credentials.sql"]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    with open(_MIGRATION_PATH) as f:
-        await db.run_migration(f.read())
+    for fname in _MIGRATIONS:
+        with open(os.path.join(_MIGRATIONS_DIR, fname)) as f:
+            await db.run_migration(f.read())
     yield
 
 
