@@ -27,25 +27,25 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL("https://concerto.run"),
   title: {
-    default: "Concerto — Remote Workshop for Claude Code Agents",
+    default: "Concerto — Talk to Claude. Claude runs Claude Code.",
     template: "%s — Concerto",
   },
   description:
-    "Run Claude Code from Claude chat. Claude spawns sessions on your dedicated remote machine — no terminal, no setup. Solo $49/mo · Pro $99/mo.",
+    "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat. Claude launches sessions, monitors progress, reads logs, compares results, and reports back. Solo $49/mo · Pro $99/mo.",
   keywords: [
     "Claude Code",
-    "AI agents",
-    "remote workshop",
-    "Claude Code agents",
-    "AI automation",
+    "Claude chat",
+    "Claude Code sessions",
+    "remote machine",
+    "parallel Claude Code",
     "developer tools",
-    "parallel AI workers",
-    "cloud AI",
+    "AI orchestration",
+    "Claude MCP",
   ],
   openGraph: {
-    title: "Concerto — Remote Workshop for Claude Code Agents",
+    title: "Concerto — Talk to Claude. Claude runs Claude Code.",
     description:
-      "Pilot Claude Code agents from your browser. Parallel AI workers running 24/7 in your own cloud — no terminal required.",
+      "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat.",
     url: "https://concerto.run",
     siteName: "Concerto",
     images: [
@@ -61,9 +61,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Concerto — Remote Workshop for Claude Code Agents",
+    title: "Concerto — Talk to Claude. Claude runs Claude Code.",
     description:
-      "Pilot Claude Code agents from your browser. Parallel AI workers 24/7, your cloud, your billing.",
+      "Concerto lets Claude operate Claude Code on a remote machine while you stay in the normal Claude chat.",
     images: ["/twitter-image"],
     creator: "@ethanadjedj",
   },
