@@ -103,6 +103,86 @@ We're sorry for the trouble. If you want to understand what went wrong or need h
     return {"subject": subject, "text": text, "html": html}
 
 
+def trial_ready(*, dashboard_url: str, email: str, minutes: int = 30) -> dict:
+    subject = f"Your Concerto trial is live — {minutes} min on the clock"
+    text = f"""\
+Hi,
+
+Your free 30-minute Concerto trial workspace is ready.
+
+Open your dashboard here:
+{dashboard_url}
+
+You have {minutes} minutes to connect claude.ai and run a real Claude Code session.
+After that, the workspace is automatically destroyed.
+
+If you want to keep going, upgrade from inside the dashboard — takes 30 seconds.
+
+— The Concerto team
+https://concerto.run
+"""
+    html = _load_html("trial_ready")
+    if html:
+        html = (
+            html.replace("{{dashboard_url}}", dashboard_url)
+            .replace("{{email}}", email)
+            .replace("{{minutes}}", str(minutes))
+        )
+    return {"subject": subject, "text": text, "html": html}
+
+
+def trial_expired(*, upgrade_url: str, email: str) -> dict:
+    subject = "Your Concerto trial ended — upgrade to keep going"
+    text = f"""\
+Hi,
+
+Your 30-minute Concerto trial has ended and the workspace has been destroyed.
+
+Want to keep going? Upgrade here:
+{upgrade_url}
+
+Options:
+  Hosted — $39/month (we host the workspace, zero setup)
+  BYOC   — $99 once  (your DigitalOcean account)
+
+Questions? Reply to this email.
+
+— The Concerto team
+"""
+    html = _load_html("trial_expired")
+    if html:
+        html = (
+            html.replace("{{upgrade_url}}", upgrade_url)
+            .replace("{{email}}", email)
+        )
+    return {"subject": subject, "text": text, "html": html}
+
+
+def trial_converted(*, setup_url: str, email: str, plan: str = "hosted") -> dict:
+    plan_name = {"hosted": "Concerto Hosted", "byoc": "Concerto BYOC"}.get(plan, "Concerto")
+    subject = f"Welcome to {plan_name} — provisioning your workspace"
+    text = f"""\
+Hi,
+
+Your payment is confirmed. Welcome to {plan_name}.
+
+We're spinning up your workspace now. Open the link below when provisioning is done:
+{setup_url}
+
+The workspace will be ready in about 3 minutes.
+
+— The Concerto team
+"""
+    html = _load_html("trial_converted")
+    if html:
+        html = (
+            html.replace("{{setup_url}}", setup_url)
+            .replace("{{email}}", email)
+            .replace("{{plan_name}}", plan_name)
+        )
+    return {"subject": subject, "text": text, "html": html}
+
+
 def welcome_after_first_session(*, email: str, discord_url: str = "https://discord.gg/concerto") -> dict:
     subject = "You're running Claude Code on your own machine"
     text = f"""\

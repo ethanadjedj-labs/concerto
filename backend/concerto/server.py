@@ -13,6 +13,7 @@ from concerto.oauth_status_router import router as oauth_status_router
 from concerto.first_call_detector import router as first_call_router
 from concerto.customer_portal import router as customer_portal_router
 from concerto.preflight_router import router as preflight_router
+from concerto.trial_router import router as trial_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -24,6 +25,7 @@ _MIGRATIONS = [
     "006_drip_tracking.sql",
     "007_recovery.sql",
     "008_rename_maestro_to_concerto.sql",
+    "009_trial_mode.sql",
 ]
 
 
@@ -64,3 +66,4 @@ app.include_router(oauth_status_router)
 app.include_router(first_call_router)
 app.include_router(customer_portal_router)
 app.include_router(preflight_router)
+app.include_router(trial_router)

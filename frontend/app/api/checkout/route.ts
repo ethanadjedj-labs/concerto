@@ -28,6 +28,11 @@ export async function POST(request: Request) {
 
   const isHosted = plan === "hosted"
 
+  // Optional: trial_token passed when upgrading from a trial
+  let trialToken = ""
+  const urlObj = new URL(request.url)
+  trialToken = urlObj.searchParams.get("trial_token") ?? ""
+
   const priceId = isHosted
     ? process.env.STRIPE_CONCERTO_HOSTED_PRICE_ID!
     : process.env.STRIPE_CONCERTO_PRICE_ID!
@@ -46,6 +51,7 @@ export async function POST(request: Request) {
       product: "concerto",
       plan,
       region,
+      ...(trialToken ? { trial_token: trialToken } : {}),
     },
     success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/#pricing`,

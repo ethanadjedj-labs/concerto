@@ -292,12 +292,12 @@ async def stripe_webhook(request: Request):
             return {"ignored": True, "reason": "product mismatch"}
 
         plan = metadata.get("plan", "byoc")
+        trial_token = metadata.get("trial_token", "")
         customer_email = obj.get("customer_email") or (
             (obj.get("customer_details") or {}).get("email")
         )
         stripe_session_id = obj.get("id", "")
         stripe_customer_id = obj.get("customer") or ""
-        token = str(uuid.uuid4())
         paid_at = int(time.time())
 
         subscription_id = obj.get("subscription")
@@ -309,6 +309,46 @@ async def stripe_webhook(request: Request):
             except Exception:
                 pass
 
+        # Trial upgrade: reuse the existing trial buyer row
+        if trial_token:
+            trial_buyer = await db.get_buyer(trial_token)
+            if trial_buyer and trial_buyer.get("plan") == "trial":
+                # Destroy the trial droplet in the background
+                trial_vps_id = trial_buyer.get("vps_id", "")
+                if trial_vps_id and _CONCERTO_DO_API_TOKEN:
+                    asyncio.create_task(provisioner.destroy_droplet(_CONCERTO_DO_API_TOKEN, trial_vps_id))
+
+                await db.update_buyer(
+                    trial_token,
+                    plan=plan,
+                    status="paid_unprovisioned",
+                    stripe_session_id=stripe_session_id,
+                    stripe_customer_id=stripe_customer_id or None,
+                    paid_at=paid_at,
+                    subscription_id=subscription_id,
+                    subscription_status="active" if subscription_id else None,
+                    next_renewal_at=next_renewal_at,
+                    expires_at=None,
+                    # Reset provisioning state for fresh setup
+                    vps_id=None,
+                    vps_ip=None,
+                    mcp_url=None,
+                    bearer_token=None,
+                    provisioned_at=None,
+                    installed_at=None,
+                )
+                token = trial_token
+
+                # Send trial converted email
+                from emails.transactional import trial_converted
+                if customer_email:
+                    setup_url = f"{_SETUP_BASE}/{trial_token}"
+                    tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
+                    await send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"])
+                return {"ok": True, "trial_upgraded": True, "token": token}
+
+        # Standard (non-trial) purchase: create fresh buyer row
+        token = str(uuid.uuid4())
         await db.insert_buyer_with_plan(
             token=token,
             email=customer_email or "",

@@ -171,6 +171,12 @@ export default function LandingPage() {
                   </a>
                 </p>
               </div>
+              <p className="mt-2 text-sm text-[#a09890]">
+                Not sure?{" "}
+                <Link href="/try" className="text-[#8a847b] underline underline-offset-2 hover:text-[#555049] transition-colors">
+                  Try free for 30 minutes, no card required →
+                </Link>
+              </p>
             </div>
 
             {/* Right column — flex-1 (~55%) on desktop */}
@@ -422,6 +428,13 @@ export default function LandingPage() {
               You can always switch later.
             </p>
           </div>
+
+          <p className="reveal mt-5 text-center text-sm text-[#a09890]">
+            Not sure if Concerto is for you?{" "}
+            <Link href="/try" className="text-[#8a847b] underline underline-offset-2 hover:text-[#555049] transition-colors">
+              Try free for 30 minutes — no card needed →
+            </Link>
+          </p>
 
         </div>
       </section>

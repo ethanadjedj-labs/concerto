@@ -159,7 +159,7 @@ async def provision_droplet(
     size: str,
     token: str,
     customer_email: str = "",
-    mode: Literal["byoc", "hosted"] = "byoc",
+    mode: Literal["byoc", "hosted", "trial"] = "byoc",
 ) -> tuple[str, str, str, str]:
     """Returns (droplet_id, ipv4, ssh_private_key_path, ttyd_password).
 
@@ -188,7 +188,12 @@ async def provision_droplet(
         ttyd_password=ttyd_password,
     )
 
-    tag = f"concerto-hosted-{token[:8]}" if mode == "hosted" else "concerto"
+    if mode == "trial":
+        tag = f"concerto-trial-{token[:8]}"
+    elif mode == "hosted":
+        tag = f"concerto-hosted-{token[:8]}"
+    else:
+        tag = "concerto"
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(
