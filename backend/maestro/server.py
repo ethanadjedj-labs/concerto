@@ -9,7 +9,6 @@ from maestro.stripe_webhook import router as stripe_router
 from maestro.provision_router import router as provision_router
 from maestro.status_router import router as status_router
 from maestro.terminal_router import router as terminal_router
-from maestro.hosted_lifecycle import router as hosted_lifecycle_router
 from maestro.oauth_status_router import router as oauth_status_router
 from maestro.first_call_detector import router as first_call_router
 from maestro.customer_portal import router as customer_portal_router
@@ -52,7 +51,6 @@ app.include_router(stripe_router)
 app.include_router(provision_router)
 app.include_router(status_router)
 app.include_router(terminal_router)
-app.include_router(hosted_lifecycle_router)
 app.include_router(oauth_status_router)
 app.include_router(first_call_router)
 app.include_router(customer_portal_router)
