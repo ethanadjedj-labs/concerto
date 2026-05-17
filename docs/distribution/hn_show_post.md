@@ -1,6 +1,6 @@
 # Show HN: Concerto
 
-**Titre** : Show HN: Concerto – provision a Claude Code server in your DigitalOcean account from a browser ($99 one-time)
+**Titre** : Show HN: Concerto – one-click Claude Code workspace, hosted ($39/mo) or BYOC in your own cloud ($99 one-time)
 
 ---
 
@@ -8,7 +8,7 @@
 
 I built Concerto to solve a specific problem I kept running into: I wanted Claude Code running persistently on a cloud server — not tied to my laptop — and accessible from any browser without managing SSH configs. Setting it up manually every time is tedious. I wanted a single purchase that handled everything.
 
-**What it does**: you pay $99 once, enter your DigitalOcean API key, and Concerto provisions an Ubuntu 24.04 Droplet (2 vCPU / 4 GB RAM) in your own account. A cloud-init script installs Claude Code via npm, starts a ttyd terminal server behind a cloudflared tunnel, and pings back when ready. The browser opens an xterm.js terminal where you run `claude auth login` (standard OAuth flow, Concerto never sees your Anthropic credentials). You then paste an MCP connector snippet into claude.ai and your agent is live.
+**Two plans**: Hosted ($39/mo, Concerto manages the infrastructure) or BYOC ($99 one-time, deploys into your own DigitalOcean account). Both give you the same browser terminal + MCP connector. The BYOC path: enter your DigitalOcean API key and Concerto provisions an Ubuntu 24.04 Droplet (2 vCPU / 4 GB RAM) in your own account. A cloud-init script installs Claude Code via npm, starts a ttyd terminal server behind a cloudflared tunnel, and pings back when ready. The browser opens an xterm.js terminal where you run `claude auth login` (standard OAuth flow, Concerto never sees your Anthropic credentials). You then paste an MCP connector snippet into claude.ai and your agent is live.
 
 **Tech stack**:
 - Provisioner: FastAPI + DigitalOcean API, cloud-init for Droplet bootstrap
@@ -20,8 +20,8 @@ I built Concerto to solve a specific problem I kept running into: I wanted Claud
 
 **What doesn't work yet**: multi-Droplet support (parallel agents), SSH key rotation UI, automatic Droplet resizing. The provisioner installs Claude Code but you still need a Claude Max plan — Concerto doesn't bundle or proxy Anthropic API credits.
 
-**Why $99**: one-time covers the provisioning automation. Ongoing compute goes directly to your DO account at standard DO pricing (~$24/mo for a 2 vCPU / 4 GB Droplet). No Concerto subscription, no markup on compute.
+**Why these prices**: Hosted ($39/mo) is all-in — Concerto handles compute, maintenance, uptime. BYOC ($99 one-time) covers the provisioning automation only; ongoing compute is ~$24/mo billed directly by DigitalOcean to your account. No Concerto subscription on BYOC, no markup on compute.
 
-**One thing I'm genuinely unsure about**: whether the "runs in your cloud, not ours" angle is a meaningful differentiator to the target user, or whether most people would just prefer a fully managed SaaS where they don't think about the infrastructure at all. Curious what this community thinks — especially people who've run Claude Code on remote servers before.
+**One thing I'm genuinely unsure about**: whether the BYOC "runs in your cloud, not ours" angle is a meaningful differentiator to most users, or whether the fully managed Hosted plan is what people actually want — they just didn't have it as an option before. Curious what this community thinks, especially people who've run Claude Code on remote servers before.
 
 concerto.run — feedback welcome, including the harsh kind.
