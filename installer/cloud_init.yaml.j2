@@ -519,7 +519,7 @@ write_files:
       {% else %}ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
       StandardOutput=append:/var/log/cloudflared-quicktunnel.log
       StandardError=append:/var/log/cloudflared-quicktunnel.log
-      {% endif %}Restart=on-failure
+      {% endif %}Restart=always
       RestartSec=10
 
       [Install]
