@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /setup/
+Disallow: /dashboard/
+
+Sitemap: https://concerto.run/sitemap.xml

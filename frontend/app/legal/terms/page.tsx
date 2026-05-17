@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 import { getLegalContent } from "@/lib/legal"
 
-export const metadata: Metadata = { title: "Terms of Service" }
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Concerto Terms of Service — governing your use of the Concerto remote workshop platform.",
+  openGraph: { title: "Terms of Service — Concerto", url: "https://concerto.run/legal/terms" },
+}
 
 export default function TermsPage() {
   const html = getLegalContent("TERMS.md")
