@@ -7,6 +7,7 @@
 #   ssh_authorized_key   — backend-generated public key for terminal proxy access
 #   customer_email       — customer email for audit logs
 #   ttyd_password        — random 32-char hex credential for ttyd Basic Auth (F2)
+#   maestro_token_prefix — first 8 chars of bearer_token (display only)
 #
 # Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
 # cloud-init runs runcmd on first boot as root.
@@ -43,6 +44,223 @@ write_files:
     permissions: '0600'
     content: |
       TTYD_PASSWORD={{ ttyd_password }}
+
+
+  # ── maestro-workspace base files ────────────────────────────────────────────
+  # These are seeded onto the customer VPS at /opt/maestro-workspace/.
+  # {{ customer_email }} and {{ maestro_token_prefix }} are Jinja2-rendered at provision time.
+
+  - path: /opt/maestro-workspace/OPS/MANAGER_STATE.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Manager State — {{ customer_email }}'s Maestro
+
+      Last updated: <fill on first edit>
+
+      ## Active strategic decisions
+
+      (Write your standing decisions here — what you're building, your business thesis, what you've chosen to ignore.)
+
+      ## Active projects
+
+      (List each active project as a section. When state changes, edit here.)
+
+      ## Pending operator decisions
+
+      (Open questions that block your sessions. Sessions should write here when they can't proceed alone.)
+
+      ## Conventions
+
+      - Sessions read this file before substantive work.
+      - Sessions write back here when state changes.
+      - This file is your future-self handoff.
+
+  - path: /opt/maestro-workspace/OPS/SESSION_RULES.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Session Rules — read at the start of every spawned session
+
+      This file defines binding conventions for Claude Code sessions on your Maestro VPS.
+
+      ## Read first in every session
+
+      1. /opt/maestro-workspace/OPS/MANAGER_STATE.md — strategic state, decisions, follow-ups
+      2. /opt/maestro-workspace/OPS/SESSION_RULES.md — this file
+      3. /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md — return format
+
+      ## Language and communication
+
+      - Write session prompts in English.
+      - Include in prompts: goal, deliverables, acceptance criteria, abort conditions.
+      - Return envelopes per ENVELOPE_SCHEMA.md as the final stdout output of every session.
+
+      ## Working directory
+
+      - Default working directory: /opt/maestro-workspace/ or a subdirectory.
+      - Prefer idempotent operations. Check before writing.
+
+      ## State hygiene
+
+      - When a session changes consequential state, update MANAGER_STATE.md before closing.
+      - Keep session scope focused. Flag scope creep and open a separate session.
+
+      ## Resource caveats
+
+      - Maestro VPS: 2 GiB RAM. Max 2 parallel Claude sessions.
+      - Abort and report if RAM drops below 200 MiB.
+
+      ## Universal abort triggers
+
+      - VPS RAM below 200 MiB → stop and report.
+      - Auth issues not resolved → stop and report.
+      - Destructive operation not in task spec → stop and ask.
+
+      ## Output discipline
+
+      - Every session ends by printing its envelope (JSON) to stdout per ENVELOPE_SCHEMA.md.
+
+  - path: /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Envelope Schema — final JSON output of every spawned session
+
+      Print this as the FINAL stdout line of every session (single line, no markdown fences):
+
+      {"status":"ok|partial|aborted|failed","summary":"<1-3 sentences>","artifacts":{"files_created":[],"files_modified":[],"pr_url":"","commits":[]},"next_recommended":"<free text>","decisions_for_operator":[],"errors":[]}
+
+      ## Status values
+
+      - ok: all criteria met
+      - partial: some criteria met
+      - aborted: hit abort trigger
+      - failed: unexpected error
+
+  - path: /opt/maestro-workspace/OPS/queue/pending/.gitkeep
+    owner: root:root
+    permissions: '0644'
+    content: ''
+
+  - path: /opt/maestro-workspace/OPS/queue/done/.gitkeep
+    owner: root:root
+    permissions: '0644'
+    content: ''
+
+  - path: /opt/maestro-workspace/OPS/queue/failed/.gitkeep
+    owner: root:root
+    permissions: '0644'
+    content: ''
+
+  - path: /opt/maestro-workspace/README.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Your first 5 minutes with Maestro
+
+      Your Maestro VPS is running Claude Code connected to your claude.ai account.
+
+      ## Step 1 — Send your first session
+
+      In any claude.ai conversation with the Maestro connector active:
+
+        Spawn a Maestro session to write a hello world Python script.
+
+      ## Step 2 — Check the session
+
+        List my Maestro sessions.
+
+      ## Step 3 — Pull the output
+
+        What did the hello world session return?
+
+      ## Step 4 — Do real work
+
+      Replace the hello world prompt with something useful. Examples:
+      - Spawn a Maestro session to clone my GitHub repo and run the tests.
+      - Spawn a Maestro session to set up a Flask app in /opt/maestro-workspace/myapp/.
+      - Spawn 3 parallel sessions: audit backend, lint frontend, check deps.
+
+      See examples/parallel_workflow.md for the parallel pattern.
+
+      ## Step 5 — Edit MANAGER_STATE.md
+
+      Write what you're building in OPS/MANAGER_STATE.md.
+      Every future session reads this file first.
+
+  - path: /opt/maestro-workspace/examples/sample_prompt.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Sample Session Prompt
+
+      Read /opt/maestro-workspace/OPS/MANAGER_STATE.md and /opt/maestro-workspace/OPS/SESSION_RULES.md before starting.
+
+      ## Goal
+
+      <One sentence: what outcome this session should produce.>
+
+      ## Deliverables
+
+      - <Specific file, endpoint, or state change that must exist when done.>
+
+      ## Acceptance criteria
+
+      - <How to verify the work is correct.>
+
+      ## Working directory
+
+      /opt/maestro-workspace/<subdirectory>
+
+      ## Abort conditions
+
+      - If RAM available drops below 200 MiB.
+      - If a required credential is missing.
+      - If a destructive operation not in this spec would be required.
+
+      ## Return format
+
+      Print a JSON envelope as the final stdout line per /opt/maestro-workspace/OPS/ENVELOPE_SCHEMA.md.
+
+  - path: /opt/maestro-workspace/examples/parallel_workflow.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Parallel Workflow
+
+      In one claude.ai message, ask Claude to spawn N sessions simultaneously:
+
+        Spawn 3 Maestro sessions in parallel:
+        1. Session "audit-backend": list Python files over 300 lines.
+        2. Session "check-deps": run pip list --outdated.
+        3. Session "test-suite": run pytest and return pass/fail counts.
+
+      Then collect results:
+
+        What did audit-backend, check-deps, and test-suite return?
+
+      Resource limits: max 2-3 heavy sessions in parallel on a 2 GiB VPS.
+
+  - path: /opt/maestro-workspace/.claude/CLAUDE.md
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Maestro Workspace
+
+      ## Read at the start of every session
+
+      1. OPS/MANAGER_STATE.md — what you are building, active projects, open decisions
+      2. OPS/SESSION_RULES.md — conventions for this workspace
+      3. OPS/ENVELOPE_SCHEMA.md — how to format your final output
+
+      ## After substantive work
+
+      Update OPS/MANAGER_STATE.md with what changed before closing.
+
+      ## Output discipline
+
+      End every session by printing a JSON envelope to stdout per OPS/ENVELOPE_SCHEMA.md.
 
   # ── MCP server ──────────────────────────────────────────────────────────────
   - path: /opt/maestro/mcp_server.py
@@ -450,3 +668,13 @@ runcmd:
 
   # ── 12. Wait for tunnel URL and POST back to empire backend ───────────────
   - ["/opt/maestro/provision_complete.sh"]
+
+  # ── 13. Workspace directory permissions ──────────────────────────────────
+  - ["bash", "-c",
+     "find /opt/maestro-workspace -type d -exec chmod 755 {} + && find /opt/maestro-workspace -type f -exec chmod 644 {} +"]
+  - ["bash", "-c", "chown -R root:root /opt/maestro-workspace"]
+
+  # ── 14. Default working directory when SSH'd in ───────────────────────────
+  - ["bash", "-c",
+     "echo 'cd /opt/maestro-workspace' >> /root/.bashrc"]
+
