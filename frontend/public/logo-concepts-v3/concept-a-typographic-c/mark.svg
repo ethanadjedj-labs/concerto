@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Concerto mark — Concept A: Typographic C">
+  <title>Concerto — Concept A: Typographic C</title>
+  <!--
+    Outer arc: radius 70, center (100,100)
+    Inner arc: radius 53, center (105,100) — eccentric +5 right for thick-thin:
+      Left stroke 18px, right stroke 12px, terminal ~13px.
+    Opening: ±35° from horizontal right = 70° mouth.
+    Upper outer: (157.3,59.9). Lower outer: (157.3,140.1).
+    Upper inner: (148.4,69.6). Lower inner: (148.4,130.4).
+    Signature: lower terminal bracket-foot, 21px wide × 3.5px tall.
+      References musical system bracket. Absent on upper terminal.
+  -->
+  <path
+    d="M 157.3 59.9
+       A 70 70 0 1 0 157.3 140.1
+       L 148.4 130.4
+       A 53 53 0 1 1 148.4 69.6
+       Z"
+    fill="#cc785c"
+  />
+  <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+</svg>

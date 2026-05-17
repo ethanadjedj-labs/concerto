@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 360" role="img" aria-label="Concept D colorways">
+  <title>Concept D — 6 colorways</title>
+
+  <rect width="540" height="360" fill="#d4cfc8"/>
+  <rect x="1" y="1" width="178" height="118" fill="#faf9f5"/>
+  <rect x="181" y="1" width="178" height="118" fill="#faf9f5"/>
+  <rect x="361" y="1" width="178" height="118" fill="#cc785c"/>
+  <rect x="1" y="121" width="178" height="118" fill="#2a2925"/>
+  <rect x="181" y="121" width="178" height="118" fill="#ffffff"/>
+  <rect x="361" y="121" width="178" height="118" fill="#f3efe5"/>
+  <rect x="1" y="241" width="178" height="118" fill="#faf9f5"/>
+  <rect x="181" y="241" width="178" height="118" fill="#f3efe5"/>
+  <rect x="361" y="241" width="178" height="118" fill="#191919"/>
+
+  <!--
+    Scale: 80/200=0.4.
+    Mark visual bounding box in 200×200: x≈20(C outer left) to x=172(o outer right), y=67 to y=142.
+    At 0.4: x=8→68.8, y=26.8→56.8. Size: 60.8×30. Cell: 180×120, center (90,60).
+    Translate per cell: (90-8-60.8/2, 60-26.8-30/2) = (51.6, 18.2) → (52,18)
+    But each row y offset: row1 y=0, row2 y=120, row3 y=240.
+  -->
+
+  <!-- R1C1: Peach on cream -->
+  <g transform="translate(52,18) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="12" y="114" font-family="monospace" font-size="7" fill="#9b9490">Peach / Cream</text>
+
+  <!-- R1C2: Dark on cream -->
+  <g transform="translate(232,18) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#2a2925"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#2a2925" fill-rule="evenodd"/>
+  </g>
+  <text x="192" y="114" font-family="monospace" font-size="7" fill="#9b9490">Dark / Cream</text>
+
+  <!-- R1C3: Cream on peach -->
+  <g transform="translate(412,18) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#faf9f5"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#faf9f5" fill-rule="evenodd"/>
+  </g>
+  <text x="372" y="114" font-family="monospace" font-size="7" fill="#faf9f5" opacity="0.7">Cream / Peach</text>
+
+  <!-- R2C1: Cream on dark -->
+  <g transform="translate(52,138) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#faf9f5"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#faf9f5" fill-rule="evenodd"/>
+  </g>
+  <text x="12" y="234" font-family="monospace" font-size="7" fill="#6b6560">Cream / Dark</text>
+
+  <!-- R2C2: Peach on white -->
+  <g transform="translate(232,138) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="192" y="234" font-family="monospace" font-size="7" fill="#9b9490">Peach / White</text>
+
+  <!-- R2C3: Peach on off-cream -->
+  <g transform="translate(412,138) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="372" y="234" font-family="monospace" font-size="7" fill="#9b9490">Peach / Off-cream</text>
+
+  <!-- R3C1: Black on cream -->
+  <g transform="translate(52,258) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#191919"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#191919" fill-rule="evenodd"/>
+  </g>
+  <text x="12" y="354" font-family="monospace" font-size="7" fill="#9b9490">Black / Cream</text>
+
+  <!-- R3C2: Peach on warm -->
+  <g transform="translate(232,258) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="192" y="354" font-family="monospace" font-size="7" fill="#9b9490">Peach / Warm</text>
+
+  <!-- R3C3: Peach on black -->
+  <g transform="translate(412,258) scale(0.4)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="372" y="354" font-family="monospace" font-size="7" fill="#6b6560">Peach / Black</text>
+
+  <text x="6" y="11" font-family="monospace" font-size="7" fill="#2a2925">D — Monogram Co · Colorways</text>
+</svg>

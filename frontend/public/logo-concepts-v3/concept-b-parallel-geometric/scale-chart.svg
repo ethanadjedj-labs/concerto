@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 100" role="img" aria-label="Concept B scale chart">
+  <title>Concept B — Scale chart: 16px to 128px</title>
+  <rect width="640" height="100" fill="#faf9f5"/>
+  <!-- 16px: scale=0.1 (16/160) -->
+  <g transform="translate(8,42) scale(0.1)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="8" y="96" font-family="monospace" font-size="7" fill="#9b9490">16px</text>
+  <!-- 24px: scale=0.15 -->
+  <g transform="translate(36,38) scale(0.15)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="36" y="96" font-family="monospace" font-size="7" fill="#9b9490">24px</text>
+  <!-- 32px: scale=0.2 -->
+  <g transform="translate(72,34) scale(0.2)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="72" y="96" font-family="monospace" font-size="7" fill="#9b9490">32px</text>
+  <!-- 48px: scale=0.3 -->
+  <g transform="translate(116,26) scale(0.3)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="116" y="96" font-family="monospace" font-size="7" fill="#9b9490">48px</text>
+  <!-- 64px: scale=0.4 -->
+  <g transform="translate(172,18) scale(0.4)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="172" y="96" font-family="monospace" font-size="7" fill="#9b9490">64px</text>
+  <!-- 128px: scale=0.8 -->
+  <g transform="translate(248,4) scale(0.8)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="248" y="96" font-family="monospace" font-size="7" fill="#9b9490">128px</text>
+  <line x1="8" y1="90" x2="620" y2="90" stroke="#e8e4dc" stroke-width="0.5"/>
+  <text x="4" y="8" font-family="monospace" font-size="7" fill="#2a2925">B — Parallel Geometric · Scale Chart</text>
+</svg>

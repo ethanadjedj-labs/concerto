@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 100" role="img" aria-label="Concerto lockup — Concept C">
+  <title>Concerto lockup — Concept C: Workshop Bracket</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300&amp;display=swap');
+    </style>
+  </defs>
+  <!-- Mark scale 0.4 (80/200). Mark visual span x=40→160, y=29→171. At 0.4: 16→64, 11.6→68.4. Translate (4,10). -->
+  <g transform="translate(4,10) scale(0.4)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="90" y="70" font-family="'Fraunces', 'Times New Roman', serif" font-weight="300" font-size="52" fill="#2a2925" letter-spacing="-0.9"><tspan>C</tspan><tspan dx="-3">o</tspan><tspan dx="0">n</tspan><tspan dx="-2">c</tspan><tspan dx="-1">e</tspan><tspan dx="0">r</tspan><tspan dx="-1">t</tspan><tspan dx="-1">o</tspan></text>
+</svg>

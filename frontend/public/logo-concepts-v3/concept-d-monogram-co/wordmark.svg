@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 80" role="img" aria-label="Concerto wordmark">
+  <title>Concerto wordmark — Fraunces Light 300</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300&amp;display=swap');
+    </style>
+  </defs>
+  <text
+    x="4"
+    y="65"
+    font-family="'Fraunces', 'Times New Roman', serif"
+    font-weight="300"
+    font-size="60"
+    fill="#2a2925"
+    letter-spacing="-1.1"
+  ><tspan>C</tspan><tspan dx="-3">o</tspan><tspan dx="0">n</tspan><tspan dx="-2">c</tspan><tspan dx="-1">e</tspan><tspan dx="0">r</tspan><tspan dx="-1">t</tspan><tspan dx="-1">o</tspan></text>
+</svg>
