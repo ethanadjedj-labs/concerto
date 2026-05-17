@@ -1,49 +1,403 @@
 #cloud-config
-# Maestro droplet bootstrap — stub (feat/installer-v1 will replace this)
-package_update: true
+# Maestro installer — Jinja2 template rendered by the empire backend.
+#
+# Template variables (all required):
+#   maestro_token        — per-provisioning callback token (identifies this droplet)
+#   maestro_callback_url — backend webhook URL to POST the tunnel/bearer details to
+#   ssh_authorized_key   — backend-generated public key for terminal proxy access
+#   customer_email       — customer email for audit logs
+#
+# Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
+# cloud-init runs runcmd on first boot as root.
 
-packages:
-  - curl
-  - wget
-  - jq
-  - git
-  - unzip
+# ─── SSH ─────────────────────────────────────────────────────────────────────
+
+ssh_authorized_keys:
+  - "{{ ssh_authorized_key }}"
+
+# ─── Write files (before runcmd) ─────────────────────────────────────────────
+
+write_files:
+
+  # Maestro environment — callback URL and provisioning identity
+  - path: /etc/maestro/env
+    owner: root:root
+    permissions: '0600'
+    content: |
+      MAESTRO_CALLBACK_URL={{ maestro_callback_url }}
+      MAESTRO_TOKEN={{ maestro_token }}
+      CUSTOMER_EMAIL={{ customer_email }}
+
+  # Version stamp
+  - path: /etc/maestro/version
+    owner: root:root
+    permissions: '0644'
+    content: "1.0.0\n"
+
+  # ── MCP server ──────────────────────────────────────────────────────────────
+  # FastMCP + Bearer auth + 4 session-management tools.
+  # Kept in sync with installer/mcp_server.py in the maestro repo.
+  - path: /opt/maestro/mcp_server.py
+    owner: root:root
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env python3
+      """Maestro MCP server — runs on the customer's VPS.
+
+      FastMCP server (streamable HTTP transport, mcp>=1.2) with Bearer auth.
+      Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
+
+      Auth: Bearer token read from /etc/maestro/token (generated at provision time).
+      Session state is in-process memory; sessions are lost on restart.
+      """
+      from __future__ import annotations
+
+      import asyncio
+      import os
+      import time
+      import uuid
+      from pathlib import Path
+      from typing import Any
+
+      import anyio
+      from mcp.server.fastmcp import FastMCP
+
+      TOKEN_PATH = Path(os.environ.get("MAESTRO_TOKEN_PATH", "/etc/maestro/token"))
+      SESSION_DIR = Path("/var/lib/maestro/sessions")
+
+      _sessions: dict[str, dict[str, Any]] = {}
+
+
+      def _read_token() -> str:
+          return TOKEN_PATH.read_text().strip()
+
+
+      mcp = FastMCP("maestro", stateless_http=True)
+
+
+      @mcp.tool()
+      async def start_claude_session(
+          prompt: str,
+          model: str = "claude-sonnet-4-5",
+      ) -> dict[str, Any]:
+          """Launch a `claude -p` session in the background.
+
+          Returns {session_id, status} immediately. Poll get_claude_session() for output.
+          stream-json output is captured and stored per-session (last 500 lines).
+          """
+          session_id = uuid.uuid4().hex[:10]
+          SESSION_DIR.mkdir(parents=True, exist_ok=True)
+
+          _sessions[session_id] = {
+              "id": session_id,
+              "status": "running",
+              "started_at": time.time(),
+              "prompt": prompt[:300],
+              "model": model,
+              "output_lines": [],
+              "exit_code": None,
+              "error": None,
+          }
+
+          task = asyncio.get_event_loop().create_task(
+              _run_claude(session_id, prompt, model),
+              name=f"claude-{session_id}",
+          )
+          _sessions[session_id]["_task"] = task
+          return {"session_id": session_id, "status": "running"}
+
+
+      @mcp.tool()
+      async def list_claude_sessions() -> list[dict[str, Any]]:
+          """Return all known sessions with id, status, model, and prompt preview."""
+          return [
+              {
+                  "id": s["id"],
+                  "status": s["status"],
+                  "started_at": s["started_at"],
+                  "model": s["model"],
+                  "prompt_preview": s["prompt"][:80],
+              }
+              for s in _sessions.values()
+          ]
+
+
+      @mcp.tool()
+      async def get_claude_session(session_id: str) -> dict[str, Any]:
+          """Return full output and status of a session by session_id."""
+          s = _sessions.get(session_id)
+          if s is None:
+              return {"error": f"session {session_id!r} not found"}
+          return {
+              "id": s["id"],
+              "status": s["status"],
+              "started_at": s["started_at"],
+              "model": s["model"],
+              "exit_code": s.get("exit_code"),
+              "error": s.get("error"),
+              "output_lines": s.get("output_lines", []),
+          }
+
+
+      @mcp.tool()
+      async def kill_claude_session(session_id: str) -> dict[str, Any]:
+          """Cancel a running claude session (sends SIGTERM via anyio task cancellation)."""
+          s = _sessions.get(session_id)
+          if s is None:
+              return {"error": f"session {session_id!r} not found"}
+          if s["status"] != "running":
+              return {"session_id": session_id, "status": s["status"], "message": "already finished"}
+
+          task: asyncio.Task | None = s.pop("_task", None)
+          if task and not task.done():
+              task.cancel()
+              try:
+                  await task
+              except (asyncio.CancelledError, Exception):
+                  pass
+
+          s["status"] = "killed"
+          return {"session_id": session_id, "status": "killed"}
+
+
+      async def _run_claude(session_id: str, prompt: str, model: str) -> None:
+          s = _sessions[session_id]
+          cmd = [
+              "claude", "-p", prompt,
+              "--output-format", "stream-json",
+              "--model", model,
+              "--no-update-check",
+          ]
+          try:
+              result = await anyio.run_process(cmd, check=False)
+              raw = result.stdout.decode("utf-8", errors="replace")
+              s["output_lines"] = raw.splitlines()[-500:]
+              s["exit_code"] = result.returncode
+              s["status"] = "done"
+          except asyncio.CancelledError:
+              s["status"] = "killed"
+              raise
+          except Exception as exc:
+              s["status"] = "failed"
+              s["error"] = str(exc)
+          finally:
+              s.pop("_task", None)
+
+
+      def main() -> None:
+          import uvicorn
+          from starlette.middleware.base import BaseHTTPMiddleware
+          from starlette.requests import Request as _Request
+          from starlette.responses import JSONResponse
+
+          class BearerAuth(BaseHTTPMiddleware):
+              async def dispatch(self, request: _Request, call_next):
+                  if request.url.path == "/healthz":
+                      return await call_next(request)
+                  try:
+                      expected = _read_token()
+                  except OSError:
+                      return JSONResponse({"error": "token file not readable"}, status_code=503)
+                  auth = request.headers.get("Authorization", "")
+                  if not auth.lower().startswith("bearer "):
+                      return JSONResponse({"error": "missing bearer token"}, status_code=401)
+                  if auth.split(" ", 1)[1].strip() != expected:
+                      return JSONResponse({"error": "invalid bearer token"}, status_code=401)
+                  return await call_next(request)
+
+          app = mcp.streamable_http_app()
+          app.add_middleware(BearerAuth)
+          uvicorn.run(app, host="127.0.0.1", port=9876, log_level="info")
+
+
+      if __name__ == "__main__":
+          main()
+
+  # ── nginx reverse proxy ─────────────────────────────────────────────────────
+  # Routes /terminal/* → ttyd (port 7681, WebSocket)
+  # Routes everything else → MCP server (port 9876)
+  # cloudflared tunnel points at this nginx (port 8080)
+  - path: /etc/nginx/conf.d/maestro.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      server {
+          listen 8080;
+          server_name _;
+
+          # MCP server (all non-terminal traffic)
+          location / {
+              proxy_pass         http://127.0.0.1:9876;
+              proxy_http_version 1.1;
+              proxy_set_header   Host              $host;
+              proxy_set_header   X-Real-IP         $remote_addr;
+              proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+              proxy_set_header   X-Forwarded-Proto $scheme;
+              proxy_read_timeout 300s;
+              proxy_send_timeout 300s;
+          }
+
+          # Redirect /terminal to /terminal/ for clean WebSocket URL
+          location = /terminal {
+              return 301 /terminal/;
+          }
+
+          # ttyd web terminal — must proxy WebSocket (Upgrade header)
+          location /terminal/ {
+              proxy_pass         http://127.0.0.1:7681/;
+              proxy_http_version 1.1;
+              proxy_set_header   Upgrade    $http_upgrade;
+              proxy_set_header   Connection "upgrade";
+              proxy_set_header   Host       $host;
+              proxy_read_timeout 3600s;
+              proxy_send_timeout 3600s;
+          }
+      }
+
+  # ── systemd: MCP server ─────────────────────────────────────────────────────
+  - path: /etc/systemd/system/maestro-mcp.service
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Maestro MCP Server
+      Documentation=https://github.com/ethanadjedj-labs/maestro
+      After=network.target
+
+      [Service]
+      Type=simple
+      ExecStart=/opt/maestro/.venv/bin/python /opt/maestro/mcp_server.py
+      Restart=always
+      RestartSec=5
+      EnvironmentFile=/etc/maestro/env
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # ── systemd: cloudflared tunnel ─────────────────────────────────────────────
+  - path: /etc/systemd/system/maestro-tunnel.service
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Maestro Cloudflared Quick Tunnel
+      Documentation=https://github.com/ethanadjedj-labs/maestro
+      After=network.target maestro-mcp.service maestro-ttyd.service nginx.service
+
+      [Service]
+      Type=simple
+      # Quick tunnel — URL logged to stdout/journald, parsed by provision_complete.sh
+      ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # ── systemd: ttyd web terminal ──────────────────────────────────────────────
+  - path: /etc/systemd/system/maestro-ttyd.service
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Maestro TTYd Web Terminal
+      Documentation=https://github.com/ethanadjedj-labs/maestro
+      After=network.target
+
+      [Service]
+      Type=simple
+      # -W = writable (allow input), -i = bind interface, no auth (protected by cloudflared tunnel)
+      ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 -W bash
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # ── provision completion script ─────────────────────────────────────────────
+  # Waits for the cloudflared tunnel URL and POSTs it back to the empire backend.
+  - path: /opt/maestro/provision_complete.sh
+    owner: root:root
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      source /etc/maestro/env
+
+      # ── Wait for cloudflared to log the tunnel URL (up to 120s) ──────────────
+      echo "[maestro] Waiting for cloudflare tunnel URL..."
+      TUNNEL_URL=""
+      for i in $(seq 1 60); do
+        TUNNEL_URL=$(
+          journalctl -u maestro-tunnel --no-pager -n 300 2>/dev/null \
+            | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' \
+            | head -1
+        )
+        [ -n "$TUNNEL_URL" ] && break
+        sleep 2
+      done
+
+      if [ -z "$TUNNEL_URL" ]; then
+        echo "[maestro] ERROR: tunnel URL not found in journald after 120s" >&2
+        journalctl -u maestro-tunnel --no-pager -n 50 >&2 || true
+        exit 1
+      fi
+
+      echo "[maestro] Tunnel URL: ${TUNNEL_URL}"
+
+      # ── Read the freshly-generated bearer token ───────────────────────────────
+      BEARER_TOKEN=$(cat /etc/maestro/token)
+
+      # ── POST results back to empire backend ───────────────────────────────────
+      curl -fsSL -X POST "${MAESTRO_CALLBACK_URL}" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"token\":         \"${MAESTRO_TOKEN}\",
+          \"mcp_url\":       \"${TUNNEL_URL}\",
+          \"bearer_token\":  \"${BEARER_TOKEN}\",
+          \"ttyd_url\":      \"${TUNNEL_URL}/terminal\"
+        }"
+
+      echo "[maestro] Provisioning complete."
+
+# ─── runcmd (runs on first boot as root, sequentially) ───────────────────────
 
 runcmd:
-  # Install authorized SSH key injected at provision time
-  - mkdir -p /root/.ssh && chmod 700 /root/.ssh
-  - echo "{{ ssh_public_key }}" >> /root/.ssh/authorized_keys
-  - chmod 600 /root/.ssh/authorized_keys
+  # ── 1. System packages ────────────────────────────────────────────────────
+  - ["apt-get", "update", "-qq"]
+  - ["apt-get", "install", "-y", "curl", "python3-venv", "tmux", "git", "ttyd", "nginx"]
 
-  # Install ttyd (web terminal) and start on localhost only
-  - |
-    TTYD_VER=$(curl -sf https://api.github.com/repos/tsl0922/ttyd/releases/latest \
-      | jq -r '.tag_name' 2>/dev/null || echo "1.7.4")
-    wget -qO /usr/local/bin/ttyd \
-      "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VER}/ttyd.x86_64"
-    chmod +x /usr/local/bin/ttyd
-  - |
-    cat > /etc/systemd/system/ttyd.service <<'EOF'
-    [Unit]
-    Description=ttyd web terminal
-    After=network.target
+  # ── 2. Node.js 20 via NodeSource ──────────────────────────────────────────
+  # Adds NodeSource apt repo then installs the nodejs package from it
+  - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
+  - ["apt-get", "install", "-y", "nodejs"]
 
-    [Service]
-    ExecStart=/usr/local/bin/ttyd --port 7681 --interface 127.0.0.1 bash
-    Restart=always
-    RestartSec=5
+  # ── 3. Claude Code CLI ────────────────────────────────────────────────────
+  - ["npm", "install", "-g", "@anthropic-ai/claude-code"]
 
-    [Install]
-    WantedBy=multi-user.target
-    EOF
-    systemctl daemon-reload
-    systemctl enable --now ttyd
+  # ── 4. cloudflared (latest .deb release from GitHub) ─────────────────────
+  - ["bash", "-c",
+     "curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb"]
 
-  # Ping Maestro API when installation is complete
-  - |
-    sleep 20
-    BEARER="$(head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32)"
-    curl -sf -X POST {{ maestro_api_base }}/api/internal/droplet-ready \
-      -H 'Content-Type: application/json' \
-      -d "{\"token\":\"{{ token }}\",\"mcp_url\":\"stub://pending\",\"bearer_token\":\"${BEARER}\"}" \
-      || echo "[maestro] pingback failed — will retry manually"
+  # ── 5. Maestro Python venv + MCP deps ────────────────────────────────────
+  - ["bash", "-c",
+     "python3 -m venv /opt/maestro/.venv && /opt/maestro/.venv/bin/pip install --quiet --upgrade pip && /opt/maestro/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
+
+  # ── 6. Generate MCP bearer token ─────────────────────────────────────────
+  # /etc/maestro/ is already created by write_files above
+  - ["bash", "-c", "openssl rand -hex 32 > /etc/maestro/token && chmod 600 /etc/maestro/token"]
+
+  # ── 7. Session storage directory ──────────────────────────────────────────
+  - ["mkdir", "-p", "/var/lib/maestro/sessions"]
+
+  # ── 8. nginx: disable default site, test config ───────────────────────────
+  - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]
+
+  # ── 9. systemd: reload, enable, start all units ───────────────────────────
+  - ["systemctl", "daemon-reload"]
+  - ["bash", "-c",
+     "systemctl enable maestro-mcp maestro-ttyd maestro-tunnel nginx && systemctl start nginx maestro-mcp maestro-ttyd maestro-tunnel"]
+
+  # ── 10. Wait for tunnel URL and POST back to empire backend ───────────────
+  - ["/opt/maestro/provision_complete.sh"]
