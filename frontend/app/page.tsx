@@ -557,6 +557,7 @@ export default function LandingPage() {
                 { href: "/legal/privacy", label: "Privacy" },
                 { href: "/legal/refund",  label: "Refund" },
                 { href: "/legal/aup",     label: "Acceptable Use" },
+                { href: "/help",          label: "Help" },
               ].map(({ href, label }) => (
                 <Link key={href} href={href} className="text-xs text-white/25 transition-colors hover:text-white/50">
                   {label}

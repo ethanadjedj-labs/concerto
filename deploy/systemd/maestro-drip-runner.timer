@@ -1,0 +1,10 @@
+[Unit]
+Description=Maestro drip runner — every hour
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+AccuracySec=60s
+
+[Install]
+WantedBy=timers.target

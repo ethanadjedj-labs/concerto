@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5 things power users do with Maestro</title>
+<style>
+  body{margin:0;padding:0;background:#0d0d14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0}
+  .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+  .logo-icon{width:36px;height:36px;background:#7c3aed;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#fff}
+  p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0 0 16px}
+  .use-case{margin-bottom:20px;padding:18px 20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px}
+  .use-case-num{font-size:11px;font-weight:700;letter-spacing:.08em;color:#7c3aed;text-transform:uppercase;margin-bottom:6px}
+  .use-case-title{font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:6px}
+  .use-case-body{font-size:14px;color:#94a3b8;line-height:1.6}
+  .btn{display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;margin:8px 0 24px}
+  .footer{font-size:12px;color:#475569;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
+  a{color:#a78bfa}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="5" stroke="white" stroke-width="1.5"/><circle cx="10" cy="10" r="2" fill="white"/></svg></div>
+    <span style="font-weight:700;font-size:18px;color:#fff">Maestro</span>
+  </div>
+
+  <h1>5 things power users do with Maestro.</h1>
+  <p>Three weeks in, here's what we see from operators who get the most out of their Droplet:</p>
+
+  <div class="use-case">
+    <div class="use-case-num">01</div>
+    <div class="use-case-title">Overnight dependency upgrades</div>
+    <div class="use-case-body">Run <code>npm audit fix --force</code> across 6 repos simultaneously, each in its own tmux session. Claude Code opens PRs, runs tests, and flags breakage. Wake up to a diff review, not a task list.</div>
+  </div>
+
+  <div class="use-case">
+    <div class="use-case-num">02</div>
+    <div class="use-case-title">Persistent scraping pipelines</div>
+    <div class="use-case-body">Set up a Python scraper on the Droplet, have Claude Code schedule it via cron, then check results the next day. The Droplet keeps running after your claude.ai session closes — no cloud function cold starts, no timeout at 30s.</div>
+  </div>
+
+  <div class="use-case">
+    <div class="use-case-num">03</div>
+    <div class="use-case-title">Multi-file refactors with full grep context</div>
+    <div class="use-case-body">Claude Code on a real shell runs <code>rg</code>, <code>find</code>, and <code>sed</code> across the whole codebase — not just open files. Operators use this for API migrations where you need to touch 40+ call sites across a monorepo.</div>
+  </div>
+
+  <div class="use-case">
+    <div class="use-case-num">04</div>
+    <div class="use-case-title">Local model inference via Ollama</div>
+    <div class="use-case-body">Install Ollama on the Droplet, pull <code>llama3:8b</code>, and have Claude Code use it for fast local inference tasks — summarization, classification, data extraction — without API costs or rate limits.</div>
+  </div>
+
+  <div class="use-case">
+    <div class="use-case-num">05</div>
+    <div class="use-case-title">Database migrations with real-time validation</div>
+    <div class="use-case-body">Run the migration, query the result set, validate row counts, and roll back if the delta is wrong — all in one Claude Code session. Because the Droplet has network access, it can hit staging and production DBs in the same session.</div>
+  </div>
+
+  <p>Which of these fits your workflow? Reply and tell us — the best use cases make it into our docs.</p>
+
+  <a href="{{discord_url}}" class="btn">Share in #show-and-tell →</a>
+
+  <div class="footer">
+    Maestro · <a href="https://maestro.run">maestro.run</a> · <a href="mailto:support@maestro.run">support@maestro.run</a><br>
+    <a href="{{unsubscribe_url}}">Unsubscribe</a> from onboarding emails
+  </div>
+</div>
+</body>
+</html>

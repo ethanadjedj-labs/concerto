@@ -10,6 +10,7 @@ import {
   CheckCircle2, Loader2, ArrowRight, Zap,
 } from "lucide-react"
 import { OPERATOR_STYLE_TEXT } from "@/lib/operator-style"
+import { SupportWidget } from "@/components/SupportWidget"
 
 // ── Shared UI ────────────────────────────────────────────────────────────────
 
@@ -493,6 +494,7 @@ export default function DashboardPage({
           </p>
         </div>
       </main>
+      <SupportWidget />
     </div>
   )
 }
