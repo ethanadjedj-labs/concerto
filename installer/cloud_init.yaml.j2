@@ -1,29 +1,29 @@
 #cloud-config
-# Concerto installer — Jinja2 template rendered by the empire backend.
+# Concerto installer - Jinja2 template rendered by the empire backend.
 #
 # Template variables (all required):
-#   concerto_token        — per-provisioning callback token (identifies this droplet)
-#   concerto_callback_url — backend webhook URL to POST the tunnel/bearer details to
-#   ssh_authorized_key   — backend-generated public key for terminal proxy access
-#   customer_email       — customer email for audit logs
-#   ttyd_password        — random 32-char hex credential for ttyd Basic Auth (F2)
-#   concerto_token_prefix — first 8 chars of bearer_token (display only)
+#   concerto_token        - per-provisioning callback token (identifies this droplet)
+#   concerto_callback_url - backend webhook URL to POST the tunnel/bearer details to
+#   ssh_authorized_key   - backend-generated public key for terminal proxy access
+#   customer_email       - customer email for audit logs
+#   ttyd_password        - random 32-char hex credential for ttyd Basic Auth (F2)
+#   concerto_token_prefix - first 8 chars of bearer_token (display only)
 #
 # Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
 # cloud-init runs runcmd on first boot as root.
 
-# ─── SSH ─────────────────────────────────────────────────────────────────────
+# --- SSH ---------------------------------------------------------------------
 # F4: ssh_authorized_keys is processed by cloud-init BEFORE runcmd executes,
 # guaranteeing the key is in place before any service starts.
 
 ssh_authorized_keys:
   - "{{ ssh_authorized_key }}"
 
-# ─── Write files (before runcmd) ─────────────────────────────────────────────
+# --- Write files (before runcmd) ---------------------------------------------
 
 write_files:
 
-  # Concerto environment — callback URL and provisioning identity
+  # Concerto environment - callback URL and provisioning identity
   - path: /etc/concerto/env
     owner: root:root
     permissions: '0600'
@@ -38,7 +38,7 @@ write_files:
     permissions: '0644'
     content: "1.0.0\n"
 
-  # F2: ttyd credential file — password is rendered at provision time
+  # F2: ttyd credential file - password is rendered at provision time
   - path: /etc/concerto/ttyd.env
     owner: root:root
     permissions: '0600'
@@ -46,7 +46,7 @@ write_files:
       TTYD_PASSWORD={{ ttyd_password }}
 
 
-  # ── concerto-workspace base files ────────────────────────────────────────────
+  # -- concerto-workspace base files --------------------------------------------
   # These are seeded onto the customer VPS at /opt/concerto-workspace/.
   # {{ customer_email }} and {{ concerto_token_prefix }} are Jinja2-rendered at provision time.
 
@@ -54,13 +54,13 @@ write_files:
     owner: root:root
     permissions: '0644'
     content: |
-      # Manager State — {{ customer_email }}'s Concerto
+      # Manager State - {{ customer_email }}'s Concerto
 
       Last updated: <fill on first edit>
 
       ## Active strategic decisions
 
-      (Write your standing decisions here — what you're building, your business thesis, what you've chosen to ignore.)
+      (Write your standing decisions here - what you're building, your business thesis, what you've chosen to ignore.)
 
       ## Active projects
 
@@ -80,15 +80,15 @@ write_files:
     owner: root:root
     permissions: '0644'
     content: |
-      # Session Rules — read at the start of every spawned session
+      # Session Rules - read at the start of every spawned session
 
       This file defines binding conventions for Claude Code sessions on your Concerto VPS.
 
       ## Read first in every session
 
-      1. /opt/concerto-workspace/OPS/MANAGER_STATE.md — strategic state, decisions, follow-ups
-      2. /opt/concerto-workspace/OPS/SESSION_RULES.md — this file
-      3. /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md — return format
+      1. /opt/concerto-workspace/OPS/MANAGER_STATE.md - strategic state, decisions, follow-ups
+      2. /opt/concerto-workspace/OPS/SESSION_RULES.md - this file
+      3. /opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md - return format
 
       ## Language and communication
 
@@ -113,9 +113,9 @@ write_files:
 
       ## Universal abort triggers
 
-      - VPS RAM below 200 MiB → stop and report.
-      - Auth issues not resolved → stop and report.
-      - Destructive operation not in task spec → stop and ask.
+      - VPS RAM below 200 MiB -> stop and report.
+      - Auth issues not resolved -> stop and report.
+      - Destructive operation not in task spec -> stop and ask.
 
       ## Output discipline
 
@@ -125,7 +125,7 @@ write_files:
     owner: root:root
     permissions: '0644'
     content: |
-      # Envelope Schema — final JSON output of every spawned session
+      # Envelope Schema - final JSON output of every spawned session
 
       Print this as the FINAL stdout line of every session (single line, no markdown fences):
 
@@ -161,21 +161,21 @@ write_files:
 
       Your Concerto VPS is running Claude Code connected to your claude.ai account.
 
-      ## Step 1 — Send your first session
+      ## Step 1 - Send your first session
 
       In any claude.ai conversation with the Concerto connector active:
 
         Spawn a Concerto session to write a hello world Python script.
 
-      ## Step 2 — Check the session
+      ## Step 2 - Check the session
 
         List my Concerto sessions.
 
-      ## Step 3 — Pull the output
+      ## Step 3 - Pull the output
 
         What did the hello world session return?
 
-      ## Step 4 — Do real work
+      ## Step 4 - Do real work
 
       Replace the hello world prompt with something useful. Examples:
       - Spawn a Concerto session to clone my GitHub repo and run the tests.
@@ -184,7 +184,7 @@ write_files:
 
       See examples/parallel_workflow.md for the parallel pattern.
 
-      ## Step 5 — Edit MANAGER_STATE.md
+      ## Step 5 - Edit MANAGER_STATE.md
 
       Write what you're building in OPS/MANAGER_STATE.md.
       Every future session reads this file first.
@@ -250,9 +250,9 @@ write_files:
 
       ## Read at the start of every session
 
-      1. OPS/MANAGER_STATE.md — what you are building, active projects, open decisions
-      2. OPS/SESSION_RULES.md — conventions for this workspace
-      3. OPS/ENVELOPE_SCHEMA.md — how to format your final output
+      1. OPS/MANAGER_STATE.md - what you are building, active projects, open decisions
+      2. OPS/SESSION_RULES.md - conventions for this workspace
+      3. OPS/ENVELOPE_SCHEMA.md - how to format your final output
 
       ## After substantive work
 
@@ -262,13 +262,13 @@ write_files:
 
       End every session by printing a JSON envelope to stdout per OPS/ENVELOPE_SCHEMA.md.
 
-  # ── MCP server ──────────────────────────────────────────────────────────────
+  # -- MCP server --------------------------------------------------------------
   - path: /opt/concerto/mcp_server.py
     owner: root:root
     permissions: '0755'
     content: |
       #!/usr/bin/env python3
-      """Concerto MCP server — runs on the customer's VPS.
+      """Concerto MCP server - runs on the customer's VPS.
 
       FastMCP server (streamable HTTP transport, mcp>=1.2) with Bearer auth.
       Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
@@ -439,7 +439,7 @@ write_files:
       if __name__ == "__main__":
           main()
 
-  # ── nginx reverse proxy ─────────────────────────────────────────────────────
+  # -- nginx reverse proxy -----------------------------------------------------
   - path: /etc/nginx/conf.d/concerto.conf
     owner: root:root
     permissions: '0644'
@@ -465,7 +465,7 @@ write_files:
               return 301 /terminal/;
           }
 
-          # ttyd web terminal — must proxy WebSocket (Upgrade header) and
+          # ttyd web terminal - must proxy WebSocket (Upgrade header) and
           # forward Authorization for ttyd Basic Auth validation (F2).
           location /terminal/ {
               proxy_pass         http://127.0.0.1:7681/;
@@ -479,7 +479,7 @@ write_files:
           }
       }
 
-  # ── systemd: MCP server ─────────────────────────────────────────────────────
+  # -- systemd: MCP server -----------------------------------------------------
   - path: /etc/systemd/system/concerto-mcp.service
     owner: root:root
     permissions: '0644'
@@ -499,7 +499,7 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  # ── systemd: cloudflared tunnel ─────────────────────────────────────────────
+  # -- systemd: cloudflared tunnel ---------------------------------------------
   # F5: stdout/stderr redirect to log file so provision_complete.sh can poll
   # the file directly rather than racing against journald sync.
   - path: /etc/systemd/system/concerto-tunnel.service
@@ -522,7 +522,7 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  # ── systemd: ttyd web terminal ──────────────────────────────────────────────
+  # -- systemd: ttyd web terminal ----------------------------------------------
   # F2: --credential from TTYD_PASSWORD env var (set via EnvironmentFile)
   # F3: --client-option flags for iframe embedding
   # F6: KillMode=control-group kills bash children on stop;
@@ -552,9 +552,9 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  # ── provision completion script ─────────────────────────────────────────────
+  # -- provision completion script ---------------------------------------------
   # F4: SSH key is already written by cloud-init ssh_authorized_keys section
-  #     before runcmd runs — this script verifies then sleeps 5s before POST.
+  #     before runcmd runs - this script verifies then sleeps 5s before POST.
   # F5: Polls /var/log/cloudflared-quicktunnel.log (written by concerto-tunnel
   #     systemd service) with 60s timeout + retry-on-empty.
   - path: /opt/concerto/provision_complete.sh
@@ -566,15 +566,15 @@ write_files:
 
       source /etc/concerto/env
 
-      # ── F4: verify SSH authorized_keys is in place before reporting back ─────
+      # -- F4: verify SSH authorized_keys is in place before reporting back -----
       echo "[concerto] Verifying SSH authorized_keys..."
       if [ ! -f /root/.ssh/authorized_keys ] || [ ! -s /root/.ssh/authorized_keys ]; then
-        echo "[concerto] WARNING: authorized_keys missing or empty — SSH access may be broken" >&2
+        echo "[concerto] WARNING: authorized_keys missing or empty - SSH access may be broken" >&2
       else
         echo "[concerto] SSH authorized_keys OK ($(wc -l < /root/.ssh/authorized_keys) key(s))"
       fi
 
-      # ── F5: wait for cloudflared to log the tunnel URL ───────────────────────
+      # -- F5: wait for cloudflared to log the tunnel URL -----------------------
       # concerto-tunnel.service writes to /var/log/cloudflared-quicktunnel.log.
       # Poll the file directly (avoids journald sync race).
       echo "[concerto] Waiting for cloudflare tunnel URL (max 60s)..."
@@ -598,14 +598,14 @@ write_files:
 
       echo "[concerto] Tunnel URL: ${TUNNEL_URL}"
 
-      # ── Read the freshly-generated bearer token ───────────────────────────────
+      # -- Read the freshly-generated bearer token -------------------------------
       BEARER_TOKEN=$(cat /etc/concerto/token)
 
-      # ── F4: sleep 5s to ensure SSH daemon has fully processed authorized_keys ─
+      # -- F4: sleep 5s to ensure SSH daemon has fully processed authorized_keys -
       echo "[concerto] Sleeping 5s before reporting back..."
       sleep 5
 
-      # ── POST results back to empire backend ───────────────────────────────────
+      # -- POST results back to empire backend -----------------------------------
       curl -fsSL -X POST "${CONCERTO_CALLBACK_URL}" \
         -H "Content-Type: application/json" \
         -d "{
@@ -617,47 +617,47 @@ write_files:
 
       echo "[concerto] Provisioning complete."
 
-# ─── runcmd (runs on first boot as root, sequentially) ───────────────────────
+# --- runcmd (runs on first boot as root, sequentially) -----------------------
 
 runcmd:
-  # ── 1. System packages ────────────────────────────────────────────────────
+  # -- 1. System packages ----------------------------------------------------
   - ["apt-get", "update", "-qq"]
   - ["apt-get", "install", "-y", "curl", "python3-venv", "tmux", "git", "ttyd", "nginx"]
 
-  # ── 2. Node.js 20 via NodeSource ──────────────────────────────────────────
+  # -- 2. Node.js 20 via NodeSource ------------------------------------------
   - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
   - ["apt-get", "install", "-y", "nodejs"]
 
-  # ── 3. Claude Code CLI ────────────────────────────────────────────────────
+  # -- 3. Claude Code CLI ----------------------------------------------------
   - ["npm", "install", "-g", "@anthropic-ai/claude-code"]
 
-  # ── 4. cloudflared (latest .deb release from GitHub) ─────────────────────
+  # -- 4. cloudflared (latest .deb release from GitHub) ---------------------
   - ["bash", "-c",
      "curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb"]
 
-  # ── 5. Concerto Python venv + MCP deps ────────────────────────────────────
+  # -- 5. Concerto Python venv + MCP deps ------------------------------------
   - ["bash", "-c",
      "python3 -m venv /opt/concerto/.venv && /opt/concerto/.venv/bin/pip install --quiet --upgrade pip && /opt/concerto/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
 
-  # ── 6. Generate MCP bearer token ─────────────────────────────────────────
+  # -- 6. Generate MCP bearer token -----------------------------------------
   - ["bash", "-c", "openssl rand -hex 32 > /etc/concerto/token && chmod 600 /etc/concerto/token"]
 
-  # ── 7. Session storage directory ──────────────────────────────────────────
+  # -- 7. Session storage directory ------------------------------------------
   - ["mkdir", "-p", "/var/lib/concerto/sessions"]
 
-  # ── 8. F4: verify SSH authorized_keys before starting services ────────────
+  # -- 8. F4: verify SSH authorized_keys before starting services ------------
   # cloud-init ssh_authorized_keys runs before runcmd, so key is already present.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true"]
 
-  # ── 9. nginx: disable default site, test config ───────────────────────────
+  # -- 9. nginx: disable default site, test config ---------------------------
   - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]
 
-  # ── 10. Prepare cloudflared log file ─────────────────────────────────────
+  # -- 10. Prepare cloudflared log file -------------------------------------
   # F5: concerto-tunnel.service appends to this file; pre-create it so
   # provision_complete.sh poll doesn't fail on first iteration.
   - ["bash", "-c", "touch /var/log/cloudflared-quicktunnel.log && chmod 644 /var/log/cloudflared-quicktunnel.log"]
 
-  # ── 11. systemd: reload, enable, start all units ──────────────────────────
+  # -- 11. systemd: reload, enable, start all units --------------------------
   # Start nginx + MCP + ttyd first, then tunnel (which depends on them).
   # F4: SSH is ready (ssh_authorized_keys processed) before we reach here.
   - ["systemctl", "daemon-reload"]
@@ -666,15 +666,15 @@ runcmd:
   # F5: brief pause to let ttyd fully bind before cloudflared starts
   - ["bash", "-c", "sleep 3 && systemctl start concerto-tunnel"]
 
-  # ── 12. Wait for tunnel URL and POST back to empire backend ───────────────
+  # -- 12. Wait for tunnel URL and POST back to empire backend ---------------
   - ["/opt/concerto/provision_complete.sh"]
 
-  # ── 13. Workspace directory permissions ──────────────────────────────────
+  # -- 13. Workspace directory permissions ----------------------------------
   - ["bash", "-c",
      "find /opt/concerto-workspace -type d -exec chmod 755 {} + && find /opt/concerto-workspace -type f -exec chmod 644 {} +"]
   - ["bash", "-c", "chown -R root:root /opt/concerto-workspace"]
 
-  # ── 14. Default working directory when SSH'd in ───────────────────────────
+  # -- 14. Default working directory when SSH'd in ---------------------------
   - ["bash", "-c",
      "echo 'cd /opt/concerto-workspace' >> /root/.bashrc"]
 
