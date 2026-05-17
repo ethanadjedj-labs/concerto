@@ -71,10 +71,14 @@ export default function LandingPage() {
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-[rgba(245,240,233,0.05)] bg-[#0f0d10]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect width="22" height="22" rx="6" fill="#d97757" />
-              <circle cx="11" cy="11" r="5.5" stroke="#f5f0e9" strokeWidth="1.25" fill="none" />
-              <circle cx="11" cy="11" r="2" fill="#f5f0e9" />
+            <svg width="22" height="22" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+              <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" strokeWidth={13} strokeLinecap="round"/>
+              <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#b483ff" strokeWidth={13} strokeLinecap="round"/>
+              <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" strokeWidth={13} strokeLinecap="round"/>
+              <circle cx="115.56" cy="115.56" r={16} fill="#d97757"/>
+              <circle cx="61.36"  cy="89.65"  r={16} fill="#b483ff"/>
+              <circle cx="150.23" cy="71.00"  r={16} fill="#8b7fff"/>
+              <circle cx="100"    cy="100"    r={22} fill="#f5f0e9"/>
             </svg>
             <span className="font-medium tracking-tight text-[#f5f0e9]">Concerto</span>
           </div>
@@ -515,10 +519,14 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2.5">
-              <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-                <rect width="22" height="22" rx="6" fill="#d97757" />
-                <circle cx="11" cy="11" r="5.5" stroke="#f5f0e9" strokeWidth="1.25" fill="none" />
-                <circle cx="11" cy="11" r="2" fill="#f5f0e9" />
+              <svg width="18" height="18" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+                <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" strokeWidth={13} strokeLinecap="round"/>
+                <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#b483ff" strokeWidth={13} strokeLinecap="round"/>
+                <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" strokeWidth={13} strokeLinecap="round"/>
+                <circle cx="115.56" cy="115.56" r={16} fill="#d97757"/>
+                <circle cx="61.36"  cy="89.65"  r={16} fill="#b483ff"/>
+                <circle cx="150.23" cy="71.00"  r={16} fill="#8b7fff"/>
+                <circle cx="100"    cy="100"    r={22} fill="#f5f0e9"/>
               </svg>
               <span className="text-sm font-medium text-[#877c70]">Concerto</span>
             </div>

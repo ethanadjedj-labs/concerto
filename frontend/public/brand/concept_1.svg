@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#0f0d10"/>
+  <!-- Orbital Mark: three concentric arcs with staggered gaps suggesting agent orbital paths -->
+  <!-- Arc 1: inner ring, peach, gap at ~45deg (upper-right), r=22, from 75deg to 15deg CW = 300deg -->
+  <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69"
+        fill="none" stroke="#d97757" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Arc 2: middle ring, mid-violet, gap at ~195deg (lower-left), r=40, from 235deg to 155deg CW = 280deg -->
+  <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"
+        fill="none" stroke="#b483ff" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Arc 3: outer ring, violet, gap at ~330deg, r=58, from 10deg to 290deg CW = 280deg -->
+  <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50"
+        fill="none" stroke="#8b7fff" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Agent dots at each gap center -->
+  <circle cx="115.56" cy="115.56" r="3"   fill="#d97757"/>
+  <circle cx="61.36"  cy="89.65"  r="3"   fill="#b483ff"/>
+  <circle cx="150.23" cy="71.00"  r="3"   fill="#8b7fff"/>
+  <!-- Central hub -->
+  <circle cx="100" cy="100" r="4.5" fill="#f5f0e9"/>
+</svg>

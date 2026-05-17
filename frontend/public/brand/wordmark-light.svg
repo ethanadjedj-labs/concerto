@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 72" width="360" height="72">
+  <rect width="360" height="72" fill="#faf8f5"/>
+  <g transform="translate(4,4) scale(0.32)">
+  <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69"
+        fill="none" stroke="#c66647" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"
+        fill="none" stroke="#9270d4" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50"
+        fill="none" stroke="#7038cc" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="115.56" cy="115.56" r="3"   fill="#c66647"/>
+  <circle cx="61.36"  cy="89.65"  r="3"   fill="#9270d4"/>
+  <circle cx="150.23" cy="71.00"  r="3"   fill="#7038cc"/>
+  <circle cx="100" cy="100" r="4.5" fill="#1a161c"/>
+  </g>
+  <text x="80" y="46"
+        font-family="Fraunces,&apos;Iowan Old Style&apos;,&apos;Palatino Linotype&apos;,Georgia,serif"
+        font-size="38" font-weight="600" fill="#1a161c" letter-spacing="-0.5">Concerto</text>
+</svg>

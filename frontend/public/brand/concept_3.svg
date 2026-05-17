@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#0f0d10"/>
+  <!-- Constellation: 6 nodes + hub forming custom star-chart pattern -->
+  <g stroke="#f5f0e9" stroke-width="0.8" opacity="0.25" stroke-linecap="round">
+    <line x1="100" y1="88" x2="62"  y2="52"/>
+    <line x1="100" y1="88" x2="148" y2="50"/>
+    <line x1="100" y1="88" x2="166" y2="98"/>
+    <line x1="100" y1="88" x2="140" y2="148"/>
+    <line x1="100" y1="88" x2="70"  y2="152"/>
+    <line x1="100" y1="88" x2="46"  y2="104"/>
+    <line x1="62"  y1="52"  x2="148" y2="50"/>
+    <line x1="140" y1="148" x2="70"  y2="152"/>
+  </g>
+  <circle cx="62"  cy="52"  r="3.5" fill="#d97757"/>
+  <circle cx="148" cy="50"  r="3"   fill="#c07aff"/>
+  <circle cx="166" cy="98"  r="3"   fill="#8b7fff"/>
+  <circle cx="140" cy="148" r="3.5" fill="#8b7fff"/>
+  <circle cx="70"  cy="152" r="3"   fill="#b483ff"/>
+  <circle cx="46"  cy="104" r="2.5" fill="#d97757" opacity="0.6"/>
+  <circle cx="100" cy="88"  r="9"   fill="#d97757" opacity="0.12"/>
+  <circle cx="100" cy="88"  r="5.5" fill="#f5f0e9"/>
+</svg>
