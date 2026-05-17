@@ -45,7 +45,7 @@ def _find_expired_trials() -> list[dict]:
     conn = _conn()
     try:
         rows = conn.execute(
-            """SELECT token, email, vps_id, vps_ip, expires_at, paid_at
+            """SELECT token, email, vps_id, vps_ip, expires_at, paid_at, cf_tunnel_id
                FROM concerto_buyers
                WHERE plan = 'trial'
                  AND expires_at < ?
@@ -69,10 +69,10 @@ def _mark_expired(token: str) -> None:
         conn.close()
 
 
-# ─── DO droplet destroy ───────────────────────────────────────────────────────
+# ─── DO droplet + CF tunnel destroy ──────────────────────────────────────────
 
 
-async def _destroy_droplet(droplet_id: str) -> None:
+async def _destroy_droplet(droplet_id: str, cf_tunnel_id: str = "") -> None:
     if not DO_API_TOKEN or not droplet_id:
         return
     headers = {
@@ -86,6 +86,10 @@ async def _destroy_droplet(droplet_id: str) -> None:
                 logger.warning("DO destroy %s returned %s", droplet_id, resp.status_code)
     except Exception as exc:
         logger.warning("DO destroy %s failed: %s", droplet_id, exc)
+
+    if cf_tunnel_id:
+        from concerto.cf_tunnel import destroy_named_tunnel
+        await destroy_named_tunnel(cf_tunnel_id)
 
 
 # ─── Email ────────────────────────────────────────────────────────────────────
@@ -119,16 +123,18 @@ async def _reap_once() -> int:
     logger.info("Reaping %d expired trial(s)", len(expired))
     tasks = []
     for buyer in expired:
-        token     = buyer["token"]
+        token      = buyer["token"]
         droplet_id = buyer.get("vps_id") or ""
-        email     = buyer.get("email") or ""
+        email      = buyer.get("email") or ""
+        cf_tunnel  = buyer.get("cf_tunnel_id") or ""
 
-        logger.info("Reaping trial token=%.8s droplet=%s email=%s", token, droplet_id, email)
+        logger.info("Reaping trial token=%.8s droplet=%s cf_tunnel=%s email=%s",
+                    token, droplet_id, cf_tunnel or "none", email)
 
         # Mark expired first so double-runs are safe
         _mark_expired(token)
 
-        tasks.append(_destroy_droplet(droplet_id))
+        tasks.append(_destroy_droplet(droplet_id, cf_tunnel))
         tasks.append(_send_expired_email(email, token))
 
     await asyncio.gather(*tasks, return_exceptions=True)

@@ -51,27 +51,36 @@ async def provision(req: ProvisionRequest):
             detail=f"Token is in unexpected state: {buyer['status']}",
         )
 
-    plan = buyer.get("plan", "byoc")
+    plan = buyer.get("plan", "solo")
 
-    if plan == "hosted":
+    # Plan-aware size mapping
+    _PLAN_SIZE = {
+        "solo": "s-2vcpu-4gb",
+        "pro": "s-2vcpu-8gb",
+        "hosted": "s-2vcpu-4gb",  # legacy grandfathered
+        "trial": "s-2vcpu-4gb",
+    }
+
+    if plan in ("solo", "pro", "hosted"):
         if not _CONCERTO_DO_API_TOKEN:
             raise HTTPException(
                 status_code=503,
                 detail="Hosted provisioning unavailable: CONCERTO_DO_API_TOKEN not configured",
             )
+        plan_size = _PLAN_SIZE.get(plan, _HOSTED_SIZE)
         await db.update_buyer(
-            req.token, status="provisioning", region=req.region, vps_size=_HOSTED_SIZE
+            req.token, status="provisioning", region=req.region, vps_size=plan_size
         )
         asyncio.create_task(
             _provision_async(
                 req.token,
                 _CONCERTO_DO_API_TOKEN,
                 req.region,
-                _HOSTED_SIZE,
-                mode="hosted",
+                plan_size,
+                mode=plan,  # mode is now plan name for downstream tagging
             )
         )
-    else:
+    elif plan == "byoc":
         if not req.do_api_key:
             raise HTTPException(
                 status_code=422,
@@ -82,6 +91,11 @@ async def provision(req: ProvisionRequest):
         )
         asyncio.create_task(
             _provision_async(req.token, req.do_api_key, req.region, req.size, mode="byoc")
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown plan: {plan}",
         )
 
     return {"status": "provisioning", "token": req.token, "plan": plan}

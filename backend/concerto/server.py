@@ -28,6 +28,8 @@ _MIGRATIONS = [
     "008_rename_maestro_to_concerto.sql",
     "009_trial_mode.sql",
     "010_email_dead_letter.sql",
+    "012_plan_check_solo_pro.sql",
+    "013_cf_tunnel_tracking.sql",
 ]
 
 
