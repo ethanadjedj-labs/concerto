@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-label="Concerto Caret lockup">
+  <title>Concerto — Caret lockup</title>
+  <svg x="0" y="0" width="80" height="80" viewBox="0 0 100 100">
+    <path d="M 24 15 L 80 50 L 24 85"
+          fill="none"
+          stroke="#cc785c"
+          stroke-width="18"
+          stroke-linejoin="miter"
+          stroke-miterlimit="8"
+          stroke-linecap="square"/>
+  </svg>
+  <text x="96" y="56"
+        font-family="Fraunces, 'Palatino Linotype', Georgia, serif"
+        font-size="42"
+        font-weight="500"
+        fill="#191919"
+        letter-spacing="-1">Concerto</text>
+</svg>

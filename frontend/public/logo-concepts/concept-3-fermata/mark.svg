@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Concerto Fermata mark">
+  <title>Concerto — Fermata mark</title>
+  <!-- Baseline -->
+  <line x1="5" y1="84" x2="95" y2="84" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+  <!-- Arc dome over dot (top semicircle: sweep=1 goes upward on screen) -->
+  <path d="M 14 59 A 36 36 0 0 1 86 59" fill="none" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+  <!-- Dot -->
+  <circle cx="50" cy="59" r="11" fill="#cc785c"/>
+</svg>

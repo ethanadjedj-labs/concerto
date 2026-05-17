@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-label="Concerto Fermata lockup">
+  <title>Concerto — Fermata lockup</title>
+  <svg x="0" y="0" width="80" height="80" viewBox="0 0 100 100">
+    <line x1="5" y1="84" x2="95" y2="84" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+    <path d="M 14 59 A 36 36 0 0 1 86 59" fill="none" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="50" cy="59" r="11" fill="#cc785c"/>
+  </svg>
+  <text x="96" y="56"
+        font-family="Fraunces, 'Palatino Linotype', Georgia, serif"
+        font-size="42"
+        font-weight="500"
+        fill="#191919"
+        letter-spacing="-1">Concerto</text>
+</svg>

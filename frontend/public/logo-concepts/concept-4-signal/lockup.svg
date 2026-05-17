@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-label="Concerto Signal lockup">
+  <title>Concerto — Signal lockup</title>
+  <svg x="0" y="0" width="80" height="80" viewBox="0 0 100 100">
+    <line x1="8" y1="62" x2="8" y2="82" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+    <line x1="8" y1="72" x2="92" y2="72" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+    <line x1="92" y1="62" x2="92" y2="82" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+    <path d="M 8 72 C 28 18 72 18 92 72" fill="none" stroke="#cc785c" stroke-width="9" stroke-linecap="round"/>
+  </svg>
+  <text x="96" y="56"
+        font-family="Fraunces, 'Palatino Linotype', Georgia, serif"
+        font-size="42"
+        font-weight="500"
+        fill="#191919"
+        letter-spacing="-1">Concerto</text>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-label="Concerto Dual-Bar lockup">
+  <title>Concerto — Dual-Bar lockup</title>
+  <svg x="0" y="0" width="80" height="80" viewBox="0 0 100 100">
+    <rect x="10" y="18" width="34" height="72" fill="#cc785c"/>
+    <rect x="56" y="42" width="34" height="48" fill="#cc785c"/>
+  </svg>
+  <text x="96" y="56"
+        font-family="Fraunces, 'Palatino Linotype', Georgia, serif"
+        font-size="42"
+        font-weight="500"
+        fill="#191919"
+        letter-spacing="-1">Concerto</text>
+</svg>
