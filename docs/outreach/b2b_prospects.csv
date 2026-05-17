@@ -1,0 +1,32 @@
+company,domain,country,team_size,signal_source,signal_strength,decision_maker_role,decision_maker_name,linkedin_url,outreach_priority
+HumanLayer,humanlayer.dev,USA,6,Anthropic blog / YC F24 / HN,strong,Founder & CEO,Dexter Horthy,https://www.linkedin.com/in/dexterihorthy/,1
+Ambral,ambral.co,USA,15,Anthropic blog / YC S25,strong,Co-Founder & CTO,Jack Stettner,https://www.linkedin.com/in/jackstettner/,1
+Vulcan Technologies,vulcan-tech.com,USA,10,Anthropic blog / YC S25 / General Catalyst,strong,Co-Founder & CSO,Aleksander Mekhanik,https://www.linkedin.com/in/aleksander-mekhanik-41547b272/,1
+Embedder,embedder.dev,USA,5,HN Launch / YC S25,strong,Co-Founder & CEO,Ethan Gibbs,https://www.ycombinator.com/companies/embedder,1
+Sanity,sanity.io,Norway/USA,200,Engineering blog / HN / GitHub,strong,Staff Engineer (internal champion),manual_lookup_needed,https://www.linkedin.com/company/sanity-io,1
+Treasure Data (Treasure AI),treasure.ai,USA/Japan,500,Company engineering blog,medium,CTO & VP Engineering,Hiroshi Nakamura,https://www.linkedin.com/in/nakahiro/,1
+Wordsmith AI,wordsmith.ai,UK,106,Anthropic customer story,strong,CTO,Volodymyr Giginiak,https://www.linkedin.com/company/ai-wordsmith,1
+Nevis,neviswealth.com,USA,40,Anthropic customer story,strong,CEO,Mark Swan,https://www.linkedin.com/in/markjamesswan/,1
+Graphite,graphite.dev,USA,80,Anthropic customer story / TechCrunch,strong,Co-Founder & CTO,Greg Foster,https://www.linkedin.com/company/withgraphite,2
+Decagon,decagon.ai,USA,343,Anthropic / YC,strong,CTO & Co-Founder,Ashwin Sreenivas,https://www.linkedin.com/in/sreenivasashwin/,2
+Sourcegraph,sourcegraph.com,USA,160,Anthropic customer story / GitHub plugin,medium,CTO & Co-Founder,Beyang Liu,https://www.linkedin.com/company/sourcegraph,2
+Altana,altana.ai,USA,300,Anthropic enterprise announcement,medium,Co-Founder & Chief Science Officer,Peter Swartz,https://www.linkedin.com/company/altana-ai,2
+Behavox,behavox.com,UK/USA,500,Anthropic enterprise announcement,medium,Head of Engineering,manual_lookup_needed,https://www.linkedin.com/company/behavox,2
+Intercom,intercom.com,USA/Ireland,650,Lenny's Newsletter / engineering blog,strong,Senior Principal Engineer (AI),Brian Scanlan,https://www.linkedin.com/in/scanlanb/,3
+Ramp,ramp.com,USA,450,Anthropic customer story / InfoQ,strong,CTO,Karim Atiyeh,https://www.linkedin.com/company/ramp-financial,3
+Shopify,shopify.com,Canada,1000,BVP blog / engineering blog,strong,CTO / VP Engineering,Mikhail Parakhin / Farhan Thawar,https://ca.linkedin.com/in/fnthawar,3
+Lovable,lovable.dev,Sweden,871,Anthropic customer story / TechCrunch,strong,CTO & Co-Founder,Fabian Hedin,https://www.linkedin.com/company/lovable-dev,3
+Replit,replit.com,USA,500,Anthropic customer story / VentureBeat,strong,CEO,Amjad Masad,https://www.linkedin.com/company/replit,3
+Snowflake,snowflake.com,USA,2000,Anthropic partnership press release,strong,CEO,Sridhar Ramaswamy,https://www.linkedin.com/company/snowflake-computing,4
+Stripe,stripe.com,USA,1370,Anthropic customer story (1370 engineers),strong,Head of Developer Infrastructure,Scott MacVicar,https://www.linkedin.com/in/scottmacvicar/,4
+Spotify,spotify.com,Sweden,1000,Engineering blog / "Honk" system,strong,VP Engineering,multiple,https://www.linkedin.com/company/spotify,4
+Block,block.xyz,USA,6000,Earnings reports / engineering blog,strong,CEO,Jack Dorsey,https://www.linkedin.com/company/block-xyz,4
+Palo Alto Networks,paloaltonetworks.com,USA,2000,AWS/Anthropic/Sourcegraph case study,strong,VP/Director Engineering,manual_lookup_needed,https://www.linkedin.com/company/palo-alto-networks,4
+Rakuten,rakuten.com,Japan,10000,Anthropic customer story,strong,GM AI for Business,Yusuke Kaji,https://www.linkedin.com/company/rakuten,4
+Uber,uber.com,USA,5000,News / The Information / HN,strong,CTO,Praveen Neppalli Naga,https://www.linkedin.com/in/pneppalli/,4
+Epic Systems,epic.com,USA,10000,Anthropic customer story,strong,N/A (enterprise-wide),N/A,https://www.linkedin.com/company/epic-systems-corporation,5
+Novo Nordisk,novonordisk.com,Denmark,5000,Anthropic customer story,medium,N/A (enterprise),N/A,https://www.linkedin.com/company/novo-nordisk,5
+Anthropic (internal reference),anthropic.com,USA,500,Anthropic engineering blog,strong,Head of Claude Code,Boris Cherny,https://www.linkedin.com/company/anthropicresearch,5
+Cursor (Anysphere),cursor.sh,USA,200,Anthropic partnership / Graphite acquisition / TechCrunch,strong,CTO,Aman Sanger,https://www.linkedin.com/company/anysphere-inc,2
+Vercel,vercel.com,USA,500,Anthropic customer mentions / integration docs,medium,CEO,Guillermo Rauch,https://www.linkedin.com/company/vercel,3
+PostHog,posthog.com,UK/USA,60,GitHub (CLAUDE.md public) / open-source team,medium,CEO & Co-Founder,James Hawkins,https://www.linkedin.com/company/posthog,2
