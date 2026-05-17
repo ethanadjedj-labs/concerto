@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!--
+    Concerto app icon — light variant (cream container, dark icon)
+    Container: 200×200, rx=44 (22% of 200)
+    Mark: translate(20,20) scale(1.25) → 128→160px, dark bubble outline
+  -->
+  <!-- Cream container with subtle border -->
+  <rect width="200" height="200" rx="44" ry="44" fill="#faf9f5"/>
+  <rect width="200" height="200" rx="44" ry="44" fill="none" stroke="#e8e4dc" stroke-width="1.5"/>
+  <defs>
+    <clipPath id="bubble-clip-ail">
+      <path transform="translate(20,20) scale(1.25)" d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#bubble-clip-ail)" transform="translate(20,20) scale(1.25)">
+    <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" stroke-width="12" stroke-linecap="butt"/>
+    <circle cx="104" cy="18" r="9" fill="#cc785c"/>
+  </g>
+  <g transform="translate(20,20) scale(1.25)">
+    <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
+      fill="none" stroke="#1f1e1c" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+</svg>

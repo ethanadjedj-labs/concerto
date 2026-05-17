@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="220" height="48">
+  <!--
+    Concerto full logo — light variant (cream/white backgrounds, nav use)
+    Mark: translate(8,4) scale(0.3125) → 128→40px height
+    Wordmark: Inter 600, size=32, letter-spacing=-0.64 (-0.02em)
+    16px gap between mark and wordmark
+    Color: #1f1e1c outline+text, #cc785c baton+dot, transparent background
+  -->
+  <defs>
+    <clipPath id="bubble-clip-fl">
+      <path transform="translate(8,4) scale(0.3125)" d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
+    </clipPath>
+  </defs>
+  <!-- Baton + dot -->
+  <g clip-path="url(#bubble-clip-fl)" transform="translate(8,4) scale(0.3125)">
+    <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" stroke-width="12" stroke-linecap="butt"/>
+    <circle cx="104" cy="18" r="9" fill="#cc785c"/>
+  </g>
+  <!-- Bubble outline -->
+  <g transform="translate(8,4) scale(0.3125)">
+    <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
+      fill="none" stroke="#1f1e1c" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+  <!-- Wordmark — x=64, baseline y=34 -->
+  <text x="64" y="34"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="600" font-size="32" fill="#1f1e1c" letter-spacing="-0.64">Concerto</text>
+</svg>

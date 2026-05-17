@@ -2,7 +2,46 @@
 
 import { useState } from "react"
 
+/* ─── Bubble+baton mark — inline SVG for Concept E preview ─── */
+function BubbleBatonMark({ size = 128, outline = "#faf9f5", bg = "#1f1e1c" }: {
+  size?: number; outline?: string; bg?: string
+}) {
+  const id = `bbc-${size}-${bg.replace("#","")}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 128 128" fill="none" style={{ display: "block" }}>
+      {bg !== "transparent" && (
+        <rect width="128" height="128" rx="28" ry="28" fill={bg}/>
+      )}
+      <defs>
+        <clipPath id={id}>
+          <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${id})`}>
+        <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" strokeWidth="12" strokeLinecap="butt"/>
+        <circle cx="104" cy="18" r="9" fill="#cc785c"/>
+      </g>
+      <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
+        fill="none" stroke={outline} strokeWidth="4" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
 const CONCEPTS = [
+  {
+    id: "concept-e-bubble-baton",
+    label: "E",
+    name: "Bubble + Baton",
+    slug: "concept-e-bubble-baton",
+    signatureMove:
+      "A rounded-square chat bubble (18% corner radius, r=18px at 100px side) with a 45° conductor's baton crossing the interior — from offset bottom-left (26,96) to top-right (104,18), dx=dy=78px exactly. The baton tip is a filled peach dot (r=9px) that touches the bubble's inner top and right edges. A small speech tail (equilateral triangle from the BL arc endpoints) grounds it as a chat bubble. One shape, one story: talk to Claude (bubble), Claude orchestrates (baton).",
+    designDecisions: [
+      "Corner radius 18% of side (18px at 100px square) — between iOS app icon (22%) and material card (8%). Reads as rounded without being soft",
+      "Baton at exactly 45° — diagonal from (26,96) to (104,18), dx=dy=78. Corner-to-corner, no approximation",
+      "Dot at (104,18) r=9px — touches inner top edge at y=9 and inner right edge at x=113 simultaneously (stroke=4, inner edge offset=2)",
+      "Speech tail: equilateral triangle, base = chord of BL corner arc (25.5px). Tip at (7,115) derived from outward perpendicular — no guessing",
+    ],
+  },
   {
     id: "concept-a-typographic-c",
     label: "A",
@@ -133,31 +172,34 @@ export function LogoConceptsClient() {
               fontWeight: 400,
             }}
           >
-            4 finished brand marks. Each has a specific signature move, construction grid, scale
-            study across 6 sizes, and 6 colorways. Click any concept to explore. Click &quot;Pick this
-            one&quot; to mark your selection.
+            Concept E is the operator&apos;s preferred direction — refined per brief 2026-05-17. Concepts A–D below for reference.
           </p>
         </div>
       )}
 
       {/* Concept grid or detail */}
       {!selected ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1px",
-            background: "#e8e4dc",
-            borderTop: "1px solid #e8e4dc",
-          }}
-        >
-          {CONCEPTS.map((concept) => (
-            <ConceptCard
-              key={concept.id}
-              concept={concept}
-              onSelect={() => setSelected(concept.id)}
-            />
-          ))}
+        <div>
+          {/* Concept E — featured full-width */}
+          <ConceptCardE onSelect={() => setSelected("concept-e-bubble-baton")} />
+          {/* Concepts A–D — 2-column grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1px",
+              background: "#e8e4dc",
+              borderTop: "1px solid #e8e4dc",
+            }}
+          >
+            {CONCEPTS.filter((c) => c.id !== "concept-e-bubble-baton").map((concept) => (
+              <ConceptCard
+                key={concept.id}
+                concept={concept}
+                onSelect={() => setSelected(concept.id)}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <ConceptDetail
@@ -199,13 +241,17 @@ function ConceptCard({
           marginBottom: "32px",
         }}
       >
-        <img
-          src={`/logo-concepts-v3/${concept.slug}/mark.svg`}
-          width={128}
-          height={128}
-          alt={`Concept ${concept.label} mark`}
-          style={{ display: "block" }}
-        />
+        {concept.id === "concept-e-bubble-baton" ? (
+          <BubbleBatonMark size={128} outline="#1f1e1c" bg="transparent"/>
+        ) : (
+          <img
+            src={`/logo-concepts-v3/${concept.slug}/mark.svg`}
+            width={128}
+            height={128}
+            alt={`Concept ${concept.label} mark`}
+            style={{ display: "block" }}
+          />
+        )}
       </div>
 
       {/* Label */}
@@ -241,12 +287,100 @@ function ConceptCard({
       </p>
 
       {/* Lockup preview */}
-      <img
-        src={`/logo-concepts-v3/${concept.slug}/lockup.svg`}
-        height={40}
-        alt={`Concept ${concept.label} lockup`}
-        style={{ display: "block", opacity: 0.85 }}
-      />
+      {concept.id === "concept-e-bubble-baton" ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", opacity: 0.9 }}>
+          <BubbleBatonMark size={32} outline="#1f1e1c" bg="transparent"/>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "26px", letterSpacing: "-0.5px", color: "#1f1e1c" }}>Concerto</span>
+        </div>
+      ) : (
+        <img
+          src={`/logo-concepts-v3/${concept.slug}/lockup.svg`}
+          height={40}
+          alt={`Concept ${concept.label} lockup`}
+          style={{ display: "block", opacity: 0.85 }}
+        />
+      )}
+    </div>
+  )
+}
+
+function ConceptCardE({ onSelect }: { onSelect: () => void }) {
+  return (
+    <div
+      onClick={onSelect}
+      style={{
+        background: "#1f1e1c",
+        padding: "48px",
+        cursor: "pointer",
+        borderTop: "1px solid #e8e4dc",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "48px",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2925")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "#1f1e1c")}
+    >
+      {/* Mark at 128px */}
+      <div style={{ flexShrink: 0 }}>
+        <BubbleBatonMark size={128} outline="#faf9f5" bg="transparent"/>
+      </div>
+
+      <div style={{ flex: 1 }}>
+        {/* Preferred badge */}
+        <div style={{
+          display: "inline-block",
+          background: "rgba(204,120,92,0.15)",
+          color: "#cc785c",
+          fontFamily: "monospace",
+          fontSize: "10px",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          padding: "3px 10px",
+          borderRadius: "2px",
+          marginBottom: "16px",
+        }}>
+          Operator&apos;s preferred
+        </div>
+
+        <div style={{ marginBottom: "12px", display: "flex", alignItems: "baseline", gap: "12px" }}>
+          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#cc785c", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Concept E
+          </span>
+          <span style={{ fontSize: "24px", fontWeight: 300, letterSpacing: "-0.4px", color: "#faf9f5" }}>
+            Bubble + Baton
+          </span>
+        </div>
+
+        <p style={{ fontFamily: "monospace", fontSize: "11px", lineHeight: 1.7, color: "#9b9490", maxWidth: "480px", marginBottom: "24px" }}>
+          Refined per operator brief 2026-05-17: peach baton #cc785c, sharper construction grid, app-tile variant. Chat bubble (talk to Claude) + conductor baton (Claude orchestrates Code).
+        </p>
+
+        {/* Scale row */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", marginBottom: "24px" }}>
+          <div style={{ textAlign: "center" }}>
+            <BubbleBatonMark size={64} outline="#faf9f5" bg="transparent"/>
+            <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6b6560", marginTop: "6px" }}>64px</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <BubbleBatonMark size={48} outline="#faf9f5" bg="transparent"/>
+            <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6b6560", marginTop: "6px" }}>48px</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <BubbleBatonMark size={32} outline="#faf9f5" bg="#1f1e1c"/>
+            <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6b6560", marginTop: "6px" }}>favicon</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <BubbleBatonMark size={64} outline="#faf9f5" bg="#1f1e1c"/>
+            <div style={{ fontFamily: "monospace", fontSize: "9px", color: "#6b6560", marginTop: "6px" }}>app icon</div>
+          </div>
+        </div>
+
+        {/* Lockup preview */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <BubbleBatonMark size={28} outline="#faf9f5" bg="transparent"/>
+          <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 600, fontSize: "22px", letterSpacing: "-0.44px", color: "#faf9f5" }}>Concerto</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -271,13 +405,17 @@ function ConceptDetail({
         }}
       >
         <div>
-          <img
-            src={`/logo-concepts-v3/${concept.slug}/mark.svg`}
-            width={256}
-            height={256}
-            alt={`Concept ${concept.label} mark at 256px`}
-            style={{ display: "block" }}
-          />
+          {concept.id === "concept-e-bubble-baton" ? (
+            <BubbleBatonMark size={256} outline="#1f1e1c" bg="transparent"/>
+          ) : (
+            <img
+              src={`/logo-concepts-v3/${concept.slug}/mark.svg`}
+              width={256}
+              height={256}
+              alt={`Concept ${concept.label} mark at 256px`}
+              style={{ display: "block" }}
+            />
+          )}
         </div>
         <div style={{ flex: 1, paddingTop: "8px" }}>
           <div
@@ -395,11 +533,19 @@ function ConceptDetail({
         >
           Construction grid
         </h2>
-        <img
-          src={`/logo-concepts-v3/${concept.slug}/construction-grid.svg`}
-          style={{ display: "block", maxWidth: "480px", width: "100%" }}
-          alt="Construction grid"
-        />
+        {concept.id === "concept-e-bubble-baton" ? (
+          <img
+            src="/brand/construction.svg"
+            style={{ display: "block", maxWidth: "480px", width: "100%" }}
+            alt="Construction grid"
+          />
+        ) : (
+          <img
+            src={`/logo-concepts-v3/${concept.slug}/construction-grid.svg`}
+            style={{ display: "block", maxWidth: "480px", width: "100%" }}
+            alt="Construction grid"
+          />
+        )}
       </div>
 
       {/* Scale chart */}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concerto mark — bubble+baton
+    Square: x=14, y=8, side=100, r=18 (18% of side)
+    BL arc endpoints: bottom=(32,108), left=(14,90)
+    Tail tip: (7,115) — equilateral from BL arc endpoints, outward perpendicular
+    Baton: (26,96)→(104,18), 45° diagonal (dx=dy=78), stroke=12 (12% of side)
+    Dot: center=(104,18), r=9 (9% of side) — touches inner top and right edges
+  -->
+  <defs>
+    <clipPath id="bubble-clip-m">
+      <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
+    </clipPath>
+  </defs>
+  <!-- Baton + dot clipped to bubble interior -->
+  <g clip-path="url(#bubble-clip-m)">
+    <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" stroke-width="12" stroke-linecap="butt"/>
+    <circle cx="104" cy="18" r="9" fill="#cc785c"/>
+  </g>
+  <!-- Bubble outline on top -->
+  <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
+    fill="none" stroke="#faf9f5" stroke-width="4" stroke-linejoin="round"/>
+</svg>
