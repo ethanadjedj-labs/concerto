@@ -1,46 +1,79 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Copy, Check, ExternalLink, Terminal, Zap } from "lucide-react"
 
+/* ─── Copy field with flash feedback ─────────────────────────── */
+
 function CopyField({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied]   = useState(false)
+  const [flash, setFlash]     = useState(false)
+  const timeoutRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   async function copy() {
-    await navigator.clipboard.writeText(value)
+    if (!value || value === "Loading...") return
+    try {
+      await navigator.clipboard.writeText(value)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = value
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+    }
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setFlash(true)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      setCopied(false)
+      setFlash(false)
+    }, 2000)
   }
 
   return (
     <div className="space-y-1.5">
-      <label className="text-xs text-white/40 font-medium uppercase tracking-wider">
+      <label className="text-[11px] font-medium uppercase tracking-widest text-white/35">
         {label}
       </label>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 rounded-md border border-white/8 bg-white/[0.03] px-3 py-2 text-sm font-mono text-white/80 break-all">
+      <div
+        className={`flex items-center gap-2 overflow-hidden rounded-lg border transition-colors duration-300 ${
+          flash
+            ? "border-green-500/30 bg-green-500/[0.06]"
+            : "border-white/[0.07] bg-white/[0.03]"
+        }`}
+      >
+        <code className="min-w-0 flex-1 break-all px-3 py-2.5 font-mono text-[13px] text-white/75">
           {value}
         </code>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           onClick={copy}
-          className="shrink-0 text-white/40 hover:text-white hover:bg-white/10"
+          aria-label={copied ? "Copied" : `Copy ${label}`}
+          className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all duration-200 ${
+            copied
+              ? "text-green-400"
+              : "text-white/35 hover:bg-white/10 hover:text-white"
+          }`}
         >
           {copied ? (
-            <Check className="h-4 w-4 text-green-400" />
+            <Check className="h-3.5 w-3.5" />
           ) : (
-            <Copy className="h-4 w-4" />
+            <Copy className="h-3.5 w-3.5" />
           )}
-        </Button>
+        </button>
       </div>
+      {copied && (
+        <p className="text-[11px] text-green-400">Copied to clipboard</p>
+      )}
     </div>
   )
 }
+
+/* ─── Dashboard page ─────────────────────────────────────────── */
 
 export default function DashboardPage({ params }: { params: { token: string } }) {
   const [dashData, setDashData] = useState<{
@@ -48,7 +81,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
     bearer_token?: string
   } | null>(null)
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
+  const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.maestro.run"
   const terminalUrl = `${backendUrl}/terminal/${params.token}`
 
   useEffect(() => {
@@ -58,119 +91,128 @@ export default function DashboardPage({ params }: { params: { token: string } })
       .catch(() => {})
   }, [backendUrl, params.token])
 
-  const mcpUrl = dashData?.mcp_url ?? `${backendUrl}/mcp/${params.token}`
+  const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Top bar */}
-      <header className="border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-6 w-6 rounded bg-gradient-to-br from-violet-500 to-indigo-600" />
-            <span className="font-semibold text-white tracking-tight">Maestro</span>
-            <Separator orientation="vertical" className="h-4 bg-white/10 mx-1" />
-            <span className="text-white/30 text-sm font-mono truncate max-w-[120px]">
+    <div className="min-h-screen bg-[#0a0a0b] text-white">
+      {/* ── Top bar ──────────────────────────────────────────── */}
+      <header className="border-b border-white/[0.05] bg-[#0a0a0b]/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect width="22" height="22" rx="6" fill="#7c3aed" />
+              <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
+              <circle cx="11" cy="11" r="2" fill="white" />
+            </svg>
+            <span className="font-semibold tracking-tight text-white">Maestro</span>
+            <Separator orientation="vertical" className="mx-1 h-4 bg-white/[0.1]" />
+            <span className="min-w-0 max-w-[110px] truncate font-mono text-[13px] text-white/30 sm:max-w-[180px]">
               {params.token}
             </span>
           </div>
-          <Badge className="bg-green-500/15 text-green-400 border-green-500/20 text-xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-green-400 mr-1.5 inline-block animate-pulse" />
+
+          <Badge className="shrink-0 border-green-500/25 bg-green-500/12 text-[12px] text-green-400">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
             Online
           </Badge>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8 space-y-8">
-        {/* Connect to claude.ai guide */}
-        <Card className="bg-white/[0.03] border-violet-500/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-transparent pointer-events-none" />
-          <CardHeader className="relative">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-violet-400" />
-              <CardTitle className="text-white text-lg">Connect to claude.ai</CardTitle>
-            </div>
-            <p className="text-white/40 text-sm mt-1">
-              Paste these 3 values into claude.ai → Settings → Connectors → Add custom connector.
-            </p>
-          </CardHeader>
-          <CardContent className="relative space-y-5">
-            <CopyField label="MCP URL" value={mcpUrl} />
-            <CopyField label="Bearer Token" value={bearerToken} />
-            <CopyField label="Connector Name" value="Maestro" />
+      {/* ── Main ─────────────────────────────────────────────── */}
+      <main className="mx-auto max-w-5xl space-y-6 px-6 py-8">
 
-            <Separator className="bg-white/8" />
+        {/* Connect card */}
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-white/[0.025]">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/45 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(124,58,237,0.07)_0%,transparent_70%)]" />
+
+          <div className="relative p-6 md:p-8">
+            <div className="mb-5 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15">
+                <Zap className="h-4.5 w-4.5 text-violet-400" />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-semibold text-white">Connect to claude.ai</h2>
+                <p className="text-[13px] text-white/40">
+                  Settings → Connectors → Add custom connector.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <CopyField label="MCP URL"       value={mcpUrl} />
+              <CopyField label="Bearer Token"  value={bearerToken} />
+              <CopyField label="Connector Name" value="Maestro" />
+            </div>
+
+            <Separator className="my-6 bg-white/[0.06]" />
 
             <div className="space-y-3">
-              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">
+              <p className="text-[11px] font-medium uppercase tracking-widest text-white/30">
                 Step-by-step
               </p>
-              <ol className="space-y-2.5">
+              <ol className="space-y-3">
                 {[
-                  <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-violet-300 inline-flex items-center gap-0.5">claude.ai <ExternalLink className="h-3 w-3" /></a> and click your avatar → <strong className="text-white/70">Settings</strong></>,
-                  <>Navigate to <strong className="text-white/70">Connectors</strong> → <strong className="text-white/70">Add custom connector</strong></>,
-                  <>Paste the <strong className="text-white/70">MCP URL</strong> and <strong className="text-white/70">Bearer Token</strong> above, name it <strong className="text-white/70">Maestro</strong>, and click Save</>,
+                  <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-violet-400 hover:text-violet-300">claude.ai <ExternalLink className="h-3 w-3" /></a> → your avatar → <strong className="font-medium text-white/70">Settings</strong></>,
+                  <>Navigate to <strong className="font-medium text-white/70">Connectors</strong> → <strong className="font-medium text-white/70">Add custom connector</strong></>,
+                  <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Maestro</strong>, and click Save</>,
                 ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm">
-                    <span className="h-5 w-5 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center text-xs shrink-0 mt-0.5">
+                  <li key={i} className="flex items-start gap-3 text-[13px]">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/18 text-[11px] font-medium text-violet-300">
                       {i + 1}
                     </span>
-                    <span className="text-white/50 leading-relaxed">{step}</span>
+                    <span className="leading-relaxed text-white/45">{step}</span>
                   </li>
                 ))}
               </ol>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Terminal */}
-        <Card className="bg-white/[0.03] border-white/8 overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-5 w-5 text-white/40" />
-              <CardTitle className="text-white text-base">Browser Terminal</CardTitle>
+        {/* Terminal card */}
+        <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.02]">
+          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
+            <div className="flex items-center gap-2 text-white/50">
+              <Terminal className="h-4 w-4" />
+              <span className="text-[14px] font-medium">Browser Terminal</span>
             </div>
             <Button
               asChild
               variant="ghost"
               size="sm"
-              className="text-white/40 hover:text-white hover:bg-white/10 text-xs gap-1.5"
+              className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
             >
               <a href={terminalUrl} target="_blank" rel="noopener noreferrer">
                 Open in new tab <ExternalLink className="h-3 w-3" />
               </a>
             </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="w-full bg-[#0d0d0d] rounded-b-lg overflow-hidden border-t border-white/5">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5 bg-black/20">
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
-                <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
-                <div className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
-                <span className="ml-2 text-white/20 text-xs font-mono">maestro · shell</span>
-              </div>
-              <iframe
-                src={terminalUrl}
-                className="w-full h-[520px] border-0"
-                title="Maestro Terminal"
-                allow="clipboard-read; clipboard-write"
-              />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Support footer */}
-        <div className="text-center py-4">
-          <p className="text-white/25 text-sm">
-            Need help?{" "}
-            <a
-              href="mailto:support@maestro.run"
-              className="text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              support@maestro.run
-            </a>
-          </p>
+          <div className="bg-[#0d0d10]">
+            {/* Fake terminal titlebar */}
+            <div className="flex items-center gap-2 border-b border-white/[0.04] bg-black/20 px-4 py-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500/55" />
+              <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/55" />
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500/55" />
+              <span className="ml-2 font-mono text-[11px] text-white/20">maestro · shell</span>
+            </div>
+            <iframe
+              src={terminalUrl}
+              className="h-[500px] w-full border-0 md:h-[560px]"
+              title="Maestro Terminal"
+              allow="clipboard-read; clipboard-write"
+            />
+          </div>
         </div>
+
+        {/* Support */}
+        <p className="pb-4 text-center text-[13px] text-white/25">
+          Need help?{" "}
+          <a href="mailto:support@maestro.run" className="text-violet-400 transition-colors hover:text-violet-300">
+            support@maestro.run
+          </a>
+        </p>
       </main>
     </div>
   )
