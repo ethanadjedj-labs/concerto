@@ -243,6 +243,23 @@ export default function SetupPage({ params }: { params: { token: string } }) {
     setRetrying(false)
 
     try {
+      // Pre-flight: validate DO key before provisioning (BYOC only)
+      if (plan === "byoc") {
+        const pf = await fetch(`${backendUrl}/api/preflight-do-key`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ do_api_key: doKey.trim() }),
+        })
+        if (!pf.ok) {
+          const pfBody = await pf.json().catch(() => ({}))
+          const detail = pfBody?.detail ?? pfBody
+          const msg = typeof detail === "object" ? (detail.error ?? "Invalid API key") : String(detail)
+          setDoKeyErr(msg)
+          setStatus("idle")
+          return
+        }
+      }
+
       const res = await fetch(`${backendUrl}/api/provision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

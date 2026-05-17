@@ -12,6 +12,7 @@ from concerto.terminal_router import router as terminal_router
 from concerto.oauth_status_router import router as oauth_status_router
 from concerto.first_call_detector import router as first_call_router
 from concerto.customer_portal import router as customer_portal_router
+from concerto.preflight_router import router as preflight_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -36,9 +37,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Concerto Backend", version="1.0.0", lifespan=lifespan)
 
+_CORS_ORIGINS = ["https://concerto.run", "https://www.concerto.run"]
+_extra = os.getenv("CONCERTO_EXTRA_ORIGINS", "")
+if _extra:
+    _CORS_ORIGINS.extend(o.strip() for o in _extra.split(",") if o.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://concerto.run", "https://www.concerto.run"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,3 +63,4 @@ app.include_router(terminal_router)
 app.include_router(oauth_status_router)
 app.include_router(first_call_router)
 app.include_router(customer_portal_router)
+app.include_router(preflight_router)

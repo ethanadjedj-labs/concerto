@@ -45,7 +45,6 @@ async def provision(req: ProvisionRequest):
         "provisioning_failed",
         "provisioning_timeout",
         "failed_install",
-        "refunded",
     ):
         raise HTTPException(
             status_code=409,

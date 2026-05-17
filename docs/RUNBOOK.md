@@ -26,7 +26,7 @@ Cloudflare zone: `208681448c90a193489a0907a48f6166`. If NS doesn't resolve to Cl
 ### Stripe
 
 - [ ] Webhook endpoint registered: `https://api.concerto.run/webhooks/stripe-concerto`
-- [ ] Webhook signing secret in `/etc/cortex/env` as `STRIPE_WEBHOOK_SECRET`
+- [ ] Webhook signing secret in `/etc/cortex/env` as `STRIPE_CONCERTO_WEBHOOK_SECRET`
 - [ ] Fire a test event:
 
 ```bash
@@ -87,7 +87,7 @@ systemctl restart <unit>
 9. Confirm `first_call_at` populated:
    ```bash
    sqlite3 /var/lib/concerto/concerto.db \
-     "SELECT email, status, first_call_at FROM concerto_buyers ORDER BY created_at DESC LIMIT 3;"
+     "SELECT email, status, first_call_at FROM concerto_buyers ORDER BY paid_at DESC LIMIT 3;"
    ```
 10. Switch Stripe back to **live mode**
 
@@ -133,7 +133,7 @@ Also verify directly in DB:
 
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT email, plan, status, created_at FROM concerto_buyers ORDER BY created_at DESC LIMIT 1;"
+  "SELECT email, plan, status, paid_at FROM concerto_buyers ORDER BY paid_at DESC LIMIT 1;"
 ```
 
 ### 0:05 — Hosted plan: verify droplet provisioning
@@ -181,7 +181,7 @@ Check `first_call_at` column:
 
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT email, first_call_at FROM concerto_buyers ORDER BY created_at DESC LIMIT 1;"
+  "SELECT email, first_call_at FROM concerto_buyers ORDER BY paid_at DESC LIMIT 1;"
 ```
 
 ### 1:00 — Welcome nudge
@@ -210,7 +210,7 @@ journalctl -u concerto-backend -n 30 | grep -i "do_api\|digitalocean\|invalid\|t
 5. Mark buyer row:
    ```bash
    sqlite3 /var/lib/concerto/concerto.db \
-     "UPDATE concerto_buyers SET status='refunded', refunded_at=datetime('now') WHERE email='CUSTOMER@EMAIL';"
+     "UPDATE concerto_buyers SET status='refunded', refunded_at=strftime('%s','now') WHERE email='CUSTOMER@EMAIL';"
    ```
 
 ### 3.2 Droplet Boot Fails
@@ -231,7 +231,7 @@ journalctl -u concerto-backend -n 30 | grep -i "do_api\|digitalocean\|invalid\|t
 ```bash
 # Get droplet ID
 DROPLET_ID=$(sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT do_droplet_id FROM concerto_buyers WHERE email='CUSTOMER@EMAIL';")
+  "SELECT vps_id FROM concerto_buyers WHERE email='CUSTOMER@EMAIL';")
 # Destroy
 curl -s -X DELETE \
   -H "Authorization: Bearer $(grep CONCERTO_DO_API_TOKEN /etc/cortex/env | cut -d= -f2)" \
@@ -289,7 +289,7 @@ systemctl restart cloudflared
 Then update the buyer row with the assigned URL:
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "UPDATE concerto_buyers SET tunnel_url='https://<token>.concerto.run' WHERE email='CUSTOMER@EMAIL';"
+  "UPDATE concerto_buyers SET mcp_url='https://<token>.concerto.run' WHERE email='CUSTOMER@EMAIL';"
 ```
 
 Notify customer via email that their instance URL is `https://<token>.concerto.run`.
@@ -374,7 +374,7 @@ Was provisioning successful?
 2. Update DB:
    ```bash
    sqlite3 /var/lib/concerto/concerto.db \
-     "UPDATE concerto_buyers SET status='refunded', refunded_at=datetime('now') WHERE email='CUSTOMER@EMAIL';"
+     "UPDATE concerto_buyers SET status='refunded', refunded_at=strftime('%s','now') WHERE email='CUSTOMER@EMAIL';"
    ```
 3. Email customer (see template "We've issued your refund" in section 8)
 
@@ -423,9 +423,9 @@ Run each morning:
 
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT email, plan, status, created_at FROM concerto_buyers \
+  "SELECT email, plan, status, paid_at FROM concerto_buyers \
    WHERE status IN ('failed_install','provisioning','pending') \
-   ORDER BY created_at DESC;"
+   ORDER BY paid_at DESC;"
 ```
 
 Any row stuck in `provisioning` for >30 min needs manual investigation (see section 3.2/3.3).
@@ -527,7 +527,7 @@ Flag if refund count >2/week or churn rate >10%.
 - Login: dashboard.stripe.com
 - If locked out: Stripe recovery via phone/email 2FA
 - Sub-user: Stripe → Settings → Team → invite with "Analyst" role for read-only access
-- Webhook signing secret: stored in `/etc/cortex/env` as `STRIPE_WEBHOOK_SECRET`
+- Webhook signing secret: stored in `/etc/cortex/env` as `STRIPE_CONCERTO_WEBHOOK_SECRET`
 - Live vs test mode: always confirm which mode you're in (banner at top of dashboard)
 
 ### NameSilo (DNS Registrar for concerto.run)
@@ -663,7 +663,7 @@ All commands run on the empire VPS. Adjust `CUSTOMER@EMAIL` and `<token>` as nee
 
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT id, email, plan, status, do_droplet_id, tunnel_url, first_call_at, created_at \
+  "SELECT id, email, plan, status, vps_id, mcp_url, first_call_at, paid_at \
    FROM concerto_buyers WHERE email='CUSTOMER@EMAIL';"
 ```
 
@@ -678,7 +678,7 @@ stripe events list --limit 5
 ```bash
 TOKEN=<buyer-token>
 DROPLET_ID=$(sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT do_droplet_id FROM concerto_buyers WHERE token='$TOKEN';")
+  "SELECT vps_id FROM concerto_buyers WHERE token='$TOKEN';")
 DO_TOKEN=$(grep CONCERTO_DO_API_TOKEN /etc/cortex/env | cut -d= -f2)
 curl -s -H "Authorization: Bearer $DO_TOKEN" \
   "https://api.digitalocean.com/v2/droplets/$DROPLET_ID" \
@@ -700,7 +700,7 @@ journalctl -u concerto-drip-runner -n 20
 ```bash
 # Step 1: get droplet ID
 DROPLET_ID=$(sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT do_droplet_id FROM concerto_buyers WHERE email='CUSTOMER@EMAIL';")
+  "SELECT vps_id FROM concerto_buyers WHERE email='CUSTOMER@EMAIL';")
 DO_TOKEN=$(grep CONCERTO_DO_API_TOKEN /etc/cortex/env | cut -d= -f2)
 
 # Step 2: destroy droplet
@@ -711,7 +711,7 @@ curl -s -X DELETE \
 # Step 3: update DB
 sqlite3 /var/lib/concerto/concerto.db \
   "UPDATE concerto_buyers \
-   SET status='refunded', refunded_at=datetime('now'), do_droplet_id=NULL \
+   SET status='refunded', refunded_at=strftime('%s','now'), vps_id=NULL \
    WHERE email='CUSTOMER@EMAIL';"
 
 # Step 4: issue Stripe refund manually via Dashboard (no CLI command — safer to click)
@@ -732,9 +732,9 @@ done
 
 ```bash
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT email, do_droplet_id, status, tunnel_url, created_at \
+  "SELECT email, vps_id, status, mcp_url, paid_at \
    FROM concerto_buyers WHERE plan='hosted' AND status NOT IN ('refunded','cancelled') \
-   ORDER BY created_at DESC;"
+   ORDER BY paid_at DESC;"
 ```
 
 ### Tail backend logs live

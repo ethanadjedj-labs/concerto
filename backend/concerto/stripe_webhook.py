@@ -14,7 +14,7 @@ from concerto.email_utils import send_email, send_operator_alert
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET_CONCERTO", "")
+_WEBHOOK_SECRET = os.getenv("STRIPE_CONCERTO_WEBHOOK_SECRET", "")
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _SETUP_BASE = "https://concerto.run/setup"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")

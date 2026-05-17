@@ -43,7 +43,7 @@ async def create_customer_portal_session(req: _PortalRequest):
             customer=stripe_customer_id,
             return_url=f"{_PORTAL_RETURN_BASE}/{req.token}",
         )
-    except stripe.error.StripeError as exc:
+    except stripe.StripeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return {"url": session.url}
