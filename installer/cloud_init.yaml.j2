@@ -6,11 +6,14 @@
 #   maestro_callback_url — backend webhook URL to POST the tunnel/bearer details to
 #   ssh_authorized_key   — backend-generated public key for terminal proxy access
 #   customer_email       — customer email for audit logs
+#   ttyd_password        — random 32-char hex credential for ttyd Basic Auth (F2)
 #
 # Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
 # cloud-init runs runcmd on first boot as root.
 
 # ─── SSH ─────────────────────────────────────────────────────────────────────
+# F4: ssh_authorized_keys is processed by cloud-init BEFORE runcmd executes,
+# guaranteeing the key is in place before any service starts.
 
 ssh_authorized_keys:
   - "{{ ssh_authorized_key }}"
@@ -34,9 +37,14 @@ write_files:
     permissions: '0644'
     content: "1.0.0\n"
 
+  # F2: ttyd credential file — password is rendered at provision time
+  - path: /etc/maestro/ttyd.env
+    owner: root:root
+    permissions: '0600'
+    content: |
+      TTYD_PASSWORD={{ ttyd_password }}
+
   # ── MCP server ──────────────────────────────────────────────────────────────
-  # FastMCP + Bearer auth + 4 session-management tools.
-  # Kept in sync with installer/mcp_server.py in the maestro repo.
   - path: /opt/maestro/mcp_server.py
     owner: root:root
     permissions: '0755'
@@ -214,9 +222,6 @@ write_files:
           main()
 
   # ── nginx reverse proxy ─────────────────────────────────────────────────────
-  # Routes /terminal/* → ttyd (port 7681, WebSocket)
-  # Routes everything else → MCP server (port 9876)
-  # cloudflared tunnel points at this nginx (port 8080)
   - path: /etc/nginx/conf.d/maestro.conf
     owner: root:root
     permissions: '0644'
@@ -242,13 +247,15 @@ write_files:
               return 301 /terminal/;
           }
 
-          # ttyd web terminal — must proxy WebSocket (Upgrade header)
+          # ttyd web terminal — must proxy WebSocket (Upgrade header) and
+          # forward Authorization for ttyd Basic Auth validation (F2).
           location /terminal/ {
               proxy_pass         http://127.0.0.1:7681/;
               proxy_http_version 1.1;
-              proxy_set_header   Upgrade    $http_upgrade;
-              proxy_set_header   Connection "upgrade";
-              proxy_set_header   Host       $host;
+              proxy_set_header   Upgrade           $http_upgrade;
+              proxy_set_header   Connection        "upgrade";
+              proxy_set_header   Host              $host;
+              proxy_set_header   Authorization     $http_authorization;
               proxy_read_timeout 3600s;
               proxy_send_timeout 3600s;
           }
@@ -275,47 +282,63 @@ write_files:
       WantedBy=multi-user.target
 
   # ── systemd: cloudflared tunnel ─────────────────────────────────────────────
+  # F5: stdout/stderr redirect to log file so provision_complete.sh can poll
+  # the file directly rather than racing against journald sync.
   - path: /etc/systemd/system/maestro-tunnel.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
       Description=Maestro Cloudflared Quick Tunnel
-      Documentation=https://github.com/ethanadjedj-labs/maestro
+      Documentation=https://github.com/ethanadjedja-labs/maestro
       After=network.target maestro-mcp.service maestro-ttyd.service nginx.service
 
       [Service]
       Type=simple
-      # Quick tunnel — URL logged to stdout/journald, parsed by provision_complete.sh
       ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
       Restart=on-failure
       RestartSec=10
+      StandardOutput=append:/var/log/cloudflared-quicktunnel.log
+      StandardError=append:/var/log/cloudflared-quicktunnel.log
 
       [Install]
       WantedBy=multi-user.target
 
   # ── systemd: ttyd web terminal ──────────────────────────────────────────────
+  # F2: --credential from TTYD_PASSWORD env var (set via EnvironmentFile)
+  # F3: --client-option flags for iframe embedding
+  # F6: KillMode=control-group kills bash children on stop;
+  #     ExecStopPost cleans up any zombie bash processes
   - path: /etc/systemd/system/maestro-ttyd.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
       Description=Maestro TTYd Web Terminal
-      Documentation=https://github.com/ethanadjedj-labs/maestro
+      Documentation=https://github.com/ethanadjedja-labs/maestro
       After=network.target
 
       [Service]
       Type=simple
-      # -W = writable (allow input), -i = bind interface, no auth (protected by cloudflared tunnel)
-      ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 -W bash
+      EnvironmentFile=/etc/maestro/ttyd.env
+      ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 -W \
+        --credential maestro:${TTYD_PASSWORD} \
+        --client-option disableLeaveAlert=true \
+        --client-option titleFixed=Maestro \
+        bash
       Restart=always
       RestartSec=5
+      KillMode=control-group
+      ExecStopPost=/bin/bash -c 'pkill -TERM -x bash 2>/dev/null || true'
 
       [Install]
       WantedBy=multi-user.target
 
   # ── provision completion script ─────────────────────────────────────────────
-  # Waits for the cloudflared tunnel URL and POSTs it back to the empire backend.
+  # F4: SSH key is already written by cloud-init ssh_authorized_keys section
+  #     before runcmd runs — this script verifies then sleeps 5s before POST.
+  # F5: Polls /var/log/cloudflared-quicktunnel.log (written by maestro-tunnel
+  #     systemd service) with 60s timeout + retry-on-empty.
   - path: /opt/maestro/provision_complete.sh
     owner: root:root
     permissions: '0755'
@@ -325,22 +348,33 @@ write_files:
 
       source /etc/maestro/env
 
-      # ── Wait for cloudflared to log the tunnel URL (up to 120s) ──────────────
-      echo "[maestro] Waiting for cloudflare tunnel URL..."
+      # ── F4: verify SSH authorized_keys is in place before reporting back ─────
+      echo "[maestro] Verifying SSH authorized_keys..."
+      if [ ! -f /root/.ssh/authorized_keys ] || [ ! -s /root/.ssh/authorized_keys ]; then
+        echo "[maestro] WARNING: authorized_keys missing or empty — SSH access may be broken" >&2
+      else
+        echo "[maestro] SSH authorized_keys OK ($(wc -l < /root/.ssh/authorized_keys) key(s))"
+      fi
+
+      # ── F5: wait for cloudflared to log the tunnel URL ───────────────────────
+      # maestro-tunnel.service writes to /var/log/cloudflared-quicktunnel.log.
+      # Poll the file directly (avoids journald sync race).
+      echo "[maestro] Waiting for cloudflare tunnel URL (max 60s)..."
       TUNNEL_URL=""
-      for i in $(seq 1 60); do
-        TUNNEL_URL=$(
-          journalctl -u maestro-tunnel --no-pager -n 300 2>/dev/null \
-            | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' \
-            | head -1
-        )
+      for i in $(seq 1 30); do
+        if [ -f /var/log/cloudflared-quicktunnel.log ]; then
+          TUNNEL_URL=$(
+            grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' \
+              /var/log/cloudflared-quicktunnel.log 2>/dev/null | head -1 || true
+          )
+        fi
         [ -n "$TUNNEL_URL" ] && break
         sleep 2
       done
 
       if [ -z "$TUNNEL_URL" ]; then
-        echo "[maestro] ERROR: tunnel URL not found in journald after 120s" >&2
-        journalctl -u maestro-tunnel --no-pager -n 50 >&2 || true
+        echo "[maestro] ERROR: tunnel URL not found after 60s" >&2
+        cat /var/log/cloudflared-quicktunnel.log >&2 || true
         exit 1
       fi
 
@@ -348,6 +382,10 @@ write_files:
 
       # ── Read the freshly-generated bearer token ───────────────────────────────
       BEARER_TOKEN=$(cat /etc/maestro/token)
+
+      # ── F4: sleep 5s to ensure SSH daemon has fully processed authorized_keys ─
+      echo "[maestro] Sleeping 5s before reporting back..."
+      sleep 5
 
       # ── POST results back to empire backend ───────────────────────────────────
       curl -fsSL -X POST "${MAESTRO_CALLBACK_URL}" \
@@ -369,7 +407,6 @@ runcmd:
   - ["apt-get", "install", "-y", "curl", "python3-venv", "tmux", "git", "ttyd", "nginx"]
 
   # ── 2. Node.js 20 via NodeSource ──────────────────────────────────────────
-  # Adds NodeSource apt repo then installs the nodejs package from it
   - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
   - ["apt-get", "install", "-y", "nodejs"]
 
@@ -385,19 +422,31 @@ runcmd:
      "python3 -m venv /opt/maestro/.venv && /opt/maestro/.venv/bin/pip install --quiet --upgrade pip && /opt/maestro/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
 
   # ── 6. Generate MCP bearer token ─────────────────────────────────────────
-  # /etc/maestro/ is already created by write_files above
   - ["bash", "-c", "openssl rand -hex 32 > /etc/maestro/token && chmod 600 /etc/maestro/token"]
 
   # ── 7. Session storage directory ──────────────────────────────────────────
   - ["mkdir", "-p", "/var/lib/maestro/sessions"]
 
-  # ── 8. nginx: disable default site, test config ───────────────────────────
+  # ── 8. F4: verify SSH authorized_keys before starting services ────────────
+  # cloud-init ssh_authorized_keys runs before runcmd, so key is already present.
+  - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true"]
+
+  # ── 9. nginx: disable default site, test config ───────────────────────────
   - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]
 
-  # ── 9. systemd: reload, enable, start all units ───────────────────────────
+  # ── 10. Prepare cloudflared log file ─────────────────────────────────────
+  # F5: maestro-tunnel.service appends to this file; pre-create it so
+  # provision_complete.sh poll doesn't fail on first iteration.
+  - ["bash", "-c", "touch /var/log/cloudflared-quicktunnel.log && chmod 644 /var/log/cloudflared-quicktunnel.log"]
+
+  # ── 11. systemd: reload, enable, start all units ──────────────────────────
+  # Start nginx + MCP + ttyd first, then tunnel (which depends on them).
+  # F4: SSH is ready (ssh_authorized_keys processed) before we reach here.
   - ["systemctl", "daemon-reload"]
   - ["bash", "-c",
-     "systemctl enable maestro-mcp maestro-ttyd maestro-tunnel nginx && systemctl start nginx maestro-mcp maestro-ttyd maestro-tunnel"]
+     "systemctl enable maestro-mcp maestro-ttyd maestro-tunnel nginx && systemctl start nginx maestro-mcp maestro-ttyd"]
+  # F5: brief pause to let ttyd fully bind before cloudflared starts
+  - ["bash", "-c", "sleep 3 && systemctl start maestro-tunnel"]
 
-  # ── 10. Wait for tunnel URL and POST back to empire backend ───────────────
+  # ── 12. Wait for tunnel URL and POST back to empire backend ───────────────
   - ["/opt/maestro/provision_complete.sh"]

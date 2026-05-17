@@ -20,6 +20,7 @@ class DropletReadyPayload(BaseModel):
     token: str
     mcp_url: str
     bearer_token: str
+    ttyd_url: str = ""  # F5: droplet POSTs the trycloudflare URL for ttyd
 
 
 @router.post("/api/provision", status_code=202)
@@ -44,14 +45,18 @@ async def provision(req: ProvisionRequest):
 
 async def _provision_async(token: str, do_api_key: str, region: str, size: str) -> None:
     try:
-        droplet_id, vps_ip, ssh_key_path = await provisioner.provision_droplet(
-            do_api_key, region, size, token
+        buyer = await db.get_buyer(token)
+        customer_email = buyer["email"] if buyer else ""
+
+        droplet_id, vps_ip, ssh_key_path, ttyd_password = await provisioner.provision_droplet(
+            do_api_key, region, size, token, customer_email=customer_email
         )
         await db.update_buyer(
             token,
             vps_id=droplet_id,
             vps_ip=vps_ip,
             ssh_keypair_private_path=ssh_key_path,
+            ttyd_password=ttyd_password,  # F2: store for terminal_router Basic Auth
             status="installing",
             provisioned_at=int(time.time()),
         )
@@ -62,6 +67,7 @@ async def _provision_async(token: str, do_api_key: str, region: str, size: str) 
 
 @router.post("/api/internal/droplet-ready")
 async def droplet_ready(payload: DropletReadyPayload):
+    """F5: droplet POSTs here once cloudflared tunnel URL is captured."""
     buyer = await db.get_buyer(payload.token)
     if not buyer:
         raise HTTPException(status_code=404, detail="Token not found")
@@ -70,6 +76,7 @@ async def droplet_ready(payload: DropletReadyPayload):
         payload.token,
         mcp_url=payload.mcp_url,
         bearer_token=payload.bearer_token,
+        ttyd_public_url=payload.ttyd_url,  # F5: store trycloudflare URL for proxy
         status="awaiting_oauth",
         installed_at=int(time.time()),
     )

@@ -1,76 +1,103 @@
-import asyncio
-import socket
+"""
+terminal_router.py — WebSocket proxy to customer ttyd via trycloudflare URL.
 
+Findings applied:
+  F1 — subprotocols=['tty'] forwarded on both client-accept and upstream connect
+  F2 — Basic Auth injected upstream using per-buyer ttyd_password (transparent to browser)
+  F3 — /terminal/{token}/frame HTTP endpoint adds CSP frame-ancestors for iframe embedding
+  F6 — ping_interval keeps idle connections alive; upstream close triggers 1011 to client
+"""
+import asyncio
+import base64
+import logging
+
+import httpx
 import websockets
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Response, WebSocket, WebSocketDisconnect
 
 from maestro import db
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-_TTYD_PORT = 7681
+_WS_PING_INTERVAL = 30
+_WS_PING_TIMEOUT = 10
+_UPSTREAM_CONNECT_TIMEOUT = 30.0
+
+_CSP_FRAME_ANCESTORS = (
+    "frame-ancestors https://maestro.run https://*.vercel.app"
+)
 
 
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("127.0.0.1", 0))
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        return s.getsockname()[1]
+def _ttyd_ws_url(ttyd_public_url: str) -> str:
+    """Convert HTTP ttyd public URL to WebSocket URL (appends /ws)."""
+    url = ttyd_public_url.rstrip("/")
+    url = url.replace("https://", "wss://").replace("http://", "ws://")
+    return url + "/ws"
 
 
-async def _wait_for_port(port: int, timeout: float = 10.0) -> bool:
-    deadline = asyncio.get_event_loop().time() + timeout
-    while asyncio.get_event_loop().time() < deadline:
-        try:
-            _, writer = await asyncio.open_connection("127.0.0.1", port)
-            writer.close()
-            await writer.wait_closed()
-            return True
-        except (ConnectionRefusedError, OSError):
-            await asyncio.sleep(0.5)
-    return False
+def _basic_auth_header(ttyd_password: str) -> str:
+    cred = base64.b64encode(f"maestro:{ttyd_password}".encode()).decode()
+    return f"Basic {cred}"
+
+
+@router.get("/terminal/{token}/frame")
+async def terminal_frame(token: str):
+    """Proxy ttyd HTML for iframe embedding; injects CSP frame-ancestors header."""
+    buyer = await db.get_buyer(token)
+    if not buyer or not buyer.get("ttyd_public_url"):
+        return Response(status_code=503, content="Terminal not yet ready")
+
+    ttyd_url = buyer["ttyd_public_url"].rstrip("/") + "/"
+    auth = _basic_auth_header(buyer.get("ttyd_password") or "")
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                ttyd_url,
+                headers={"Authorization": auth},
+                follow_redirects=True,
+            )
+        return Response(
+            content=r.content,
+            status_code=r.status_code,
+            media_type=r.headers.get("content-type", "text/html"),
+            headers={"Content-Security-Policy": _CSP_FRAME_ANCESTORS},
+        )
+    except httpx.RequestError as exc:
+        logger.warning("terminal_frame proxy error: %s", exc)
+        return Response(status_code=503, content="Terminal unreachable")
 
 
 @router.websocket("/terminal/{token}")
 async def terminal_proxy(websocket: WebSocket, token: str):
     buyer = await db.get_buyer(token)
-    if (
-        not buyer
-        or not buyer.get("vps_ip")
-        or not buyer.get("ssh_keypair_private_path")
-    ):
+    if not buyer or not buyer.get("ttyd_public_url"):
         await websocket.close(code=4004)
         return
 
-    vps_ip = buyer["vps_ip"]
-    key_path = buyer["ssh_keypair_private_path"]
-    local_port = _free_port()
+    ttyd_password = buyer.get("ttyd_password") or ""
+    ws_url = _ttyd_ws_url(buyer["ttyd_public_url"])
+    auth_header = _basic_auth_header(ttyd_password)
 
-    ssh_proc = await asyncio.create_subprocess_exec(
-        "ssh",
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "UserKnownHostsFile=/dev/null",
-        "-o", "ExitOnForwardFailure=yes",
-        "-o", "ServerAliveInterval=15",
-        "-N",
-        "-L", f"127.0.0.1:{local_port}:127.0.0.1:{_TTYD_PORT}",
-        f"root@{vps_ip}",
-        "-i", key_path,
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
+    # F1: Accept with 'tty' subprotocol if the client requested it.
+    offered = [
+        s.strip()
+        for s in websocket.headers.get("sec-websocket-protocol", "").split(",")
+    ]
+    use_subprotocol = "tty" if "tty" in offered else None
+    await websocket.accept(subprotocol=use_subprotocol)
 
     try:
-        ready = await _wait_for_port(local_port, timeout=15.0)
-        if not ready:
-            await websocket.close(code=4008)
-            return
-
-        await websocket.accept()
-
+        # F1: upstream connect with subprotocols=['tty']
+        # F2: inject Basic Auth header transparent to browser
         async with websockets.connect(
-            f"ws://127.0.0.1:{local_port}/ws",
+            ws_url,
             subprotocols=["tty"],
+            additional_headers={"Authorization": auth_header},
+            ping_interval=_WS_PING_INTERVAL,
+            ping_timeout=_WS_PING_TIMEOUT,
+            open_timeout=_UPSTREAM_CONNECT_TIMEOUT,
         ) as remote_ws:
 
             async def to_remote():
@@ -104,11 +131,15 @@ async def terminal_proxy(websocket: WebSocket, token: str):
                 except (asyncio.CancelledError, Exception):
                     pass
 
-    except (WebSocketDisconnect, websockets.exceptions.ConnectionClosed):
+    except websockets.exceptions.InvalidStatusCode as exc:
+        logger.warning("ttyd rejected WS connection for token %.8s: %s", token, exc)
+    except (websockets.exceptions.WebSocketException, WebSocketDisconnect):
         pass
+    except Exception as exc:
+        logger.error("terminal_proxy unexpected error for token %.8s: %s", token, exc)
     finally:
-        ssh_proc.terminate()
+        # F6: close client side; code 1011 signals server-side terminal exit
         try:
-            await asyncio.wait_for(ssh_proc.wait(), timeout=3)
-        except asyncio.TimeoutError:
-            ssh_proc.kill()
+            await websocket.close(code=1011)
+        except Exception:
+            pass
