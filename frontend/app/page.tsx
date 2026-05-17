@@ -126,8 +126,8 @@ export default function LandingPage() {
           {/* Desktop: two-column | Mobile: stacked */}
           <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16">
 
-            {/* Left column — ~45% width on desktop */}
-            <div className="animate-fade-up flex-shrink-0 lg:w-[44%]">
+            {/* Left column — ~45% width on desktop, padded right to prevent demo overlap */}
+            <div className="animate-fade-up flex-shrink-0 lg:w-[44%] lg:pr-8">
 
               {/* Editorial peach line — book/manifesto mark */}
               <div className="mb-8 h-px w-[60px] bg-[#cc785c]" />
@@ -147,13 +147,11 @@ export default function LandingPage() {
                 <span className="text-[#cc785c]">from Claude chat.</span>
               </h1>
 
-              <p className="mb-3 text-lg leading-relaxed text-[#555049]">
-                Talk to Claude. Claude runs Claude Code on a dedicated remote workspace.
-                No terminal. No GitHub juggling. No sandbox.
-              </p>
-
-              <p className="mb-10 text-sm text-[#8a847b]">
-                Works with your Claude Pro or Max subscription.
+              <p className="mb-10 text-lg leading-relaxed text-[#555049]">
+                You connect Concerto inside claude.ai. Ask Claude to build something — a website,
+                a script, a refactor. Claude spawns a session on your dedicated remote machine,
+                watches the work happen, and reports back in chat. Run one. Run ten in parallel.
+                Close the tab; come back to a finished project.
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -176,16 +174,13 @@ export default function LandingPage() {
                   </Button>
                 </form>
               </div>
-              <p className="mt-2 text-sm text-[#a09890]">
-                Not sure?{" "}
-                <Link href="/try" className="text-[#8a847b] underline underline-offset-2 hover:text-[#555049] transition-colors">
-                  Try free for 30 minutes, no card required →
-                </Link>
+              <p className="mt-2 text-sm text-[#8a847b]">
+                Works with your Claude Pro or Max subscription.
               </p>
             </div>
 
-            {/* Right column — flex-1 (~55%) on desktop */}
-            <div className="animate-fade-up delay-200 min-w-0 flex-1">
+            {/* Right column — hidden on mobile, ~45% on desktop */}
+            <div className="animate-fade-up delay-200 hidden lg:block lg:flex-1 lg:min-w-0">
               <HeroClaudeDemo />
             </div>
           </div>
@@ -217,14 +212,14 @@ export default function LandingPage() {
               icon={<GitBranch className="h-5 w-5 text-[#555049]" />}
               iconBg="bg-[rgba(25,25,25,0.05)]"
               title="No more GitHub juggling"
-              description="Cloning, branches, PRs handled on the remote workspace. You stay in Claude chat the whole time."
+              description="Cloning, branches, PRs handled on the remote machine. You stay in Claude chat the whole time."
             />
             <FeatureCard
               revealDelay="reveal-d3"
               icon={<Shield className="h-5 w-5 text-[#555049]" />}
               iconBg="bg-[rgba(25,25,25,0.05)]"
               title="No more sandbox limits"
-              description="Sandboxed environments cap what Claude Code can do. Your dedicated workspace runs real git, real tests, real deploys."
+              description="Sandboxed environments cap what Claude Code can do. Your dedicated remote machine runs real git, real tests, real deploys."
             />
           </div>
         </div>
@@ -244,7 +239,7 @@ export default function LandingPage() {
               {
                 n: "01",
                 title: "Pick a plan",
-                desc: "Solo ($49/mo) or Pro ($99/mo) — we provision a dedicated remote workspace for you. Takes about 3 minutes.",
+                desc: "Solo ($49/mo) or Pro ($99/mo) — we provision a dedicated remote machine for you. Takes about 3 minutes.",
               },
               {
                 n: "02",
@@ -254,7 +249,7 @@ export default function LandingPage() {
               {
                 n: "03",
                 title: "Chat normally.",
-                desc: "Claude does the rest. Tell it what to build. It writes code, runs it, opens PRs — on your workspace.",
+                desc: "Claude does the rest. Tell it what to build. It writes code, runs it, opens PRs — on your machine.",
               },
             ].map((step, i) => (
               <div
@@ -295,19 +290,19 @@ export default function LandingPage() {
               {
                 label: "Start from scratch",
                 prompt: "Make me a landing page for my coffee shop with online ordering.",
-                prose: "Claude spins up a workspace, builds the site, wires up payments, and shows it to you running. You see real code being written, then a real link you can share.",
+                prose: "Claude spawns a session on your machine, builds the site, wires up payments, and shows it to you running. You see real code being written, then a real link you can share.",
                 delay: "reveal-d1",
               },
               {
                 label: "Work on existing project",
                 prompt: "Add a contact form to my existing website (here's the GitHub link) and connect it to my email.",
-                prose: "Your repo is cloned into the workspace, the change is made and tested, then handed back to you to review before anything is committed.",
+                prose: "Your repo is cloned onto the machine, the change is made and tested, then handed back to you to review before anything is committed.",
                 delay: "reveal-d2",
               },
               {
                 label: "Long-running work",
                 prompt: "Read all 60 episodes of my podcast transcripts and write me summaries with key quotes.",
-                prose: "Long tasks that timeout in regular Claude run for hours on your workspace. You can close the tab and come back to the result.",
+                prose: "Long tasks that timeout in regular Claude run for hours on your machine. You can close the tab and come back to the result.",
                 delay: "reveal-d3",
               },
               {
@@ -343,7 +338,7 @@ export default function LandingPage() {
               Pick your plan.
             </h2>
             <p className="text-[#8a847b]">
-              Both plans include a dedicated workspace. Start with Solo, upgrade when you need more sessions.
+              Both plans include a dedicated remote machine. Start with Solo, upgrade when you need more sessions.
             </p>
           </div>
 
@@ -354,7 +349,7 @@ export default function LandingPage() {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">Dedicated workspace, 4GB memory</p>
+              <p className="mb-1 text-sm text-[#8a847b]">Dedicated remote machine, 4GB</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -362,7 +357,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Dedicated workspace, 4GB memory",
+                  "Dedicated remote machine, 4GB",
                   "Up to 2 parallel sessions",
                   "Email support included",
                   "Cancel anytime",
@@ -387,7 +382,7 @@ export default function LandingPage() {
                   <Star className="h-3 w-3 fill-current" /> Most popular
                 </span>
               </div>
-              <p className="mb-1 text-sm text-[#8a847b]">Dedicated workspace, 8GB memory</p>
+              <p className="mb-1 text-sm text-[#8a847b]">Dedicated remote machine, 8GB</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -395,7 +390,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Dedicated workspace, 8GB memory",
+                  "Dedicated remote machine, 8GB",
                   "Up to 6–8 parallel sessions",
                   "Email support included",
                   "Cancel anytime",
@@ -424,13 +419,6 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <p className="reveal mt-5 text-center text-sm text-[#a09890]">
-            Not sure if Concerto is for you?{" "}
-            <Link href="/try" className="text-[#8a847b] underline underline-offset-2 hover:text-[#555049] transition-colors">
-              Try free for 30 minutes — no card needed →
-            </Link>
-          </p>
-
         </div>
       </section>
 
@@ -447,7 +435,7 @@ export default function LandingPage() {
             {[
               {
                 q: "What is Concerto?",
-                a: "A dedicated remote workspace where Claude Code runs your projects. You talk to Claude in chat (or via voice), Claude spawns sessions on your workspace to do the actual work — write code, run it, fetch files, anything Claude Code can do. You see the progress in your conversation.",
+                a: "Concerto gives you a dedicated remote machine where Claude Code runs your projects. You talk to Claude in chat (or via voice), Claude spawns sessions on your machine to do the actual work — write code, run it, fetch files, anything Claude Code can do. You see the progress in your conversation.",
               },
               {
                 q: "Do I need to know how to code?",
@@ -458,8 +446,8 @@ export default function LandingPage() {
                 a: "We strongly recommend Max. Claude Pro's token limits get exhausted quickly with the kind of agentic work Concerto enables. Max ($200/month) gives you 5× the usage. Pro works for light experimentation but you'll hit walls fast.",
               },
               {
-                q: "Is my workspace dedicated to me?",
-                a: "Yes. Every Concerto subscription is a dedicated remote workspace isolated from other customers. Your code, files, and history stay yours.",
+                q: "Is my machine dedicated to me?",
+                a: "Yes. Every Concerto subscription is a dedicated remote machine isolated from other customers. Your code, files, and history stay yours.",
               },
               {
                 q: "What can I run on it?",
@@ -467,7 +455,7 @@ export default function LandingPage() {
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes, instantly. Cancel from your dashboard, workspace gets cleaned up at the end of the billing period. No questions, no contracts.",
+                a: "Yes, instantly. Cancel from your dashboard, your machine is decommissioned at the end of the billing period. No questions, no contracts.",
               },
             ].map(({ q, a }) => (
               <AccordionItem key={q} value={q} className="border-b border-[rgba(25,25,25,0.08)]">

@@ -258,7 +258,7 @@ function DemoShell({ children, fading }: { children: React.ReactNode; fading: bo
   return (
     <div
       role="img"
-      aria-label="Concerto demo: Claude orchestrating a project via Concerto workspace"
+      aria-label="Concerto demo: Claude orchestrating a project via Concerto sessions"
       className="relative mx-auto w-full max-w-3xl select-none"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.65s ease" }}
     >
@@ -556,5 +556,12 @@ export function HeroClaudeDemo() {
   const scriptIdxRef = useRef(Math.floor(Math.random() * HERO_SCRIPTS.length))
   const script = HERO_SCRIPTS[scriptIdxRef.current]
   const reduced = usePrefersReducedMotion()
-  return reduced ? <StaticFallback script={script} /> : <AnimatedDemo script={script} />
+  return (
+    <div style={{ opacity: 0.6, maxWidth: 520 }}>
+      {reduced ? <StaticFallback script={script} /> : <AnimatedDemo script={script} />}
+      <p style={{ textAlign: "center", marginTop: 8, fontSize: 11, color: "#8a847b" }}>
+        Demo preview — full claude.ai interface coming.
+      </p>
+    </div>
+  )
 }
