@@ -503,22 +503,33 @@ export default function LandingPage() {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className="border-t border-white/[0.05] px-6 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2.5">
-            <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect width="22" height="22" rx="6" fill="#7c3aed" />
-              <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
-              <circle cx="11" cy="11" r="2" fill="white" />
-            </svg>
-            <span className="text-sm font-medium text-white/40">Maestro</span>
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+            <div className="flex items-center gap-2.5">
+              <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                <rect width="22" height="22" rx="6" fill="#7c3aed" />
+                <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
+                <circle cx="11" cy="11" r="2" fill="white" />
+              </svg>
+              <span className="text-sm font-medium text-white/40">Maestro</span>
+            </div>
+            <p className="text-sm text-white/20">© {new Date().getFullYear()} Maestro. All rights reserved.</p>
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
+              {[
+                { href: "/legal/terms",   label: "Terms" },
+                { href: "/legal/privacy", label: "Privacy" },
+                { href: "/legal/refund",  label: "Refund" },
+                { href: "/legal/aup",     label: "Acceptable Use" },
+              ].map(({ href, label }) => (
+                <Link key={href} href={href} className="text-xs text-white/25 transition-colors hover:text-white/50">
+                  {label}
+                </Link>
+              ))}
+              <a href="mailto:support@maestro.run" className="text-xs text-white/25 transition-colors hover:text-white/50">
+                support@maestro.run
+              </a>
+            </div>
           </div>
-          <p className="text-sm text-white/20">© {new Date().getFullYear()} Maestro. All rights reserved.</p>
-          <a
-            href="mailto:support@maestro.run"
-            className="text-sm text-white/28 transition-colors hover:text-white/55"
-          >
-            support@maestro.run
-          </a>
         </div>
       </footer>
 
