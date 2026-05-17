@@ -51,18 +51,7 @@ def is_eligible_auto(buyer: dict) -> bool:
     return age_days <= _REFUND_WINDOW_DAYS
 
 
-async def _destroy_hosted_droplet(droplet_id: str) -> None:
-    do_key = os.getenv("CONCERTO_DO_API_TOKEN", "")
-    if not do_key or not droplet_id:
-        return
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            await client.delete(
-                f"{_DO_API_BASE}/droplets/{droplet_id}",
-                headers={"Authorization": f"Bearer {do_key}"},
-            )
-    except Exception:
-        pass
+# _destroy_hosted_droplet removed — use provisioner.destroy_droplet which also handles CF tunnels
 
 
 def _queue_operator_review(buyer_token: str, reason: str) -> None:
@@ -114,8 +103,12 @@ async def refund(buyer_token: str, reason: str, full_amount: bool = True) -> dic
         except stripe.StripeError as exc:
             raise RefundError(f"Stripe refund failed: {exc}") from exc
 
-    if buyer.get("plan") == "hosted" and buyer.get("vps_id"):
-        await _destroy_hosted_droplet(buyer["vps_id"])
+    if buyer.get("plan") in ("hosted", "solo", "pro") and buyer.get("vps_id"):
+        # Destroy droplet + CF tunnel for all platform-managed plans (Bug #22/#23)
+        do_key = os.getenv("CONCERTO_DO_API_TOKEN", "")
+        if do_key:
+            from concerto.provisioner import destroy_droplet
+            await destroy_droplet(do_key, buyer["vps_id"], buyer.get("cf_tunnel_id") or "")
 
     await db.update_buyer(
         buyer_token,
