@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { HeroOrbital } from "@/components/HeroOrbital"
-import { HeroDemo } from "@/components/HeroDemo"
+import { HeroClaudeDemo } from "@/components/HeroClaudeDemo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -159,7 +159,7 @@ export default function LandingPage() {
           </div>
 
           <div className="animate-fade-up delay-500 mt-16 px-2">
-            <HeroDemo />
+            <HeroClaudeDemo />
           </div>
         </div>
       </section>
