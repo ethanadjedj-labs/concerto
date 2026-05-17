@@ -6,7 +6,7 @@ const cards = [
     body: "Claude breaks it into frontend, deployment, DNS, and verification sessions. You get the live URL back in chat.",
   },
   {
-    quote: "Fix this bug in my repo",
+    quote: "Fix this bug in my project",
     body: "Claude reads the failing logs, launches debug sessions, tests fixes, and tells you exactly what changed.",
   },
   {
@@ -14,8 +14,8 @@ const cards = [
     body: "Claude launches three Claude Code sessions with different approaches, compares the outputs, and recommends the best one.",
   },
   {
-    quote: "Audit my repo, tests, and deployment setup",
-    body: "Claude launches sessions for repo structure, test coverage, and deploy config, then gives you a clean report.",
+    quote: "Audit my project, tests, and deployment setup",
+    body: "Claude launches sessions for project structure, test coverage, and deploy config, then gives you a clean report.",
   },
 ]
 

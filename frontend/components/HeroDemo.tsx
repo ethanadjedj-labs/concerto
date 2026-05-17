@@ -130,7 +130,7 @@ export function HeroDemo() {
 
   return (
     <div
-      aria-label="Concerto demo: Claude Code agent running on your remote machine"
+      aria-label="Concerto demo: Claude Code agent running your sessions"
       role="img"
       className="relative mx-auto w-full max-w-2xl select-none"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.6s ease" }}
@@ -355,7 +355,7 @@ export function HeroDemo() {
 function StaticFallback() {
   return (
     <div
-      aria-label="Concerto: Claude Code agent running on your remote machine"
+      aria-label="Concerto: Claude Code agent running your sessions"
       role="img"
       className="relative mx-auto w-full max-w-2xl"
     >
@@ -381,7 +381,7 @@ function StaticFallback() {
             [git] creating branch refactor/auth-jwt-v2
           </div>
           <div style={{ color: "#c084fc" }}>
-            [gh] opening PR #142 to ethanadjedj-labs/myrepo
+            [gh] opening PR #142 to yourname/myproject
           </div>
           <div style={{ color: "#4ade80" }}>
             ✓ Session complete — 4 min 12 sec

@@ -1,6 +1,6 @@
 "use client"
 
-type SessionStatus = "running" | "blocked" | "done"
+type SessionStatus = "working" | "done" | "needs-input"
 
 interface SessionCard {
   name: string
@@ -8,31 +8,31 @@ interface SessionCard {
 }
 
 const sessions: SessionCard[] = [
-  { name: "frontend", status: "running" },
-  { name: "deploy", status: "blocked" },
-  { name: "DNS check", status: "done" },
-  { name: "tests", status: "running" },
+  { name: "frontend", status: "working" },
+  { name: "tests", status: "done" },
+  { name: "deploy", status: "done" },
+  { name: "review", status: "needs-input" },
 ]
 
 function StatusBadge({ status }: { status: SessionStatus }) {
-  if (status === "running") {
+  if (status === "working") {
     return (
-      <span className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(204,120,92,0.10)] text-[#cc785c]">
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#cc785c] animate-dot-blink" />
-        running
+      <span className="inline-flex min-w-0 shrink-0 items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(204,120,92,0.10)] text-[#cc785c]">
+        <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#cc785c] animate-dot-blink" />
+        working
       </span>
     )
   }
-  if (status === "blocked") {
+  if (status === "needs-input") {
     return (
-      <span className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(138,132,123,0.12)] text-[#8a847b]">
-        <span className="font-bold leading-none">!</span>
-        blocked
+      <span className="inline-flex min-w-0 shrink-0 items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(138,132,123,0.12)] text-[#8a847b]">
+        <span className="text-[10px] font-bold leading-none">?</span>
+        needs input
       </span>
     )
   }
   return (
-    <span className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(204,120,92,0.10)] text-[#cc785c]">
+    <span className="inline-flex min-w-0 shrink-0 items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-[rgba(204,120,92,0.10)] text-[#cc785c]">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
         <path d="M2 5l2.5 2.5L8 3" stroke="#cc785c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -51,7 +51,7 @@ export function SessionCardsDiagram() {
           </h2>
         </div>
 
-        <div className="reveal mx-auto max-w-3xl rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_4px_rgba(25,25,25,0.06)]">
+        <div className="reveal mx-auto max-w-3xl rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-6 shadow-[0_1px_4px_rgba(25,25,25,0.06)] sm:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-10">
 
             {/* Left: user request */}
@@ -67,17 +67,17 @@ export function SessionCardsDiagram() {
             </div>
 
             {/* Right: 4 session cards in 2×2 grid */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-[#8a847b]">
                 Claude launches
               </p>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 {sessions.map((session) => (
                   <div
                     key={session.name}
-                    className="flex items-center justify-between rounded-lg border border-[rgba(25,25,25,0.08)] bg-[#faf9f5] px-3 py-2.5"
+                    className="flex min-w-0 flex-wrap items-center justify-between gap-1.5 rounded-lg border border-[rgba(25,25,25,0.08)] bg-[#faf9f5] px-3 py-2.5"
                   >
-                    <span className="font-mono text-[12px] text-[#191919]">{session.name}</span>
+                    <span className="truncate font-mono text-[12px] text-[#191919]">{session.name}</span>
                     <StatusBadge status={session.status} />
                   </div>
                 ))}
@@ -106,7 +106,7 @@ export function SessionCardsDiagram() {
             </p>
             <div className="rounded-lg border border-[rgba(204,120,92,0.20)] bg-[rgba(204,120,92,0.04)] p-4">
               <p className="text-sm text-[#555049] leading-relaxed">
-                &ldquo;Frontend done. Deploy blocked on env var, I need your DigitalOcean token. DNS and tests passing.&rdquo;
+                &ldquo;Project built and deployed. Tests passing. Live at concerto.run.&rdquo;
               </p>
             </div>
           </div>
