@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 
-export const runtime = "edge"
+export const runtime = "nodejs"
 export const alt = "Concerto — Remote Workshop for Claude Code Agents"
 export const size = { width: 1200, height: 600 }
 export const contentType = "image/png"
@@ -114,7 +114,7 @@ export default function TwitterImage() {
             fontFamily: "system-ui, sans-serif",
           }}
         >
-          <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#cc785c" }} />
+          <span style={{ display: "block", width: 5, height: 5, borderRadius: "50%", background: "#cc785c" }} />
           <span>concerto.run</span>
         </div>
       </div>

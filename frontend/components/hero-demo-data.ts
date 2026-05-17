@@ -15,13 +15,13 @@ export type DemoScript = {
 
 export const DEMO_SCRIPT: DemoScript = {
   userPrompt: "Refactor my auth module to use JWT, run tests, open PR",
-  claudeResponse: "Spawning Concerto session on your workspace...",
+  claudeResponse: "Spawning Concerto session on your remote machine...",
   typingSpeedMs: 50,
   loopIntervalMs: 12000,
   terminalLines: [
     {
       prefix: "[concerto]",
-      text: "spawning session sess_abc123 on workspace-nyc",
+      text: "spawning session sess_abc123 on remote-nyc",
       color: "cyan",
       delay: 0,
     },

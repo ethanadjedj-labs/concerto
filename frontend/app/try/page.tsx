@@ -62,10 +62,10 @@ export default function TryPage() {
           </div>
           <div>
             <h1 className="font-display text-3xl font-[450] tracking-tight mb-3">
-              Your workspace is spinning up.
+              Your remote machine is spinning up.
             </h1>
             <p className="text-[#877c70] leading-relaxed">
-              We&apos;re setting up your workspace. Takes about 3 minutes.
+              We&apos;re setting up your remote machine. Takes about 3 minutes.
               We&apos;ll send a confirmation to <strong className="text-[#c4b8aa]">{email}</strong> when it&apos;s ready.
             </p>
           </div>
@@ -123,7 +123,7 @@ export default function TryPage() {
           </h1>
 
           <p className="mb-10 text-lg text-[#877c70] leading-relaxed">
-            We provision a real workspace, you connect claude.ai, and run actual Claude Code sessions.
+            We provision a real remote machine, you connect claude.ai, and run actual Claude Code sessions.
             No credit card. No commitment. Auto-destroyed at the end.
           </p>
 
@@ -167,7 +167,7 @@ export default function TryPage() {
           </form>
 
           <p className="mt-4 text-xs text-[#6e645a]">
-            One trial per email. We destroy the workspace when time runs out.
+            One trial per email. We destroy the remote machine when time runs out.
           </p>
         </div>
 
@@ -177,8 +177,8 @@ export default function TryPage() {
             {
               icon: <Zap className="h-5 w-5 text-[#d97757]" />,
               bg: "bg-[rgba(217,119,87,0.12)]",
-              title: "Real workspace",
-              desc: "A dedicated remote workspace. Not a sandbox. Real git, real tests, real deploys.",
+              title: "Real remote machine",
+              desc: "A dedicated remote machine. Not a sandbox. Real git, real tests, real deploys.",
             },
             {
               icon: <svg width="20" height="20" viewBox="0 0 200 200" fill="none" aria-hidden="true">
@@ -193,7 +193,7 @@ export default function TryPage() {
               icon: <Shield className="h-5 w-5 text-[#8b7fff]" />,
               bg: "bg-[rgba(139,127,255,0.12)]",
               title: "Auto-destroyed",
-              desc: "After 30 minutes the workspace is destroyed. No surprise charges. No cleanup needed.",
+              desc: "After 30 minutes the remote machine is destroyed. No surprise charges. No cleanup needed.",
             },
           ].map(({ icon, bg, title, desc }) => (
             <div
