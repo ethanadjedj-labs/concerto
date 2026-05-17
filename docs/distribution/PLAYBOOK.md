@@ -6,14 +6,13 @@ Sequence the channels. Respect the timing. Watch the right metric at each step.
 
 ## Day 0 — Launch day: Personal network
 
-**Channels**: WhatsApp (soft + direct + qual) + email personal network + Discord soft-launch
+**Channels**: WhatsApp (soft + direct + qual) + email personal network
 
 **Timing**: morning, before 10am local time. People check phones first thing.
 
 **Execute**:
 1. Send `whatsapp_short_qual.md` to the list of qualified contacts — wait for signal before escalating to `whatsapp_direct.md`
 2. Send `email_personal_network.md` to the top 20–30 contacts with real AI / dev profiles
-3. Post a low-key intro in 2–3 Discord servers where you're already active (no cold drops)
 4. Open 10 beta seats via `beta_recruitment_plan.md` — log archetypes in the tracking table
 
 **Key metric to watch**: reply rate on WhatsApp qual messages. Target >30% reply, >15% positive signal. If signal is weak, the pitch or the targeting is off — fix before Day 1.
@@ -105,7 +104,7 @@ Sequence the channels. Respect the timing. Watch the right metric at each step.
 
 **Execute**:
 1. Publish `dev_to_blog_post.md` to dev.to with tags: `claudecode`, `devtools`, `cloudcomputing`, `tutorial`
-2. Share the link in the HN thread if it's still active; share in relevant Discord servers (#devtools, #claude-code channels)
+2. Share the link in the HN thread if it's still active
 3. Cross-post to Medium 3–7 days later if you want broader reach (canonical URL = dev.to)
 
 **Key metric to watch**: reads in the first 48 hours. Target >500 reads = the SEO and community sharing worked. Long-tail: technical posts compound over weeks/months via search — check monthly.
@@ -116,7 +115,7 @@ Sequence the channels. Respect the timing. Watch the right metric at each step.
 
 | Day | Channel | Best time | Primary metric |
 |-----|---------|-----------|----------------|
-| 0 | WhatsApp + Email + Discord | Morning local | Reply rate >30% |
+| 0 | WhatsApp + Email | Morning local | Reply rate >30% |
 | 1 | HN Show | 9–11am PT | Points at 2h mark |
 | 2 | Twitter/X thread | 9–11am or 6–8pm ET | Tweet 1 impressions at 2h |
 | 3 | LinkedIn | 8–10am or 12–1pm | Impressions at 24h |

@@ -8,44 +8,50 @@ export async function POST(request: Request) {
 
   const origin = request.headers.get("origin") ?? "https://concerto.run"
 
-  // Accept plan from JSON body or query param
-  let plan = "byoc"
+  let plan = "solo"
   let region = "nyc1"
   const contentType = request.headers.get("content-type") ?? ""
   if (contentType.includes("application/json")) {
     try {
       const body = await request.json()
-      plan = body.plan ?? "byoc"
+      plan = body.plan ?? "solo"
       region = body.region ?? "nyc1"
     } catch {
       // ignore parse errors; fall back to defaults
     }
   } else {
     const url = new URL(request.url)
-    plan = url.searchParams.get("plan") ?? "byoc"
+    plan = url.searchParams.get("plan") ?? "solo"
     region = url.searchParams.get("region") ?? "nyc1"
   }
 
-  const isHosted = plan === "hosted"
+  if (!["solo", "pro", "byoc"].includes(plan)) {
+    plan = "solo"
+  }
 
   // Optional: trial_token passed when upgrading from a trial
-  let trialToken = ""
   const urlObj = new URL(request.url)
-  trialToken = urlObj.searchParams.get("trial_token") ?? ""
+  const trialToken = urlObj.searchParams.get("trial_token") ?? ""
 
-  const priceId = isHosted
-    ? process.env.STRIPE_CONCERTO_HOSTED_PRICE_ID!
-    : process.env.STRIPE_CONCERTO_PRICE_ID!
+  let priceId: string
+  let mode: Stripe.Checkout.SessionCreateParams["mode"]
+
+  if (plan === "solo") {
+    priceId = process.env.STRIPE_CONCERTO_SOLO_PRICE_ID!
+    mode = "subscription"
+  } else if (plan === "pro") {
+    priceId = process.env.STRIPE_CONCERTO_PRO_PRICE_ID!
+    mode = "subscription"
+  } else {
+    // byoc — one-time payment
+    priceId = process.env.STRIPE_CONCERTO_BYOC_PRICE_ID!
+    mode = "payment"
+  }
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    mode: isHosted ? "subscription" : "payment",
+    line_items: [{ price: priceId, quantity: 1 }],
+    mode,
     automatic_tax: { enabled: true },
     metadata: {
       product: "concerto",

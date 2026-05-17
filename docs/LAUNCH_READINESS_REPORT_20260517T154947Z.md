@@ -135,9 +135,9 @@ mkdir -p /var/www/concerto-status && chown www-data:www-data /var/www/concerto-s
 |-------|--------|--------|
 | Transactional templates (4) | ✅ PASS | HTML valid: `provisioning_complete`, `provisioning_failed`, `purchase_confirmation`, `welcome_after_first_session` |
 | Drip templates (7) | ✅ PASS | HTML valid: day 0/1/3/7/14/21/30 |
-| Dynamic variables | ⚠️ INFO | Templates use `{{discord_url}}`, `{{setup_url}}`, `{{dashboard_url}}` etc. — runtime replacements; backend must provide all values |
+| Dynamic variables | ⚠️ INFO | Templates use `{{email_url}}`, `{{setup_url}}`, `{{dashboard_url}}` etc. — runtime replacements; backend must provide all values |
 | Resend `concerto.run` domain | ❌ MISSING | Only `strandedgrid.com` verified. Without `concerto.run` in Resend, all transactional emails will fail or fall back to `strandedgrid.com` sender |
-| Discord invite URL | ⚠️ NOT SET | `DISCORD_INVITE_URL` env var missing — templates reference `{{discord_url}}` |
+| email invite URL | ⚠️ NOT SET | `SUPPORT_EMAIL_URL` env var missing — templates reference `{{email_url}}` |
 
 ---
 
@@ -180,7 +180,7 @@ mkdir -p /var/www/concerto-status && chown www-data:www-data /var/www/concerto-s
 | 6 | **Start concerto timers**: `systemctl start concerto-hosted-lifecycle.timer concerto-drip-runner.timer concerto-status-writer.timer concerto-monitoring.timer` |
 | 7 | **Create status dir**: `mkdir -p /var/www/concerto-status && chown www-data:www-data /var/www/concerto-status` → starts writing `status.json` |
 | 8 | **Add `status.concerto.run`** Cloudflare DNS CNAME → Vercel (or tunnel), + add ingress rule to tunnel |
-| 9 | **Set `DISCORD_INVITE_URL`** in `/etc/cortex/env` (create Discord server first) |
+| 9 | **Set `SUPPORT_EMAIL_URL`** in `/etc/cortex/env` (create email server first) |
 | 10 | **Stripe Tax**: log into Stripe → Tax → Settings → set head_office location → enable automatic tax collection on Concerto products |
 | 11 | **Remove `api.maestro.run`** from tunnel ingress after confirming zero maestro.run active sessions |
 | 12 | **Rebuild + restart frontend preview** from latest repo code: `cd /tmp/concerto-audit/frontend && npm run build && pkill -f "next start" && nohup npm start -- -p 3500 > /tmp/concerto-next.log 2>&1 &` |

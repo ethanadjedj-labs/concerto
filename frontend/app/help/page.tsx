@@ -307,19 +307,12 @@ export default function HelpPage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
               href="mailto:support@concerto.run"
-              className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 transition-colors hover:border-violet-500/40 hover:text-white"
-            >
-              Email support
-            </a>
-            <a
-              href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/concerto"}
-              target="_blank"
-              rel="noopener noreferrer"
               className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              Join Discord
+              Email support@concerto.run →
             </a>
           </div>
+          <p className="mt-3 text-xs text-white/30">Human reply within 24 hours. No community forums.</p>
         </div>
       </div>
     </div>

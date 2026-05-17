@@ -160,7 +160,7 @@ This is MANAGER_STATE blocker #4.
 | 6 | Set `CONCERTO_EXTRA_ORIGINS` if using preview URL for testing | 🟡 Dev/test only |
 | 7 | Start timers: `systemctl start concerto-hosted-lifecycle.timer concerto-drip-runner.timer concerto-status-writer.timer concerto-monitoring.timer` | 🟡 Within 48h post-launch |
 | 8 | `mkdir -p /var/www/concerto-status && chown www-data:www-data /var/www/concerto-status` | 🟡 Status page prereq |
-| 9 | Set `DISCORD_INVITE_URL` in `/etc/cortex/env` | 🟡 Support infra |
+| 9 | Set `SUPPORT_EMAIL` in `/etc/cortex/env` | 🟡 Support infra |
 | 10 | Run `npm run build` from `/opt/concerto/frontend` and verify 0 TS errors | 🟡 Before deploy |
 
 ---

@@ -9,9 +9,6 @@ import {
   CalendarClock, AlertTriangle, Loader2,
   CreditCard, Ban, RefreshCw, RotateCcw,
 } from "lucide-react"
-import { TrialCountdownBanner } from "@/components/TrialCountdownBanner"
-
-/* ─── Copy field ──────────────────────────────────────────────── */
 
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied]   = useState(false)
@@ -71,8 +68,6 @@ function CopyField({ label, value }: { label: string; value: string }) {
     </div>
   )
 }
-
-/* ─── Status banners ────────────────────────────────────────────── */
 
 function PastDueBanner() {
   return (
@@ -134,8 +129,6 @@ function RefundedBanner() {
   )
 }
 
-/* ─── Terminal fallback panel ───────────────────────────────────── */
-
 function TerminalFallback({ vpsIp }: { vpsIp: string }) {
   return (
     <div className="p-5 space-y-3">
@@ -161,8 +154,6 @@ function TerminalFallback({ vpsIp }: { vpsIp: string }) {
     </div>
   )
 }
-
-/* ─── Refund button ─────────────────────────────────────────────── */
 
 function RefundButton({ token, backendUrl, eligible }: {
   token: string
@@ -238,8 +229,6 @@ function RefundButton({ token, backendUrl, eligible }: {
   )
 }
 
-/* ─── Dashboard page ─────────────────────────────────────────────── */
-
 export default function DashboardPage({ params }: { params: { token: string } }) {
   const [dashData, setDashData] = useState<{
     mcp_url?: string
@@ -251,10 +240,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
     next_renewal_at?: number
     refund_eligible?: boolean
     refund_window_open?: boolean
-    expires_at?: number
   } | null>(null)
-  const [cancelling, setCancelling]     = useState(false)
-  const [cancelDone, setCancelDone]     = useState(false)
   const [terminalError, setTerminalError] = useState(false)
   const [terminalRetry, setTerminalRetry] = useState(0)
 
@@ -274,15 +260,14 @@ export default function DashboardPage({ params }: { params: { token: string } })
         next_renewal_at: d.next_renewal_at,
         refund_eligible: d.refund_eligible,
         refund_window_open: d.refund_window_open,
-        expires_at: d.expires_at,
       }))
       .catch(() => {})
   }, [backendUrl, params.token])
 
   const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
-  const isHosted    = dashData?.plan === "hosted"
-  const isTrial     = dashData?.plan === "trial"
+  const plan        = dashData?.plan ?? "byoc"
+  const isHosted    = plan === "solo" || plan === "pro" || plan === "hosted"
   const status      = dashData?.status ?? "active"
   const vpsIp       = dashData?.vps_ip ?? ""
 
@@ -297,16 +282,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
       })
     : null
 
-  async function cancelSubscription() {
-    if (!confirm("Cancel your Hosted subscription? Your droplet stays live for 72 hours after cancellation.")) return
-    setCancelling(true)
-    try {
-      const res = await fetch(`${backendUrl}/api/buyer/${params.token}/cancel`, { method: "POST" })
-      if (res.ok) setCancelDone(true)
-    } finally {
-      setCancelling(false)
-    }
-  }
+  const planLabel = plan === "pro" ? "Pro" : plan === "solo" ? "Solo" : "BYOC"
 
   function getBadge() {
     if (isRefunded)  return <Badge className="shrink-0 border-blue-500/25 bg-blue-500/12 text-[12px] text-blue-400">Refunded</Badge>
@@ -322,7 +298,6 @@ export default function DashboardPage({ params }: { params: { token: string } })
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white">
-      {/* ── Top bar ──────────────────────────────────────────── */}
       <header className="border-b border-white/[0.05] bg-[#0a0a0b]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -336,23 +311,19 @@ export default function DashboardPage({ params }: { params: { token: string } })
             <span className="min-w-0 max-w-[110px] truncate font-mono text-[13px] text-white/30 sm:max-w-[180px]">
               {params.token}
             </span>
+            <span className="hidden text-[11px] font-medium text-white/25 sm:inline">{planLabel}</span>
           </div>
           {getBadge()}
         </div>
       </header>
 
-      {/* ── Main ─────────────────────────────────────────────── */}
       <main className="mx-auto max-w-5xl space-y-4 px-6 py-8">
 
-        {/* Status banners */}
-        {isTrial && dashData?.expires_at && (
-          <TrialCountdownBanner token={params.token} expiresAt={dashData.expires_at} />
-        )}
         {isPastDue   && <PastDueBanner />}
         {isSuspended && <SuspendedBanner />}
         {isRefunded  && <RefundedBanner />}
 
-        {/* Connect card — hidden if workspace is dead */}
+        {/* Connect card */}
         {!isBanned && (
           <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-white/[0.025]">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/45 to-transparent" />
@@ -452,7 +423,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
           </div>
         )}
 
-        {/* Hosted: subscription panel */}
+        {/* Subscription panel — Solo + Pro only */}
         {isHosted && !isBanned && (
           <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 space-y-4">
             <div className="flex items-center gap-2">
@@ -460,6 +431,10 @@ export default function DashboardPage({ params }: { params: { token: string } })
               <span className="text-[14px] font-semibold text-white">Subscription</span>
             </div>
             <div className="h-px bg-white/[0.07]" />
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-white/40">Plan</span>
+              <span className="text-white/70">{planLabel} — {plan === "pro" ? "$99/month" : "$49/month"}</span>
+            </div>
             <div className="flex items-center justify-between text-[13px]">
               <span className="text-white/40">Status</span>
               <span className="text-white/70 capitalize">{dashData?.subscription_status ?? "active"}</span>
@@ -471,28 +446,29 @@ export default function DashboardPage({ params }: { params: { token: string } })
               </div>
             )}
             <div className="h-px bg-white/[0.07]" />
-            {cancelDone ? (
-              <div className="flex items-start gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/8 px-4 py-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
-                <p className="text-[13px] text-yellow-300">
-                  Cancellation requested. Your droplet stays live for 72 hours.
-                </p>
-              </div>
-            ) : (
-              <button
-                onClick={cancelSubscription}
-                disabled={cancelling}
-                className="w-full rounded-xl border border-red-500/20 bg-transparent px-4 py-2.5 text-[13px] text-red-400/70 transition-colors hover:border-red-500/30 hover:bg-red-500/8 hover:text-red-300 disabled:opacity-50"
-              >
-                {cancelling ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Cancelling…
-                  </span>
-                ) : (
-                  "Cancel subscription"
-                )}
-              </button>
-            )}
+            <a
+              href="https://billing.stripe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[13px] text-white/60 transition-colors hover:border-violet-500/30 hover:bg-violet-500/8 hover:text-white"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              Manage subscription via Stripe
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <p className="text-center text-[11px] text-white/20">
+              Cancel, update payment method, or download invoices. Need to upgrade Solo → Pro? Email support@concerto.run.
+            </p>
+          </div>
+        )}
+
+        {/* BYOC: one-time purchase note */}
+        {!isHosted && !isBanned && (
+          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
+            <p className="text-[13px] text-white/40">
+              BYOC — one-time purchase. No subscription to manage.
+              Your droplet runs in your own DigitalOcean account.
+            </p>
           </div>
         )}
 

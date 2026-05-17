@@ -20,7 +20,7 @@
 | **Session templates library** | Q3 2026 | Pre-configured environments (Python dev, Node dev, data science, Rust) installable in one click after provisioning. |
 | **Observability dashboard** | Q4 2026 | Per-session metrics: tool calls/min, active processes, disk usage, uptime. Accessible from the Concerto web dashboard. |
 | **Automatic Claude Code updates** | Q4 2026 | Droplet pulls the latest Claude Code release automatically; dashboard shows current version and last update time. |
-| **Usage alerts** | Q4 2026 | Email/Discord notification when a session has been idle for > 24 h or when DO billing estimate exceeds a threshold. |
+| **Usage alerts** | Q4 2026 | Email notification when a session has been idle for > 24 h or when DO billing estimate exceeds a threshold. |
 
 ---
 
@@ -44,4 +44,4 @@
 
 ---
 
-*Roadmap items are targets, not commitments. Join the [Discord](https://discord.gg/concerto) to vote on priorities or ask about specific features.*
+*Roadmap items are targets, not commitments. Email support@concerto.run to share feedback or vote on priorities.*
