@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Maestro hosted lifecycle reconciler every hour
+Requires=maestro-hosted-lifecycle.service
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=maestro-hosted-lifecycle.service
+
+[Install]
+WantedBy=timers.target

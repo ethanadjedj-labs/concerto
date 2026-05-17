@@ -1,9 +1,13 @@
 import asyncio
 import os
 import secrets
+import time
+from typing import Literal
 
 import httpx
 from jinja2 import Template
+
+from maestro import db
 
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _DEFAULT_IMAGE = "ubuntu-22-04-x64"
@@ -35,7 +39,7 @@ runcmd:
     sleep 15
     curl -sf -X POST {{ maestro_api_base }}/api/internal/droplet-ready \\
       -H 'Content-Type: application/json' \\
-      -d "{\"token\":\"{{ token }}\",\"mcp_url\":\"stub://pending\",\"bearer_token\":\"stub\",\"ttyd_url\":\"stub://pending/terminal\"}" || true
+      -d '{"token":"{{ token }}","mcp_url":"stub://pending","bearer_token":"stub","ttyd_url":"stub://pending/terminal"}' || true
 """
 
 
@@ -74,14 +78,16 @@ async def provision_droplet(
     size: str,
     token: str,
     customer_email: str = "",
+    mode: Literal["byoc", "hosted"] = "byoc",
 ) -> tuple[str, str, str, str]:
     """Returns (droplet_id, ipv4, ssh_private_key_path, ttyd_password).
 
-    F2: ttyd_password is a random 32-char hex secret embedded into cloud-init
-    and stored in the DB so terminal_router can inject Basic Auth upstream.
+    mode='hosted': Ethan's DO account, s-2vcpu-4gb, tagged maestro-hosted-<prefix>,
+                   registered in maestro_hosted_pool.
+    mode='byoc':   customer's DO key, customer-chosen size, tagged maestro.
     """
     private_key_path, public_key = await _generate_ssh_keypair(token)
-    ttyd_password = secrets.token_hex(16)  # 32 hex chars
+    ttyd_password = secrets.token_hex(16)
 
     cloud_init = Template(_load_cloud_init_template()).render(
         token=token,
@@ -93,6 +99,8 @@ async def provision_droplet(
         customer_email=customer_email,
         ttyd_password=ttyd_password,
     )
+
+    tag = f"maestro-hosted-{token[:8]}" if mode == "hosted" else "maestro"
 
     headers = {
         "Authorization": f"Bearer {do_api_key}",
@@ -110,11 +118,21 @@ async def provision_droplet(
                 "size": size,
                 "image": _DEFAULT_IMAGE,
                 "user_data": cloud_init,
-                "tags": ["maestro"],
+                "tags": [tag],
             },
         )
         resp.raise_for_status()
         droplet_id = str(resp.json()["droplet"]["id"])
+
+        # Register hosted droplets immediately in the pool
+        if mode == "hosted":
+            await db.upsert_hosted_pool(
+                droplet_id=droplet_id,
+                buyer_token=token,
+                ipv4=None,
+                status="provisioning",
+                created_at=int(time.time()),
+            )
 
         # Poll for active + public IP (max 5 min)
         for _ in range(60):
@@ -125,6 +143,15 @@ async def provision_droplet(
             if d["status"] == "active":
                 for net in d.get("networks", {}).get("v4", []):
                     if net["type"] == "public":
-                        return droplet_id, net["ip_address"], private_key_path, ttyd_password
+                        ipv4 = net["ip_address"]
+                        if mode == "hosted":
+                            await db.upsert_hosted_pool(
+                                droplet_id=droplet_id,
+                                buyer_token=token,
+                                ipv4=ipv4,
+                                status="active",
+                                created_at=int(time.time()),
+                            )
+                        return droplet_id, ipv4, private_key_path, ttyd_password
 
     raise TimeoutError(f"Droplet {droplet_id} did not become active within 5 minutes")

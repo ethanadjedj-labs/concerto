@@ -8,17 +8,43 @@ export async function POST(request: Request) {
 
   const origin = request.headers.get("origin") ?? "https://maestro.run"
 
+  // Accept plan from JSON body or query param
+  let plan = "byoc"
+  let region = "nyc1"
+  const contentType = request.headers.get("content-type") ?? ""
+  if (contentType.includes("application/json")) {
+    try {
+      const body = await request.json()
+      plan = body.plan ?? "byoc"
+      region = body.region ?? "nyc1"
+    } catch {
+      // ignore parse errors; fall back to defaults
+    }
+  } else {
+    const url = new URL(request.url)
+    plan = url.searchParams.get("plan") ?? "byoc"
+    region = url.searchParams.get("region") ?? "nyc1"
+  }
+
+  const isHosted = plan === "hosted"
+
+  const priceId = isHosted
+    ? process.env.STRIPE_MAESTRO_HOSTED_PRICE_ID!
+    : process.env.STRIPE_MAESTRO_PRICE_ID!
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [
       {
-        price: process.env.STRIPE_MAESTRO_PRICE_ID!,
+        price: priceId,
         quantity: 1,
       },
     ],
-    mode: "payment",
+    mode: isHosted ? "subscription" : "payment",
     metadata: {
       product: "maestro",
+      plan,
+      region,
     },
     success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/#pricing`,
