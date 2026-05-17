@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 100" role="img" aria-label="Concerto lockup — Concept D">
+  <title>Concerto lockup — Concept D: Monogram Co</title>
+  <!--
+    Mark scale 0.4 (80/200). Mark visual span: C outer left x≈20, o outer right x=172.
+    At 0.4: left=8, right=68.8. Translate (4,10). Wordmark starts at x=89 (gap≈20).
+    Wordmark baseline y=70 (mark visual center ≈50, cap half-height ≈20).
+  -->
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300&amp;display=swap');
+    </style>
+  </defs>
+  <g transform="translate(4,10) scale(0.4)">
+    <path
+      d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z"
+      fill="#cc785c"
+    />
+    <path
+      d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z"
+      fill="#cc785c"
+      fill-rule="evenodd"
+    />
+  </g>
+  <text
+    x="89"
+    y="70"
+    font-family="'Fraunces', 'Times New Roman', serif"
+    font-weight="300"
+    font-size="52"
+    fill="#2a2925"
+    letter-spacing="-0.9"
+  ><tspan>C</tspan><tspan dx="-3">o</tspan><tspan dx="0">n</tspan><tspan dx="-2">c</tspan><tspan dx="-1">e</tspan><tspan dx="0">r</tspan><tspan dx="-1">t</tspan><tspan dx="-1">o</tspan></text>
+</svg>

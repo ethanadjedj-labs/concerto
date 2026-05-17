@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 100" role="img" aria-label="Concept D scale chart">
+  <title>Concept D — Scale chart: 16px to 128px</title>
+  <rect width="640" height="100" fill="#faf9f5"/>
+
+  <!-- 16px: scale=0.08 -->
+  <g transform="translate(8,8) scale(0.08)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="8" y="96" font-family="monospace" font-size="7" fill="#9b9490">16px</text>
+
+  <!-- 24px: scale=0.12 -->
+  <g transform="translate(36,4) scale(0.12)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="36" y="96" font-family="monospace" font-size="7" fill="#9b9490">24px</text>
+
+  <!-- 32px: scale=0.16 -->
+  <g transform="translate(76,0) scale(0.16)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="76" y="96" font-family="monospace" font-size="7" fill="#9b9490">32px</text>
+
+  <!-- 48px: scale=0.24 -->
+  <g transform="translate(128,0) scale(0.24)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="128" y="96" font-family="monospace" font-size="7" fill="#9b9490">48px</text>
+
+  <!-- 64px: scale=0.32 -->
+  <g transform="translate(198,0) scale(0.32)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="198" y="96" font-family="monospace" font-size="7" fill="#9b9490">64px</text>
+
+  <!-- 128px: scale=0.64 -->
+  <g transform="translate(294,0) scale(0.64)">
+    <path d="M 135.7 67.0 A 62 62 0 1 0 125.8 141.8 L 118.8 129.8 A 45 45 0 1 1 126.0 75.5 Z" fill="#cc785c"/>
+    <path d="M 150 67 A 22 25 0 0 1 150 117 A 22 25 0 0 1 150 67 Z M 150 76 A 13 16 0 0 0 150 108 A 13 16 0 0 0 150 76 Z" fill="#cc785c" fill-rule="evenodd"/>
+  </g>
+  <text x="294" y="96" font-family="monospace" font-size="7" fill="#9b9490">128px</text>
+
+  <line x1="8" y1="90" x2="620" y2="90" stroke="#e8e4dc" stroke-width="0.5"/>
+  <text x="4" y="8" font-family="monospace" font-size="7" fill="#2a2925">D — Monogram Co · Scale Chart</text>
+</svg>

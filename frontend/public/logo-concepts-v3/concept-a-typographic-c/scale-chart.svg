@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 100" role="img" aria-label="Concept A scale chart">
+  <title>Concept A — Scale chart: 16px to 128px</title>
+  <rect width="640" height="100" fill="#faf9f5"/>
+  <!-- 16px: scale=0.08 (16/200) -->
+  <g transform="translate(12,42) scale(0.08)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="12" y="96" font-family="monospace" font-size="7" fill="#9b9490">16px</text>
+  <!-- 24px: scale=0.12 -->
+  <g transform="translate(42,38) scale(0.12)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="42" y="96" font-family="monospace" font-size="7" fill="#9b9490">24px</text>
+  <!-- 32px: scale=0.16 -->
+  <g transform="translate(84,34) scale(0.16)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="84" y="96" font-family="monospace" font-size="7" fill="#9b9490">32px</text>
+  <!-- 48px: scale=0.24 -->
+  <g transform="translate(140,26) scale(0.24)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="140" y="96" font-family="monospace" font-size="7" fill="#9b9490">48px</text>
+  <!-- 64px: scale=0.32 -->
+  <g transform="translate(212,18) scale(0.32)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="212" y="96" font-family="monospace" font-size="7" fill="#9b9490">64px</text>
+  <!-- 128px: scale=0.46 -->
+  <g transform="translate(304,4) scale(0.46)">
+    <path d="M 157.3 59.9 A 70 70 0 1 0 157.3 140.1 L 148.4 130.4 A 53 53 0 1 1 148.4 69.6 Z" fill="#cc785c"/>
+    <rect x="148.4" y="140.1" width="21.0" height="3.5" fill="#cc785c"/>
+  </g>
+  <text x="304" y="96" font-family="monospace" font-size="7" fill="#9b9490">128px</text>
+  <line x1="8" y1="90" x2="620" y2="90" stroke="#e8e4dc" stroke-width="0.5"/>
+  <text x="4" y="8" font-family="monospace" font-size="7" fill="#2a2925">A — Typographic C · Scale Chart</text>
+</svg>

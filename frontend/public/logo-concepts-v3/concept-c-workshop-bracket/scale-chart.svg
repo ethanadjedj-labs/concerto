@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 100" role="img" aria-label="Concept C scale chart">
+  <title>Concept C — Scale chart: 16px to 128px</title>
+  <rect width="640" height="100" fill="#faf9f5"/>
+  <!-- 16px: scale=0.08 -->
+  <g transform="translate(8,8) scale(0.08)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="8" y="96" font-family="monospace" font-size="7" fill="#9b9490">16px</text>
+  <!-- 24px: scale=0.12 -->
+  <g transform="translate(36,4) scale(0.12)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="36" y="96" font-family="monospace" font-size="7" fill="#9b9490">24px</text>
+  <!-- 32px: scale=0.16 -->
+  <g transform="translate(72,0) scale(0.16)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="72" y="96" font-family="monospace" font-size="7" fill="#9b9490">32px</text>
+  <!-- 48px: scale=0.24 -->
+  <g transform="translate(120,0) scale(0.24)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="120" y="96" font-family="monospace" font-size="7" fill="#9b9490">48px</text>
+  <!-- 64px: scale=0.32 -->
+  <g transform="translate(192,0) scale(0.32)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="192" y="96" font-family="monospace" font-size="7" fill="#9b9490">64px</text>
+  <!-- 128px: scale=0.64 -->
+  <g transform="translate(284,0) scale(0.64)">
+    <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+    <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+    <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+    <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+    <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+    <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+    <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+  </g>
+  <text x="284" y="96" font-family="monospace" font-size="7" fill="#9b9490">128px</text>
+  <line x1="8" y1="90" x2="620" y2="90" stroke="#e8e4dc" stroke-width="0.5"/>
+  <text x="4" y="8" font-family="monospace" font-size="7" fill="#2a2925">C — Workshop Bracket · Scale Chart</text>
+</svg>

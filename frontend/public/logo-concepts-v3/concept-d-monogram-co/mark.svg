@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Concerto mark — Concept D: Monogram Co">
+  <title>Concerto — Concept D: Monogram Co</title>
+  <!--
+    C: outer r=62 center(82,98), inner r=45 center(87,98) [eccentric +5].
+    Opening: −30° upper, +45° lower (asymmetric). Upper terminal outer (135.7,67.0).
+    Lower terminal outer (125.8,141.8). Inner terminals (126.0,75.5) and (118.8,129.8).
+    o: oval rx=22,ry=25 outer / rx=13,ry=16 inner, center (150,92).
+    o top y=67 aligns exactly with C upper terminal y — shared top tangent line.
+    Signature: o's top tangent aligns with C's upper terminal. Both fill same color
+    so where they visually merge (o left edge ≈ C inner wall) they become one form.
+  -->
+  <path
+    d="M 135.7 67.0
+       A 62 62 0 1 0 125.8 141.8
+       L 118.8 129.8
+       A 45 45 0 1 1 126.0 75.5
+       Z"
+    fill="#cc785c"
+  />
+  <path
+    d="M 150 67
+       A 22 25 0 0 1 150 117
+       A 22 25 0 0 1 150 67
+       Z
+       M 150 76
+       A 13 16 0 0 0 150 108
+       A 13 16 0 0 0 150 76
+       Z"
+    fill="#cc785c"
+    fill-rule="evenodd"
+  />
+</svg>

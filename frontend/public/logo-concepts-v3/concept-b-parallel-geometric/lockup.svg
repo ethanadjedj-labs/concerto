@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 100" role="img" aria-label="Concerto lockup — Concept B">
+  <title>Concerto lockup — Concept B: Parallel Geometric</title>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300&amp;display=swap');
+    </style>
+  </defs>
+  <!-- Mark scaled 0.375× to ~60px tall. Bars visual center at (100,78.5) → scaled (37.5,29.4). Translate (8,20). -->
+  <g transform="translate(8,20) scale(0.375)">
+    <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+    <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+    <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+  </g>
+  <text x="81" y="68" font-family="'Fraunces', 'Times New Roman', serif" font-weight="300" font-size="52" fill="#2a2925" letter-spacing="-0.9"><tspan>C</tspan><tspan dx="-3">o</tspan><tspan dx="0">n</tspan><tspan dx="-2">c</tspan><tspan dx="-1">e</tspan><tspan dx="0">r</tspan><tspan dx="-1">t</tspan><tspan dx="-1">o</tspan></text>
+</svg>

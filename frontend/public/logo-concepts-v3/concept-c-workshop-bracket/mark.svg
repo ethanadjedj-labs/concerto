@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Concerto mark — Concept C: Workshop Bracket">
+  <title>Concerto — Concept C: Workshop Bracket</title>
+  <!--
+    Asymmetric musical system brackets. Left: 10px arm, 7px crossbars.
+    Right: 6px arm, 4px crossbars. Dot at golden ratio (φ) from top.
+    Signature: asymmetric weight — left bracket 67% heavier than right.
+    Arm outer: (68,35)→(40,100)→(68,165). Perpendicular 10px offset inward.
+    Arm inner: (77.2,39)→(49.2,104)→(77.2,161).
+    Right bracket mirrored: outer (132,35)→(160,100)→(132,165).
+    Inner 6px offset: (126.5,37.4)→(154.5,102.4)→(126.5,162.6).
+    Dot: center (100,85) radius 4.5. (85 = 35+0.382*130, golden ratio point).
+  -->
+  <path d="M 68 35 L 40 100 L 68 165 L 77.2 161.0 L 49.2 104.0 L 77.2 39.0 Z" fill="#cc785c"/>
+  <rect x="46" y="29" width="36" height="7" fill="#cc785c"/>
+  <rect x="46" y="164" width="36" height="7" fill="#cc785c"/>
+  <path d="M 132 35 L 160 100 L 132 165 L 126.5 162.6 L 154.5 102.4 L 126.5 37.4 Z" fill="#cc785c"/>
+  <rect x="118" y="29" width="36" height="4" fill="#cc785c"/>
+  <rect x="118" y="167" width="36" height="4" fill="#cc785c"/>
+  <circle cx="100" cy="85" r="4.5" fill="#cc785c"/>
+</svg>

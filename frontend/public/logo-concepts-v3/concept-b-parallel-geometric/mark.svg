@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" role="img" aria-label="Concerto mark — Concept B: Parallel Geometric">
+  <title>Concerto — Concept B: Parallel Geometric</title>
+  <!--
+    Three right-leaning parallelograms, flush right edge, decreasing width.
+    Lean: 1px horizontal per 7px vertical (~8.1°).
+    Right edges at x=141 (top-right corners).
+    Signature: top-left corner of each bar has triangular notch (play-button indent).
+    Bottom 80×14px / Middle 65×10px / Top 52×7px. Gaps: 5px.
+    Bottom: y=85→99 / Middle: y=70→80 / Top: y=58→65.
+  -->
+  <!-- Bottom bar (heaviest) -->
+  <path d="M 59 99 H 139 L 141 85 H 65 L 61 89 V 99 Z" fill="#cc785c"/>
+  <!-- Middle bar -->
+  <path d="M 74.6 80 H 139.6 L 141 70 H 79.5 L 76 73.5 V 80 Z" fill="#cc785c"/>
+  <!-- Top bar (lightest) -->
+  <path d="M 88 65 H 140 L 141 58 H 92 L 89 61 V 65 Z" fill="#cc785c"/>
+</svg>
