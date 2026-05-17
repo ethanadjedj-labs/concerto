@@ -49,6 +49,7 @@ async def insert_buyer_with_plan(
     subscription_id: str | None = None,
     subscription_status: str | None = None,
     next_renewal_at: int | None = None,
+    stripe_customer_id: str | None = None,
 ) -> None:
     def _run():
         conn = _conn()
@@ -56,10 +57,12 @@ async def insert_buyer_with_plan(
             conn.execute(
                 """INSERT INTO maestro_buyers
                    (token, email, stripe_session_id, status, paid_at,
-                    plan, subscription_id, subscription_status, next_renewal_at)
-                   VALUES (?, ?, ?, 'paid_unprovisioned', ?, ?, ?, ?, ?)""",
+                    plan, subscription_id, subscription_status, next_renewal_at,
+                    stripe_customer_id)
+                   VALUES (?, ?, ?, 'paid_unprovisioned', ?, ?, ?, ?, ?, ?)""",
                 (token, email, stripe_session_id, paid_at,
-                 plan, subscription_id, subscription_status, next_renewal_at),
+                 plan, subscription_id, subscription_status, next_renewal_at,
+                 stripe_customer_id),
             )
             conn.commit()
         finally:

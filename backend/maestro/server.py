@@ -12,6 +12,7 @@ from maestro.terminal_router import router as terminal_router
 from maestro.hosted_lifecycle import router as hosted_lifecycle_router
 from maestro.oauth_status_router import router as oauth_status_router
 from maestro.first_call_detector import router as first_call_router
+from maestro.customer_portal import router as customer_portal_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -19,6 +20,7 @@ _MIGRATIONS = [
     "002_ttyd_credentials.sql",
     "003_hosted_plan.sql",
     "004_operator_kit.sql",
+    "005_stripe_customer_id.sql",
 ]
 
 
@@ -53,3 +55,4 @@ app.include_router(terminal_router)
 app.include_router(hosted_lifecycle_router)
 app.include_router(oauth_status_router)
 app.include_router(first_call_router)
+app.include_router(customer_portal_router)
