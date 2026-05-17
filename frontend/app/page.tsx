@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { HeroClaudeDemo } from "@/components/HeroClaudeDemo"
 import { MobileStickyCTA } from "@/components/MobileStickyCTA"
+import { SessionCardsDiagram } from "@/components/SessionCardsDiagram"
 import { WhatActuallyHappens } from "@/components/WhatActuallyHappens"
 import { ConcreteExamples } from "@/components/ConcreteExamples"
 import { BeforeAfter } from "@/components/BeforeAfter"
@@ -117,13 +118,14 @@ export default function LandingPage() {
               </h1>
 
               <p className="mb-6 text-lg leading-relaxed text-[#555049]">
-                Concerto lets Claude turn your request into the right Claude Code sessions on a remote machine. Claude launches them, monitors progress, reads logs, compares results, and reports back — while you stay in the normal Claude chat.
+                Concerto gives Claude the tools to orchestrate Claude Code. Claude decides which sessions to launch, starts them on your machine, monitors progress, reads logs, compares results, and reports back — you stay in Claude chat the whole time.
               </p>
 
               {/* Hero bullets */}
               <ul className="mb-10 space-y-2.5">
                 {[
                   "Claude decides which sessions to launch",
+                  "Claude picks the right model per session to save your tokens",
                   "Claude starts and monitors Claude Code runs",
                   "Claude reads logs and detects stuck sessions",
                   "Claude compares outputs from parallel attempts",
@@ -172,7 +174,10 @@ export default function LandingPage() {
       {/* Sentinel for mobile CTA IntersectionObserver */}
       <div id="hero-section-end" aria-hidden="true" />
 
-      {/* ── What actually happens ────────────────────────────────── */}
+      {/* ── Session cards diagram ────────────────────────────────── */}
+      <SessionCardsDiagram />
+
+      {/* ── What happens after you ask Claude ───────────────────── */}
       <WhatActuallyHappens />
 
       {/* ── Concrete examples ───────────────────────────────────── */}
