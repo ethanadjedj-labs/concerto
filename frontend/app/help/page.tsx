@@ -20,23 +20,19 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "What is Concerto?",
-        a: "Concerto provisions a cloud VPS in your own DigitalOcean account and pre-installs Claude Code, an MCP server, and a cloudflared tunnel. From any claude.ai conversation you can pilot Claude Code agents running on your Droplet — real shell, real filesystem, persistent sessions.",
+        a: "Concerto gives you a dedicated remote workspace with Claude Code, an MCP server, and a cloudflared tunnel pre-installed. From any claude.ai conversation you can pilot Claude Code agents running on your workspace — real shell, real filesystem, persistent sessions.",
       },
       {
         q: "What do I need before I can start?",
-        a: "A claude.ai account (any plan), a DigitalOcean account (free to create, you pay DO directly for the Droplet), and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud expertise required.",
+        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no SSH client, no terminal, no cloud account required. Concerto provisions and manages the workspace for you.",
       },
       {
         q: "How long does provisioning take?",
-        a: "Typically 3–5 minutes from submitting your DO API key to the Droplet being ready. The dashboard polls automatically and advances each step when it completes.",
+        a: "Typically 3–5 minutes from purchase to workspace ready. The dashboard polls automatically and advances each step when it completes.",
       },
       {
-        q: "Which DigitalOcean regions are supported?",
-        a: "All standard DO regions work. The default is nyc1. You can change the region by contacting support before provisioning — region selection in the UI is coming in a future update.",
-      },
-      {
-        q: "Can I use Hetzner instead of DigitalOcean?",
-        a: "Not in v1. Hetzner support is planned for v2. If you need Hetzner specifically, reply to your purchase confirmation email and we'll prioritize it.",
+        q: "Which regions are available?",
+        a: "New York, San Francisco, Frankfurt, Amsterdam, Singapore, London, Bangalore, and Sydney. The default is New York. Contact support before provisioning if you need a specific region.",
       },
     ],
   },
@@ -45,11 +41,11 @@ const SECTIONS: Section[] = [
     items: [
       {
         q: "The OAuth step is stuck / spinning forever.",
-        a: "Open the embedded terminal on your dashboard, run `claude auth login`, and complete the browser prompt. The step polls via SSH every 10 seconds and auto-advances once Claude CLI reports authenticated. If the terminal itself won't load, try a hard-refresh (Ctrl+Shift+R) or a different browser.",
+        a: "Open the embedded terminal on your dashboard, run `claude auth login`, and complete the browser prompt. The step polls every 10 seconds and auto-advances once Claude CLI reports authenticated. If the terminal itself won't load, try a hard-refresh (Ctrl+Shift+R) or a different browser.",
       },
       {
         q: "I ran `claude auth login` but the dashboard didn't advance.",
-        a: "The SSH poll can take up to 30 seconds to detect the auth change. Wait a moment, then refresh the dashboard. If it still shows 'waiting', open the terminal again and run `claude --version` — if that returns a version number, auth is complete and the poll will catch up within 60 seconds.",
+        a: "The poll can take up to 30 seconds to detect the auth change. Wait a moment, then refresh the dashboard. If it still shows 'waiting', open the terminal again and run `claude --version` — if that returns a version number, auth is complete and the poll will catch up within 60 seconds.",
       },
       {
         q: "The connector doesn't appear in claude.ai Settings → Connectors.",
@@ -61,12 +57,12 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Can I use the connector from multiple claude.ai conversations at the same time?",
-        a: "Yes. The MCP server on your Droplet handles concurrent connections. Each claude.ai conversation gets its own session context, but they share the same filesystem and running processes on the Droplet.",
+        a: "Yes. The MCP server on your workspace handles concurrent connections. Each claude.ai conversation gets its own session context, but they share the same filesystem and running processes on the workspace.",
       },
     ],
   },
   {
-    title: "Spawning sessions",
+    title: "Running sessions",
     items: [
       {
         q: "How do I run multiple tasks in parallel?",
@@ -74,57 +70,36 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Sessions time out before my task finishes.",
-        a: "Claude Code on Concerto runs on your Droplet — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the Droplet process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
+        a: "Claude Code on Concerto runs on your workspace — there's no context timeout on the agent side. The claude.ai conversation may have a session limit, but the workspace process keeps running. Use tmux or nohup to detach long-running jobs; reconnect via a new claude.ai message and check the output.",
       },
       {
         q: "Can Claude Code install packages, run npm install, or modify system files?",
-        a: "Yes. The Droplet runs as root by default, so Claude Code has full system access. It can install apt packages, run npm/pip installs, write to any path, configure cron jobs, and start background services.",
+        a: "Yes. The workspace runs with full system access. Claude Code can install packages, write to any path, configure cron jobs, and start background services.",
       },
       {
-        q: "How do I check what's running on my Droplet?",
-        a: "Ask Claude Code to run `tmux ls` (active sessions), `ps aux | grep python` (running processes), or `systemctl list-units --state=running` (system services). You can also SSH directly into the Droplet using the credentials on your dashboard.",
+        q: "How do I check what's running on my workspace?",
+        a: "Ask Claude Code to run `tmux ls` (active sessions), `ps aux | grep python` (running processes), or `systemctl list-units --state=running` (system services). You can also use the embedded terminal on your dashboard.",
       },
     ],
   },
   {
-    title: "Subscription + billing (Hosted plan)",
+    title: "Subscription + billing",
     items: [
       {
-        q: "What is the Hosted plan?",
-        a: "The Hosted plan ($39/mo) is a recurring subscription that keeps your Droplet alive and managed. Concerto monitors the tunnel, renews the cloudflared config, and handles updates automatically. The Droplet itself is billed to your DO account separately.",
-      },
-      {
-        q: "What is the BYOC plan?",
-        a: "BYOC (Bring Your Own Cloud) is a one-time $99 payment. Concerto provisions the Droplet and configures everything, but ongoing monitoring and updates are self-managed. Your Droplet runs indefinitely as long as your DO account is active.",
+        q: "What's the difference between Solo and Pro?",
+        a: "Solo ($49/mo) includes a 4GB workspace and up to 2 parallel sessions. Pro ($99/mo) includes an 8GB workspace and up to 6–8 parallel sessions. Both include email support and cancel anytime.",
       },
       {
         q: "How do I cancel my subscription?",
         a: "Open your dashboard → Billing tab → Manage Subscription. This opens the Stripe customer portal where you can cancel, change plan, or download invoices. Cancellation takes effect at the end of your current billing period.",
       },
       {
-        q: "Will my Droplet be deleted if I cancel?",
-        a: "No. Your Droplet lives in your DigitalOcean account — Concerto cannot delete it. Cancelling the Hosted plan stops Concerto's monitoring, but your Droplet and its data remain. You'll need to manage the tunnel and updates yourself after cancellation.",
+        q: "What happens to my workspace if I cancel?",
+        a: "Your workspace and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
       },
       {
         q: "I was charged but the setup never completed.",
         a: "Contact support@concerto.run with your email address. We'll either complete the setup or issue a full refund — no questions asked. Provisioning failures are fully refundable.",
-      },
-    ],
-  },
-  {
-    title: "BYOC specifics",
-    items: [
-      {
-        q: "Do I need to keep my DigitalOcean API key stored anywhere?",
-        a: "Once provisioning is complete, your DO API key is no longer needed by Concerto. It's used only during the initial Droplet creation and then discarded (encrypted at rest, deleted after provisioning).",
-      },
-      {
-        q: "Can I SSH into my Droplet directly?",
-        a: "Yes. The Droplet's IP address and the SSH public key fingerprint are available on your dashboard. The private key is stored at the path shown in your dashboard details — you can download it from the embedded terminal.",
-      },
-      {
-        q: "What's installed on the Droplet?",
-        a: "Ubuntu 24.04, Claude Code (via npm), the Concerto MCP server, cloudflared (tunnel daemon), and ttyd (web terminal). No database, no application server. The Droplet is a clean workspace; Claude Code brings the intelligence.",
       },
     ],
   },
@@ -137,19 +112,11 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Claude Code says 'tool not available' or 'MCP server unreachable'.",
-        a: "The MCP server process may have crashed. Open the embedded terminal and run: `systemctl restart concerto-mcp` (or the equivalent service name shown in your cloud-init docs). The connector in claude.ai will reconnect automatically within 30 seconds.",
+        a: "The MCP server process may have crashed. Open the embedded terminal and run: `systemctl restart concerto-mcp`. The connector in claude.ai will reconnect automatically within 30 seconds.",
       },
       {
         q: "I'm getting rate limit errors from Claude CLI.",
-        a: "Claude CLI uses your Max plan credits. If you're hitting limits, it means your Droplet is running intensive workloads. Space out parallel sessions or wait for the rate limit window to reset (typically 1 minute).",
-      },
-      {
-        q: "The provisioning step failed with 'API key invalid'.",
-        a: "Your DigitalOcean API key needs write permissions (not read-only). Create a new token at cloud.digitalocean.com/account/api/tokens with full read+write scope, and re-enter it on the setup page.",
-      },
-      {
-        q: "My Droplet is using more bandwidth than expected.",
-        a: "Claude Code may be running network-intensive tasks (large downloads, git clones, package installs). Check with `nethogs` or `iftop` in the embedded terminal. DO includes 1TB transfer/month on standard Droplets; excess is billed at $0.01/GB.",
+        a: "Claude CLI uses your Claude plan credits. If you're hitting limits frequently, consider upgrading to Claude Max — Pro's token limits run out fast with agentic work. Space out parallel sessions or wait for the rate limit window to reset (typically 1 minute).",
       },
       {
         q: "I can't find the connector config snippet.",
@@ -161,20 +128,20 @@ const SECTIONS: Section[] = [
     title: "Privacy + security",
     items: [
       {
-        q: "Does Concerto have access to my Droplet after provisioning?",
-        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not have persistent SSH access to your Droplet. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
+        q: "Does Concerto have access to my workspace after provisioning?",
+        a: "Only via the cloudflared tunnel, which routes the web terminal and MCP traffic. Concerto does not retain persistent access to your workspace. Your code, files, and data never pass through Concerto's servers — only the tunnel handshake does.",
       },
       {
-        q: "Is my DigitalOcean API key stored securely?",
-        a: "Your DO API key is encrypted at rest using AES-256 and is only decrypted during the provisioning workflow. It is deleted from our database once provisioning completes successfully.",
+        q: "Is my workspace isolated from other customers?",
+        a: "Yes. Every Concerto subscription is a dedicated workspace. There is no shared compute or shared filesystem between customers.",
       },
       {
-        q: "Can Anthropic see what runs on my Droplet?",
-        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your Droplet is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
+        q: "Can Anthropic see what runs on my workspace?",
+        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. The filesystem content of your workspace is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
       },
       {
         q: "What data does Concerto collect?",
-        a: "Your email address (from Stripe), your DO region preference, provisioning status, and (optionally) your first session timestamp. We do not log MCP tool calls, shell commands, or file contents. Full privacy policy: concerto.run/legal/privacy.",
+        a: "Your email address (from Stripe), your region preference, provisioning status, and (optionally) your first session timestamp. We do not log MCP tool calls, shell commands, or file contents. Full privacy policy: concerto.run/legal/privacy.",
       },
     ],
   },

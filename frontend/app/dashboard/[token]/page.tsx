@@ -266,7 +266,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
 
   const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
-  const plan        = dashData?.plan ?? "byoc"
+  const plan        = dashData?.plan ?? "solo"
   const isHosted    = plan === "solo" || plan === "pro" || plan === "hosted"
   const status      = dashData?.status ?? "active"
   const vpsIp       = dashData?.vps_ip ?? ""
@@ -282,7 +282,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
       })
     : null
 
-  const planLabel = plan === "pro" ? "Pro" : plan === "solo" ? "Solo" : "BYOC"
+  const planLabel = plan === "pro" ? "Pro" : "Solo"
 
   function getBadge() {
     if (isRefunded)  return <Badge className="shrink-0 border-blue-500/25 bg-blue-500/12 text-[12px] text-blue-400">Refunded</Badge>
@@ -462,15 +462,6 @@ export default function DashboardPage({ params }: { params: { token: string } })
           </div>
         )}
 
-        {/* BYOC: one-time purchase note */}
-        {!isHosted && !isBanned && (
-          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
-            <p className="text-[13px] text-white/40">
-              BYOC — one-time purchase. No subscription to manage.
-              Your droplet runs in your own DigitalOcean account.
-            </p>
-          </div>
-        )}
 
         {/* Refund + Support */}
         <div className="flex flex-col items-center gap-2 pb-4">

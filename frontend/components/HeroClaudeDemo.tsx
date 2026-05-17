@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { HERO_SCRIPT } from "./hero-claude-demo-script"
+import { HERO_SCRIPTS, HERO_TIMINGS, type ScriptVariant } from "./hero-claude-demo-script"
 
 function usePrefersReducedMotion(): boolean {
   const [r, setR] = useState(false)
@@ -15,23 +15,7 @@ function usePrefersReducedMotion(): boolean {
   return r
 }
 
-type Phase =
-  | "idle" | "typing" | "sent" | "streaming"
-  | "tool-loading" | "tool-expanded" | "tool-result"
-  | "followup" | "done" | "fading"
-
-const AFTER_SENT = new Set<Phase>([
-  "sent","streaming","tool-loading","tool-expanded","tool-result","followup","done","fading",
-])
-const SHOW_RESPONSE = new Set<Phase>([
-  "streaming","tool-loading","tool-expanded","tool-result","followup","done","fading",
-])
-const SHOW_TOOL = new Set<Phase>([
-  "tool-loading","tool-expanded","tool-result","followup","done","fading",
-])
-
-// Geometric C mark — open arc + centre dot. NOT the Anthropic logo (three asymmetric arcs).
-// This is a single symmetric open circle letterform; a different visual motif entirely.
+// Geometric C mark — open arc + centre dot. NOT the Anthropic logo.
 function BrandMark() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -56,8 +40,7 @@ function ConcertoIcon({ size = 10 }: { size?: number }) {
   )
 }
 
-function Sidebar() {
-  const { sidebarProjects, sidebarRecents } = HERO_SCRIPT
+function Sidebar({ script }: { script: ScriptVariant }) {
   return (
     <div
       className="hidden md:flex flex-col shrink-0 overflow-hidden"
@@ -84,7 +67,7 @@ function Sidebar() {
         <div style={{ color: "#877c70", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", paddingBottom: 5, paddingLeft: 8 }}>
           Projects
         </div>
-        {sidebarProjects.map((p) => (
+        {script.sidebarProjects.map((p) => (
           <div
             key={p.name}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-md mb-px truncate"
@@ -106,7 +89,7 @@ function Sidebar() {
         <div style={{ color: "#877c70", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", paddingBottom: 5, paddingLeft: 8 }}>
           Recents
         </div>
-        {sidebarRecents.map((title) => (
+        {script.sidebarRecents.map((title) => (
           <div
             key={title}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-md mb-px"
@@ -157,10 +140,19 @@ function TopBar() {
   )
 }
 
-function ToolCallWidget({ loading, expanded, resultCount }: { loading: boolean; expanded: boolean; resultCount: number }) {
-  const params = HERO_SCRIPT.toolParams
-  const results = HERO_SCRIPT.resultLines.slice(0, resultCount)
-  const paramStr = `{\n  "project": "${params.project}",\n  "prompt": "${params.prompt}",\n  "timeout_seconds": ${params.timeout_seconds}\n}`
+function ToolChip({
+  toolName,
+  params,
+  expanded,
+}: {
+  toolName: string
+  params: Record<string, unknown>
+  expanded: boolean
+}) {
+  const hasParams = Object.keys(params).length > 0
+  const paramStr = hasParams
+    ? JSON.stringify(params, null, 2)
+    : ""
 
   return (
     <div
@@ -175,14 +167,9 @@ function ToolCallWidget({ loading, expanded, resultCount }: { loading: boolean; 
         <span style={{ color: "#c4b8aa", fontSize: 12, fontWeight: 500 }}>Using Concerto</span>
         <span style={{ color: "#877c70", fontSize: 12 }}>·</span>
         <span style={{ color: "#877c70", fontSize: 11, fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>
-          spawn_claude_code_session
+          {toolName}
         </span>
-        <div className="ml-auto flex items-center gap-2">
-          {loading && !expanded && (
-            <span style={{ color: "#877c70", fontSize: 11, animation: "cc-pulse 1.4s ease-in-out infinite" }}>
-              Working…
-            </span>
-          )}
+        <div className="ml-auto">
           <svg
             width="11" height="11" viewBox="0 0 12 12" fill="none"
             style={{ color: "#877c70", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease" }}
@@ -191,7 +178,7 @@ function ToolCallWidget({ loading, expanded, resultCount }: { loading: boolean; 
           </svg>
         </div>
       </div>
-      {expanded && (
+      {expanded && hasParams && (
         <div className="px-3 py-2.5" style={{ animation: "cc-fade-down 0.25s ease both" }}>
           <div style={{ color: "#877c70", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>
             Parameters
@@ -202,34 +189,13 @@ function ToolCallWidget({ loading, expanded, resultCount }: { loading: boolean; 
           >
             {paramStr}
           </pre>
-          {results.length > 0 && (
-            <div className="mt-3">
-              <div style={{ color: "#877c70", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>
-                Output
-              </div>
-              <div className="rounded px-3 py-2 space-y-1" style={{ background: "rgba(0,0,0,0.35)" }}>
-                {results.map((line, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 text-[11px]"
-                    style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", color: "#c4b8aa", animation: "cc-fade-left 0.2s ease both" }}
-                  >
-                    <span style={{ color: "#4ade80", flexShrink: 0 }}>{line.icon}</span>
-                    <span>{line.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
   )
 }
 
-function InputArea({ phase, displayedPrompt }: { phase: Phase; displayedPrompt: string }) {
-  const isTyping = phase === "typing"
-  const hasConversation = AFTER_SENT.has(phase)
+function InputArea({ isTyping, displayedPrompt, hasConversation }: { isTyping: boolean; displayedPrompt: string; hasConversation: boolean }) {
   const sendActive = isTyping && displayedPrompt.length > 0
 
   return (
@@ -288,77 +254,11 @@ function InputArea({ phase, displayedPrompt }: { phase: Phase; displayedPrompt: 
   )
 }
 
-function MessageThread({
-  phase,
-  displayedResponse,
-  showUserMsg,
-  showResponse,
-  showToolCall,
-  resultCount,
-  showFollowup,
-  scrollRef,
-}: {
-  phase: Phase
-  displayedResponse: string
-  showUserMsg: boolean
-  showResponse: boolean
-  showToolCall: boolean
-  resultCount: number
-  showFollowup: boolean
-  scrollRef: React.RefObject<HTMLDivElement>
-}) {
-  const toolLoading = phase === "tool-loading"
-  const toolExpanded = ["tool-expanded","tool-result","followup","done","fading"].includes(phase)
-
-  return (
-    <div
-      ref={scrollRef}
-      className="flex-1 overflow-y-auto px-4 py-5 space-y-5"
-      style={{ scrollbarWidth: "none" }}
-    >
-      <div className="text-sm leading-relaxed" style={{ color: "#c4b8aa" }}>
-        {HERO_SCRIPT.existingMessage}
-      </div>
-      {showUserMsg && (
-        <div className="flex justify-end" style={{ animation: "cc-fade-up 0.25s ease both" }}>
-          <div
-            className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed max-w-[82%]"
-            style={{ background: "#2d2520", color: "#f5f0e9", border: "1px solid rgba(245,240,233,0.07)" }}
-          >
-            {HERO_SCRIPT.userPrompt}
-          </div>
-        </div>
-      )}
-      {showResponse && (
-        <div style={{ animation: "cc-fade-up 0.3s ease both" }}>
-          <div className="text-sm leading-relaxed" style={{ color: "#f5f0e9" }}>
-            {displayedResponse}
-            {phase === "streaming" && displayedResponse.length < HERO_SCRIPT.claudeResponse.length && (
-              <span
-                className="inline-block ml-px"
-                style={{ width: 2, height: "1em", background: "#f5f0e9", verticalAlign: "middle", opacity: 0.5, animation: "cc-blink 0.8s step-end infinite" }}
-              />
-            )}
-          </div>
-          {showToolCall && (
-            <ToolCallWidget loading={toolLoading} expanded={toolExpanded} resultCount={resultCount} />
-          )}
-        </div>
-      )}
-      {showFollowup && (
-        <div className="text-sm leading-relaxed" style={{ color: "#f5f0e9", animation: "cc-fade-up 0.3s ease both" }}>
-          {HERO_SCRIPT.claudeFollowup}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function DemoShell({ children, fading }: { children: React.ReactNode; fading: boolean }) {
   return (
     <div
       role="img"
-      aria-label="Concerto demo: Claude Code session running inside claude.ai"
+      aria-label="Concerto demo: Claude orchestrating a project via Concerto workspace"
       className="relative mx-auto w-full max-w-3xl select-none"
       style={{ opacity: fading ? 0 : 1, transition: "opacity 0.65s ease" }}
     >
@@ -394,72 +294,203 @@ function DemoShell({ children, fading }: { children: React.ReactNode; fading: bo
   )
 }
 
-function AnimatedDemo() {
-  const [phase, setPhase] = useState<Phase>("idle")
-  const [typedCount, setTypedCount] = useState(0)
-  const [streamedCount, setStreamedCount] = useState(0)
-  const [resultCount, setResultCount] = useState(0)
-  const [showFollowup, setShowFollowup] = useState(false)
+// Rendered conversation item
+type ConvItem =
+  | { type: "user"; text: string }
+  | { type: "text"; text: string; streamedChars: number }
+  | { type: "tool"; toolName: string; params: Record<string, unknown>; expanded: boolean }
+
+function MessageThread({
+  items,
+  scrollRef,
+}: {
+  items: ConvItem[]
+  scrollRef: React.RefObject<HTMLDivElement>
+}) {
+  return (
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto px-4 py-5 space-y-4"
+      style={{ scrollbarWidth: "none" }}
+    >
+      {items.map((item, i) => {
+        if (item.type === "user") {
+          return (
+            <div key={i} className="flex justify-end" style={{ animation: "cc-fade-up 0.25s ease both" }}>
+              <div
+                className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm leading-relaxed max-w-[82%]"
+                style={{ background: "#2d2520", color: "#f5f0e9", border: "1px solid rgba(245,240,233,0.07)" }}
+              >
+                {item.text}
+              </div>
+            </div>
+          )
+        }
+        if (item.type === "text") {
+          const displayed = item.text.slice(0, item.streamedChars)
+          const streaming = item.streamedChars < item.text.length
+          return (
+            <div key={i} className="text-sm leading-relaxed" style={{ color: "#f5f0e9", animation: "cc-fade-up 0.3s ease both" }}>
+              {displayed}
+              {streaming && (
+                <span
+                  className="inline-block ml-px"
+                  style={{ width: 2, height: "1em", background: "#f5f0e9", verticalAlign: "middle", opacity: 0.5, animation: "cc-blink 0.8s step-end infinite" }}
+                />
+              )}
+            </div>
+          )
+        }
+        if (item.type === "tool") {
+          return (
+            <ToolChip
+              key={i}
+              toolName={item.toolName}
+              params={item.params}
+              expanded={item.expanded}
+            />
+          )
+        }
+        return null
+      })}
+    </div>
+  )
+}
+
+function AnimatedDemo({ script }: { script: ScriptVariant }) {
+  const [isTyping, setIsTyping] = useState(false)
+  const [typedChars, setTypedChars] = useState(0)
+  const [items, setItems] = useState<ConvItem[]>([])
   const [fading, setFading] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const clearTimers = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = [] }, [])
-  const add = useCallback((fn: () => void, ms: number) => { timers.current.push(setTimeout(fn, ms)) }, [])
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout)
+    timers.current = []
+  }, [])
+
+  const add = useCallback((fn: () => void, ms: number) => {
+    timers.current.push(setTimeout(fn, ms))
+  }, [])
+
   const scrollBottom = useCallback(() => {
-    requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight })
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    })
   }, [])
 
   const runSequence = useCallback(() => {
-    const { timings, userPrompt, claudeResponse, resultLines } = HERO_SCRIPT
-    setPhase("idle"); setTypedCount(0); setStreamedCount(0)
-    setResultCount(0); setShowFollowup(false); setFading(false)
-    add(() => setPhase("typing"), timings.typingStartMs)
-    for (let i = 1; i <= userPrompt.length; i++) {
-      add(() => setTypedCount(i), timings.typingStartMs + i * timings.typingSpeedMs)
+    const T = HERO_TIMINGS
+    setIsTyping(false)
+    setTypedChars(0)
+    setItems([])
+    setFading(false)
+
+    let t = T.typingStartMs
+
+    add(() => setIsTyping(true), t)
+
+    const prompt = script.userPrompt
+    for (let c = 1; c <= prompt.length; c++) {
+      const cap = c
+      add(() => setTypedChars(cap), t + cap * T.typingSpeedMs)
     }
-    add(() => { setPhase("sent"); setTypedCount(0) }, timings.sentMs)
-    add(() => setPhase("streaming"), timings.streamingStartMs)
-    for (let i = 1; i <= claudeResponse.length; i++) {
-      add(() => setStreamedCount(i), timings.streamingStartMs + i * timings.streamingSpeedMs)
+    t += prompt.length * T.typingSpeedMs + T.sentDelayMs
+
+    add(() => {
+      setIsTyping(false)
+      setTypedChars(0)
+      setItems([{ type: "user", text: prompt }])
+    }, t)
+
+    t += 500
+
+    let toolCount = 0
+
+    for (let segI = 0; segI < script.segments.length; segI++) {
+      const seg = script.segments[segI]
+      const itemIdx = segI + 1  // 0 = user message, 1+ = segments
+
+      if (seg.kind === "text") {
+        const capturedT = t
+        const content = seg.content
+
+        add(() => {
+          setItems((prev) => [
+            ...prev,
+            { type: "text", text: content, streamedChars: 0 },
+          ])
+          scrollBottom()
+        }, capturedT)
+
+        for (let c = 1; c <= content.length; c++) {
+          const cap = c
+          add(() => {
+            setItems((prev) =>
+              prev.map((it, idx) =>
+                idx === itemIdx && it.type === "text"
+                  ? { ...it, streamedChars: cap }
+                  : it
+              )
+            )
+          }, capturedT + cap * T.streamingSpeedMs)
+        }
+
+        t = capturedT + content.length * T.streamingSpeedMs
+
+      } else {
+        // tool chip
+        const tc = toolCount
+        const capturedT = t + T.afterTextToToolMs
+        const shouldExpand = seg.expand
+
+        add(() => {
+          setItems((prev) => [
+            ...prev,
+            { type: "tool", toolName: seg.toolName, params: seg.params, expanded: false },
+          ])
+          scrollBottom()
+        }, capturedT)
+
+        if (shouldExpand) {
+          add(() => {
+            setItems((prev) =>
+              prev.map((it, idx) =>
+                idx === itemIdx && it.type === "tool"
+                  ? { ...it, expanded: true }
+                  : it
+              )
+            )
+            scrollBottom()
+          }, capturedT + T.toolExpandDelayMs)
+        }
+
+        const afterDelay = tc === 0 ? T.afterTool1Ms : tc === 1 ? T.afterTool2Ms : T.afterTool3Ms
+        t = capturedT + afterDelay
+        toolCount++
+      }
     }
-    add(scrollBottom, timings.streamingStartMs + 700)
-    add(() => { setPhase("tool-loading"); scrollBottom() }, timings.toolLoadingMs)
-    add(() => { setPhase("tool-expanded"); scrollBottom() }, timings.toolExpandedMs)
-    add(() => setPhase("tool-result"), timings.toolResultStartMs)
-    resultLines.forEach((line, idx) => {
-      add(() => { setResultCount(idx + 1); scrollBottom() }, timings.toolResultStartMs + line.delayMs)
-    })
-    add(() => { setShowFollowup(true); setPhase("followup"); scrollBottom() }, timings.followupMs)
-    add(() => setPhase("done"), timings.followupMs + 1200)
-    add(() => setFading(true), timings.loopMs - 700)
-    add(() => { setStreamedCount(0); runSequence() }, timings.loopMs)
-  }, [add, scrollBottom])
+
+    add(() => setFading(true), t + T.donePauseMs)
+    add(() => { setItems([]); runSequence() }, t + T.donePauseMs + T.fadeMs + 500)
+  }, [script, add, scrollBottom])
 
   useEffect(() => {
     const t = setTimeout(() => runSequence(), 500)
     return () => { clearTimeout(t); clearTimers() }
   }, [runSequence, clearTimers])
 
-  const displayedPrompt = HERO_SCRIPT.userPrompt.slice(0, typedCount)
-  const displayedResponse = HERO_SCRIPT.claudeResponse.slice(0, streamedCount)
+  const displayedPrompt = script.userPrompt.slice(0, typedChars)
+  const hasConversation = items.some((it) => it.type === "user")
 
   return (
     <DemoShell fading={fading}>
-      <Sidebar />
+      <Sidebar script={script} />
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar />
-        <MessageThread
-          phase={phase}
-          displayedResponse={displayedResponse}
-          showUserMsg={AFTER_SENT.has(phase)}
-          showResponse={SHOW_RESPONSE.has(phase)}
-          showToolCall={SHOW_TOOL.has(phase)}
-          resultCount={resultCount}
-          showFollowup={showFollowup}
-          scrollRef={scrollRef}
-        />
-        <InputArea phase={phase} displayedPrompt={displayedPrompt} />
+        <MessageThread items={items} scrollRef={scrollRef} />
+        <InputArea isTyping={isTyping} displayedPrompt={displayedPrompt} hasConversation={hasConversation} />
       </div>
       <style>{`
         @keyframes cc-blink { 0%,100%{opacity:1} 50%{opacity:0} }
@@ -472,62 +503,58 @@ function AnimatedDemo() {
   )
 }
 
-function StaticFallback() {
-  const { resultLines, claudeFollowup, userPrompt } = HERO_SCRIPT
+function StaticFallback({ script }: { script: ScriptVariant }) {
+  const finalItems: ConvItem[] = [
+    { type: "user", text: script.userPrompt },
+    ...script.segments.map((seg): ConvItem => {
+      if (seg.kind === "text") {
+        return { type: "text", text: seg.content, streamedChars: seg.content.length }
+      }
+      return { type: "tool", toolName: seg.toolName, params: seg.params, expanded: seg.expand }
+    }),
+  ]
+
   return (
     <DemoShell fading={false}>
-      <Sidebar />
+      <Sidebar script={script} />
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar />
-        <div className="flex-1 overflow-hidden px-4 py-5 space-y-5">
-          <div className="text-sm leading-relaxed" style={{ color: "#c4b8aa" }}>
-            {HERO_SCRIPT.existingMessage}
-          </div>
-          <div className="flex justify-end">
-            <div className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm max-w-[82%]"
-              style={{ background: "#2d2520", color: "#f5f0e9", border: "1px solid rgba(245,240,233,0.07)" }}>
-              {userPrompt}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm leading-relaxed" style={{ color: "#f5f0e9" }}>
-              {HERO_SCRIPT.claudeResponse}
-            </div>
-            <div className="mt-3 rounded-lg overflow-hidden"
-              style={{ border: "1px solid rgba(245,240,233,0.1)", background: "#130f16" }}>
-              <div className="flex items-center gap-2 px-3 py-2"
-                style={{ borderBottom: "1px solid rgba(245,240,233,0.07)" }}>
-                <ConcertoIcon size={12} />
-                <span style={{ color: "#c4b8aa", fontSize: 12, fontWeight: 500 }}>Using Concerto</span>
-                <span style={{ color: "#877c70", fontSize: 12 }}>&nbsp;&middot;&nbsp;</span>
-                <span style={{ color: "#877c70", fontSize: 11, fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}>
-                  spawn_claude_code_session
-                </span>
-              </div>
-              <div className="px-3 py-2.5">
-                <div className="rounded px-3 py-2 space-y-1" style={{ background: "rgba(0,0,0,0.35)" }}>
-                  {resultLines.map((l, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px]"
-                      style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", color: "#c4b8aa" }}>
-                      <span style={{ color: "#4ade80" }}>{l.icon}</span>
-                      <span>{l.text}</span>
-                    </div>
-                  ))}
+        <div className="flex-1 overflow-hidden px-4 py-5 space-y-4">
+          {finalItems.map((item, i) => {
+            if (item.type === "user") {
+              return (
+                <div key={i} className="flex justify-end">
+                  <div className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm max-w-[82%]"
+                    style={{ background: "#2d2520", color: "#f5f0e9", border: "1px solid rgba(245,240,233,0.07)" }}>
+                    {item.text}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="text-sm leading-relaxed" style={{ color: "#f5f0e9" }}>
-            {claudeFollowup}
-          </div>
+              )
+            }
+            if (item.type === "text") {
+              return (
+                <div key={i} className="text-sm leading-relaxed" style={{ color: "#f5f0e9" }}>
+                  {item.text}
+                </div>
+              )
+            }
+            if (item.type === "tool") {
+              return (
+                <ToolChip key={i} toolName={item.toolName} params={item.params} expanded={item.expanded} />
+              )
+            }
+            return null
+          })}
         </div>
-        <InputArea phase="done" displayedPrompt="" />
+        <InputArea isTyping={false} displayedPrompt="" hasConversation={true} />
       </div>
     </DemoShell>
   )
 }
 
 export function HeroClaudeDemo() {
+  const scriptIdxRef = useRef(Math.floor(Math.random() * HERO_SCRIPTS.length))
+  const script = HERO_SCRIPTS[scriptIdxRef.current]
   const reduced = usePrefersReducedMotion()
-  return reduced ? <StaticFallback /> : <AnimatedDemo />
+  return reduced ? <StaticFallback script={script} /> : <AnimatedDemo script={script} />
 }

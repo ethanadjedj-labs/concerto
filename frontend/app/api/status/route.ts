@@ -20,7 +20,7 @@ export async function GET() {
         updated_at: Math.floor(Date.now() / 1000),
         services: [
           { name: "Concerto API", status: "unknown", latency_ms: null },
-          { name: "DigitalOcean API", status: "unknown", latency_ms: null },
+          { name: "Workspace API", status: "unknown", latency_ms: null },
           { name: "Stripe API", status: "unknown", latency_ms: null },
           { name: "Resend API", status: "unknown", latency_ms: null },
         ],

@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -13,11 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  ExternalLink, Eye, EyeOff, Loader2, CheckCircle, AlertCircle,
+  ExternalLink, Loader2, CheckCircle, AlertCircle,
   Server, RefreshCw, CreditCard,
 } from "lucide-react"
-
-const DO_TOKEN_RE = /^dop_v1_[0-9a-f]{64}$/i
 
 const REGIONS = [
   { value: "nyc1", label: "New York 1 (NYC)", flag: "🇺🇸" },
@@ -30,30 +26,22 @@ const REGIONS = [
   { value: "syd1", label: "Sydney 1 (SYD)", flag: "🇦🇺" },
 ]
 
-const SIZES = [
-  { value: "s-2vcpu-2gb", label: "Basic", spec: "2 vCPU / 2 GB", price: "$18/mo" },
-  { value: "s-2vcpu-4gb", label: "Standard", spec: "2 vCPU / 4 GB", price: "$24/mo", recommended: true },
-  { value: "s-4vcpu-8gb", label: "Pro", spec: "4 vCPU / 8 GB", price: "$48/mo" },
-]
-
 const STATUS_STEPS = [
-  { key: "paid",           label: "Payment confirmed" },
-  { key: "provisioning",  label: "Creating droplet" },
-  { key: "installing",    label: "Installing Claude Code" },
-  { key: "awaiting_oauth",label: "Awaiting Claude OAuth" },
-  { key: "ready",         label: "Ready!" },
+  { key: "paid",            label: "Payment confirmed" },
+  { key: "provisioning",   label: "Setting up workspace" },
+  { key: "installing",     label: "Installing Claude Code" },
+  { key: "awaiting_oauth", label: "Awaiting Claude OAuth" },
+  { key: "ready",          label: "Ready!" },
 ]
 
 type ProvisionStatus =
   | "idle" | "submitting" | "paid" | "provisioning"
   | "installing" | "awaiting_oauth" | "ready"
   | "provisioning_failed" | "provisioning_timeout"
-  | "api_key_invalid" | "account_no_credit" | "failed_install"
-  | "error"
+  | "failed_install" | "error"
 
 const ERROR_STATES: ProvisionStatus[] = [
-  "provisioning_failed", "provisioning_timeout",
-  "api_key_invalid", "account_no_credit", "failed_install", "error",
+  "provisioning_failed", "provisioning_timeout", "failed_install", "error",
 ]
 
 interface ErrorCardDef {
@@ -66,50 +54,11 @@ interface ErrorCardDef {
 }
 
 const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
-  api_key_invalid: {
-    title: "Invalid API key",
-    titleFr: "Clé API invalide",
-    description:
-      "Your DigitalOcean API token was rejected (401). Check that the token is correct, has write permissions, and hasn't expired.",
-    descriptionFr:
-      "Votre token DigitalOcean a été refusé. Vérifiez qu'il est correct et dispose des permissions d'écriture.",
-    extraAction: (
-      <a
-        href="https://cloud.digitalocean.com/account/api/tokens"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-400 hover:text-violet-300"
-      >
-        Get a new API token <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-    ),
-    retryable: true,
-  },
-  account_no_credit: {
-    title: "Insufficient DigitalOcean credit",
-    titleFr: "Crédit DigitalOcean insuffisant",
-    description:
-      "Your DigitalOcean account has insufficient credit. Top up your balance, then retry.",
-    descriptionFr:
-      "Votre compte DigitalOcean n'a pas assez de crédit. Rechargez votre solde, puis réessayez.",
-    extraAction: (
-      <a
-        href="https://cloud.digitalocean.com/account/billing"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-violet-400 hover:text-violet-300"
-      >
-        <CreditCard className="h-3.5 w-3.5" />
-        Top up at DigitalOcean billing <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-    ),
-    retryable: true,
-  },
   provisioning_failed: {
     title: "Provisioning failed",
     titleFr: "Échec du provisionnement",
     description:
-      "The droplet encountered an error during boot. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
+      "The workspace encountered an error during setup. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
     descriptionFr:
       "Le serveur a rencontré une erreur. Un remboursement intégral a été initié automatiquement.",
     retryable: false,
@@ -118,7 +67,7 @@ const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
     title: "Provisioning timed out",
     titleFr: "Délai de provisionnement dépassé",
     description:
-      "The droplet took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
+      "The workspace took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
     descriptionFr:
       "Le serveur a mis trop longtemps à démarrer. Un remboursement a été initié. Veuillez réessayer.",
     retryable: false,
@@ -174,46 +123,31 @@ function ErrorCard({
   )
 }
 
-type PlanType = "solo" | "pro" | "byoc" | null
+type PlanType = "solo" | "pro" | null
 
 export default function SetupPage({ params }: { params: { token: string } }) {
   const router = useRouter()
   const [plan, setPlan]           = useState<PlanType>(null)
-  const [doKey, setDoKey]         = useState("")
-  const [doKeyErr, setDoKeyErr]   = useState("")
-  const [showKey, setShowKey]     = useState(false)
   const [region, setRegion]       = useState("nyc1")
-  const [size, setSize]           = useState("s-2vcpu-4gb")
   const [status, setStatus]       = useState<ProvisionStatus>("idle")
   const [serverErr, setServerErr] = useState("")
   const [retrying, setRetrying]   = useState(false)
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
-  const isHosted = plan === "solo" || plan === "pro"
 
   useEffect(() => {
     fetch(`${backendUrl}/api/buyer/${params.token}/status`)
       .then((r) => r.json())
       .then((d) => {
         const p = d.plan as string
-        if (p === "solo" || p === "pro" || p === "byoc") {
-          setPlan(p)
-        } else if (p === "hosted") {
-          setPlan("solo") // legacy grandfathered
+        if (p === "pro") {
+          setPlan("pro")
         } else {
-          setPlan("byoc")
+          setPlan("solo")  // solo, hosted (legacy), or unknown → solo
         }
       })
-      .catch(() => setPlan("byoc"))
+      .catch(() => setPlan("solo"))
   }, [backendUrl, params.token])
-
-  const validateKey = useCallback((val: string): string => {
-    if (isHosted) return ""
-    if (!val.trim()) return "API key is required."
-    if (!DO_TOKEN_RE.test(val.trim()))
-      return "Invalid format — DigitalOcean tokens start with dop_v1_ followed by 64 hex characters."
-    return ""
-  }, [isHosted])
 
   function pollStatus(token: string) {
     let attempts = 0
@@ -244,40 +178,15 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const err = validateKey(doKey)
-    if (err) { setDoKeyErr(err); return }
-
-    setDoKeyErr("")
     setServerErr("")
     setStatus("submitting")
     setRetrying(false)
 
     try {
-      // Pre-flight: validate DO key before provisioning (BYOC only)
-      if (!isHosted) {
-        const pf = await fetch(`${backendUrl}/api/preflight-do-key`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ do_api_key: doKey.trim() }),
-        })
-        if (!pf.ok) {
-          const pfBody = await pf.json().catch(() => ({}))
-          const detail = pfBody?.detail ?? pfBody
-          const msg = typeof detail === "object" ? (detail.error ?? "Invalid API key") : String(detail)
-          setDoKeyErr(msg)
-          setStatus("idle")
-          return
-        }
-      }
-
       const res = await fetch(`${backendUrl}/api/provision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          isHosted
-            ? { token: params.token, region }
-            : { token: params.token, do_api_key: doKey.trim(), region, size }
-        ),
+        body: JSON.stringify({ token: params.token, region }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -294,17 +203,14 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === status)
   const isErrorState     = ERROR_STATES.includes(status)
   const isProvisioning   = !["idle", "submitting", "error"].includes(status) && !isErrorState
-  const selectedSize     = SIZES.find((s) => s.value === size)
   const errorDef         = ERROR_CARD_DEFS[status]
   const showForm         = !isProvisioning || retrying
 
-  const hostedSpec = plan === "pro"
-    ? "Includes an 8 GB / 2-vCPU droplet — handles up to 6–8 parallel sessions."
-    : "Includes a 4 GB / 2-vCPU droplet — handles up to 2 parallel sessions."
+  const planSpec = plan === "pro"
+    ? "8GB memory, up to 6–8 parallel sessions"
+    : "4GB memory, up to 2 parallel sessions"
 
-  const setupSubtitle = isHosted
-    ? `Pick a region — we'll provision your ${plan === "pro" ? "8 GB / 2-vCPU" : "4 GB / 2-vCPU"} droplet automatically.`
-    : "Enter your DigitalOcean API key to provision your dedicated droplet."
+  const setupSubtitle = `Pick a region — we'll provision your dedicated workspace automatically. (${planSpec})`
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b] px-6 py-16 text-white">
@@ -321,7 +227,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
           <p className="text-sm text-white/40">{setupSubtitle}</p>
         </div>
 
-        {/* Bilingual error card */}
+        {/* Error card */}
         {isErrorState && errorDef && (
           <ErrorCard
             def={errorDef}
@@ -336,72 +242,17 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             <div className="p-7">
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
-                {/* Hosted: info banner */}
-                {isHosted && (
-                  <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
-                    <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
-                    <p className="text-[13px] text-violet-300">
-                      {hostedSpec} No DigitalOcean account required.
-                    </p>
-                  </div>
-                )}
-
-                {/* BYOC: DO API Key */}
-                {!isHosted && (
-                  <div className="space-y-2">
-                    <Label htmlFor="do-key" className="text-[13px] font-medium text-white/60">
-                      DigitalOcean API Key
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="do-key"
-                        type={showKey ? "text" : "password"}
-                        value={doKey}
-                        onChange={(e) => {
-                          setDoKey(e.target.value)
-                          if (doKeyErr) setDoKeyErr(validateKey(e.target.value))
-                        }}
-                        onBlur={() => setDoKeyErr(validateKey(doKey))}
-                        placeholder="dop_v1_..."
-                        aria-describedby={doKeyErr ? "do-key-err" : undefined}
-                        aria-invalid={!!doKeyErr}
-                        className={`h-11 bg-white/[0.04] pr-10 font-mono text-[13px] placeholder:text-white/20 focus-visible:ring-violet-500/50 ${
-                          doKeyErr
-                            ? "border-red-500/40 focus-visible:ring-red-500/40"
-                            : "border-white/[0.08]"
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowKey(!showKey)}
-                        aria-label={showKey ? "Hide API key" : "Show API key"}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/60"
-                      >
-                        {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-
-                    {doKeyErr && (
-                      <div id="do-key-err" role="alert" className="flex items-start gap-1.5 text-[12px] text-red-400">
-                        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        {doKeyErr}
-                      </div>
-                    )}
-
-                    <a
-                      href="https://cloud.digitalocean.com/account/api/tokens"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[12px] text-violet-400 transition-colors hover:text-violet-300"
-                    >
-                      Get your API token <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                )}
+                {/* Info banner */}
+                <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
+                  <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                  <p className="text-[13px] text-violet-300">
+                    Dedicated workspace — {planSpec}. No account setup needed.
+                  </p>
+                </div>
 
                 {/* Region picker */}
                 <div className="space-y-2">
-                  <Label className="text-[13px] font-medium text-white/60">Region</Label>
+                  <label className="text-[13px] font-medium text-white/60">Region</label>
                   <Select value={region} onValueChange={setRegion}>
                     <SelectTrigger className="h-11 border-white/[0.08] bg-white/[0.04] focus:ring-violet-500/50">
                       <SelectValue />
@@ -422,40 +273,6 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   <p className="text-[12px] text-white/25">Choose the region closest to you for lowest latency.</p>
                 </div>
 
-                {/* Size picker — BYOC only */}
-                {!isHosted && (
-                  <div className="space-y-2">
-                    <Label className="text-[13px] font-medium text-white/60">VPS Size</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {SIZES.map((s) => (
-                        <button
-                          key={s.value}
-                          type="button"
-                          onClick={() => setSize(s.value)}
-                          className={`relative rounded-lg border p-3 text-left transition-all ${
-                            size === s.value
-                              ? "border-violet-500/50 bg-violet-500/10 ring-1 ring-violet-500/30"
-                              : "border-white/[0.07] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
-                          }`}
-                        >
-                          {s.recommended && (
-                            <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-violet-600 px-2 py-0.5 text-[10px] font-medium text-white">
-                              Best
-                            </span>
-                          )}
-                          <div className="text-[12px] font-semibold text-white">{s.label}</div>
-                          <div className="mt-0.5 text-[11px] text-white/35">{s.spec}</div>
-                          <div className="mt-1.5 text-[12px] font-medium text-violet-400">{s.price}</div>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[12px] text-white/25">
-                      Billed directly by DigitalOcean to your account.
-                      Selected: <span className="text-white/50">{selectedSize?.spec} — {selectedSize?.price}</span>
-                    </p>
-                  </div>
-                )}
-
                 {serverErr && (
                   <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/8 px-4 py-3 text-[13px] text-red-300">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -473,7 +290,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   ) : retrying ? (
                     "Retry Provisioning"
                   ) : (
-                    "Provision My Concerto"
+                    "Provision My Workspace"
                   )}
                 </Button>
               </form>
@@ -482,7 +299,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             /* ── Provisioning stepper ──────────────────────────── */
             <div className="p-7">
               <div className="mb-5">
-                <h2 className="text-[15px] font-semibold text-white">Provisioning your Concerto</h2>
+                <h2 className="text-[15px] font-semibold text-white">Setting up your workspace</h2>
                 <p className="mt-1 text-[13px] text-white/40">This takes about 3–5 minutes. Don&apos;t close this tab.</p>
               </div>
 

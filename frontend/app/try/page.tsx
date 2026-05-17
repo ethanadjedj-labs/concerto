@@ -65,7 +65,7 @@ export default function TryPage() {
               Your workspace is spinning up.
             </h1>
             <p className="text-[#877c70] leading-relaxed">
-              We&apos;re provisioning your droplet. Takes about 3 minutes.
+              We&apos;re setting up your workspace. Takes about 3 minutes.
               We&apos;ll send a confirmation to <strong className="text-[#c4b8aa]">{email}</strong> when it&apos;s ready.
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function TryPage() {
               icon: <Zap className="h-5 w-5 text-[#d97757]" />,
               bg: "bg-[rgba(217,119,87,0.12)]",
               title: "Real workspace",
-              desc: "A dedicated s-2vcpu-4gb droplet. Not a sandbox. Real git, real tests, real deploys.",
+              desc: "A dedicated remote workspace. Not a sandbox. Real git, real tests, real deploys.",
             },
             {
               icon: <svg width="20" height="20" viewBox="0 0 200 200" fill="none" aria-hidden="true">
@@ -193,7 +193,7 @@ export default function TryPage() {
               icon: <Shield className="h-5 w-5 text-[#8b7fff]" />,
               bg: "bg-[rgba(139,127,255,0.12)]",
               title: "Auto-destroyed",
-              desc: "After 30 minutes the droplet is gone. No surprise charges. No cleanup needed.",
+              desc: "After 30 minutes the workspace is destroyed. No surprise charges. No cleanup needed.",
             },
           ].map(({ icon, bg, title, desc }) => (
             <div

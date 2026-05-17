@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Shield, Lock, Server, GitBranch, Star } from "lucide-react"
+import { Shield, Lock, Server, Star } from "lucide-react"
 
 type StatusLevel = "operational" | "degraded" | "outage" | "unknown"
 
@@ -120,27 +120,13 @@ export function TrustSection() {
       <div className="mx-auto max-w-6xl space-y-14">
 
         {/* Built-by strip */}
-        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-center">
+        <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-[13px] text-[#8a847b]">
-            Built by an operator who runs his own infra. Open source.
+            Built by a solo operator who runs the same infrastructure himself.
           </p>
-          <a
-            href="https://github.com/ethanadjedj-labs/concerto"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[12px] text-[#555049] transition-colors hover:text-[#191919]"
-            style={{ borderColor: "rgba(25,25,25,0.10)", background: "rgba(25,25,25,0.02)" }}
-          >
-            <GitBranch className="h-3.5 w-3.5" />
-            View on GitHub →
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://img.shields.io/github/stars/ethanadjedj-labs/concerto?style=flat&labelColor=transparent&color=cc785c&label="
-              alt="GitHub stars"
-              className="h-4"
-              loading="lazy"
-            />
-          </a>
+          <p className="text-[13px] text-[#8a847b]">
+            Real human support, real maintenance.
+          </p>
         </div>
 
         {/* Live status indicator */}
@@ -162,8 +148,8 @@ export function TrustSection() {
           />
           <SecurityBadge
             icon={<Server className="h-3.5 w-3.5" />}
-            label="Your data never leaves your VPS"
-            href="https://github.com/ethanadjedj-labs/concerto/blob/main/docs/SECURITY.md"
+            label="Your workspace is isolated from other customers"
+            href="/legal/privacy"
           />
         </div>
 
@@ -175,7 +161,7 @@ export function TrustSection() {
           <p className="text-[12px] leading-relaxed text-[#8a847b]">
             Cursor and Devin run agents on their infrastructure — you pay per-token and share
             compute. Raw Claude Code works locally but stops when you close your laptop. Concerto
-            gives you persistent remote execution on <em>your</em> VPS: cheaper, always-on, and
+            gives you persistent remote execution on a dedicated workspace: always-on, and
             fully under your control.
           </p>
           <Link

@@ -25,33 +25,24 @@ export async function POST(request: Request) {
     region = url.searchParams.get("region") ?? "nyc1"
   }
 
-  if (!["solo", "pro", "byoc"].includes(plan)) {
-    plan = "solo"
+  // Only solo and pro are valid plans. Redirect anything else (including legacy requests) to pricing.
+  if (!["solo", "pro"].includes(plan)) {
+    return NextResponse.redirect(`${origin}/#pricing`, { status: 303 })
   }
 
   // Optional: trial_token passed when upgrading from a trial
   const urlObj = new URL(request.url)
   const trialToken = urlObj.searchParams.get("trial_token") ?? ""
 
-  let priceId: string
-  let mode: Stripe.Checkout.SessionCreateParams["mode"]
-
-  if (plan === "solo") {
-    priceId = process.env.STRIPE_CONCERTO_SOLO_PRICE_ID!
-    mode = "subscription"
-  } else if (plan === "pro") {
-    priceId = process.env.STRIPE_CONCERTO_PRO_PRICE_ID!
-    mode = "subscription"
-  } else {
-    // byoc — one-time payment
-    priceId = process.env.STRIPE_CONCERTO_BYOC_PRICE_ID!
-    mode = "payment"
-  }
+  const priceId =
+    plan === "pro"
+      ? process.env.STRIPE_CONCERTO_PRO_PRICE_ID!
+      : process.env.STRIPE_CONCERTO_SOLO_PRICE_ID!
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
-    mode,
+    mode: "subscription",
     automatic_tax: { enabled: true },
     metadata: {
       product: "concerto",

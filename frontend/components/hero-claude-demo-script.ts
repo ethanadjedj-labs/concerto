@@ -1,84 +1,203 @@
-export interface ResultLine {
-  icon: string
-  text: string
-  delayMs: number
-}
+export type Segment =
+  | { kind: "text"; content: string }
+  | { kind: "tool"; toolName: string; params: Record<string, unknown>; expand: boolean }
 
-export interface HeroDemoScript {
-  projectName: string
-  existingMessage: string
+export interface ScriptVariant {
   userPrompt: string
-  claudeResponse: string
-  toolName: string
-  toolParams: {
-    project: string
-    prompt: string
-    timeout_seconds: number
-  }
-  resultLines: ResultLine[]
-  claudeFollowup: string
+  projectName: string
+  segments: Segment[]
   sidebarProjects: Array<{ name: string; active: boolean }>
   sidebarRecents: string[]
-  timings: {
-    typingStartMs: number
-    typingSpeedMs: number
-    sentMs: number
-    streamingStartMs: number
-    streamingSpeedMs: number
-    toolLoadingMs: number
-    toolExpandedMs: number
-    toolResultStartMs: number
-    followupMs: number
-    loopMs: number
-  }
 }
 
-export const HERO_SCRIPT: HeroDemoScript = {
-  projectName: "ecommerce-api",
-  existingMessage:
-    "I've reviewed the checkout module. The idempotency_key field exists in the schema but isn't being validated on incoming requests. Let me know what you'd like to tackle next.",
-  userPrompt:
-    "Refactor the checkout flow to use idempotency keys. Open a PR when tests pass.",
-  claudeResponse:
-    "I'll spawn a Concerto session to handle this. The agent will inspect the checkout module, add idempotency keys, run tests, and open the PR.",
-  toolName: "spawn_claude_code_session",
-  toolParams: {
-    project: "ecommerce-api",
-    prompt:
-      "Refactor checkout/ to use idempotency keys per Stripe best practice. Run pytest. Open PR.",
-    timeout_seconds: 1800,
+export const HERO_SCRIPTS: ScriptVariant[] = [
+  {
+    userPrompt:
+      "Build me a small website to track my freelance invoices — clients, amounts, paid/unpaid.",
+    projectName: "invoice-tracker",
+    segments: [
+      {
+        kind: "text",
+        content:
+          "I'll set this up on your Concerto workspace. Spawning a session now — it'll create the project, build the pages, and have something running you can click through.",
+      },
+      {
+        kind: "tool",
+        toolName: "spawn_claude_code_session",
+        params: {
+          project: "invoice-tracker",
+          prompt: "Build a small invoice tracker with clients, amounts, paid/unpaid status.",
+        },
+        expand: true,
+      },
+      {
+        kind: "text",
+        content: "Session running. Let me check progress.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Good — project is set up, the clients and invoices pages are being built. Should be ready in a minute.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Done. Your invoice tracker is live on your workspace. You can add clients, log invoices, mark them paid. Want me to send you the workspace URL or add anything else — like a monthly summary view?",
+      },
+    ],
+    sidebarProjects: [
+      { name: "invoice-tracker", active: true },
+      { name: "freelance-site", active: false },
+      { name: "client-portal", active: false },
+    ],
+    sidebarRecents: [
+      "Invoice reminders",
+      "Client list import",
+      "Payment status",
+      "Monthly totals",
+    ],
   },
-  resultLines: [
-    { icon: "✓", text: "Session sess_abc123 spawned on droplet-nyc-3", delayMs: 0 },
-    { icon: "✓", text: "Reading 4 files in checkout/", delayMs: 350 },
-    { icon: "✓", text: "Patched 6 functions with idempotency key support", delayMs: 700 },
-    { icon: "✓", text: "Running pytest... 47 tests passed", delayMs: 1100 },
-    { icon: "✓", text: "git checkout -b refactor/idempotency-keys", delayMs: 1450 },
-    { icon: "✓", text: "Opening PR #142 → ethan/ecommerce-api", delayMs: 1800 },
-  ],
-  claudeFollowup:
-    "Done. PR #142 is open with all 47 tests passing. Took 4 min 12 sec on your VPS. Want me to add a follow-up session to update the API docs?",
-  sidebarProjects: [
-    { name: "ecommerce-api", active: true },
-    { name: "api-docs", active: false },
-    { name: "stripe-webhooks", active: false },
-  ],
-  sidebarRecents: [
-    "Add Stripe webhooks",
-    "Write project README",
-    "Set up CI pipeline",
-    "Refactor auth module",
-  ],
-  timings: {
-    typingStartMs: 1000,
-    typingSpeedMs: 25,
-    sentMs: 3000,
-    streamingStartMs: 3500,
-    streamingSpeedMs: 9,
-    toolLoadingMs: 5100,
-    toolExpandedMs: 5900,
-    toolResultStartMs: 7000,
-    followupMs: 9200,
-    loopMs: 12000,
+  {
+    userPrompt:
+      "Help me set up a simple booking page for my photography sessions. Calendar + email confirmation.",
+    projectName: "booking-page",
+    segments: [
+      {
+        kind: "text",
+        content:
+          "I'll set this up on your Concerto workspace. Spawning a session now — it'll build the booking page and wire up email confirmation.",
+      },
+      {
+        kind: "tool",
+        toolName: "spawn_claude_code_session",
+        params: {
+          project: "booking-page",
+          prompt:
+            "Build a photography session booking page with calendar and email confirmation.",
+        },
+        expand: true,
+      },
+      {
+        kind: "text",
+        content: "Session running. Let me check progress.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Good — the booking page and calendar are being built. Setting up the email confirmation flow too.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Done. Your booking page is live on your workspace. Clients can pick a session slot and you'll get an email confirmation. Want me to add anything — like a deposit payment option?",
+      },
+    ],
+    sidebarProjects: [
+      { name: "booking-page", active: true },
+      { name: "portfolio-site", active: false },
+      { name: "client-gallery", active: false },
+    ],
+    sidebarRecents: [
+      "Booking confirmation",
+      "Calendar setup",
+      "Email templates",
+      "Payment deposits",
+    ],
   },
+  {
+    userPrompt: "Create a small dashboard showing my Etsy sales by week with a chart.",
+    projectName: "etsy-dashboard",
+    segments: [
+      {
+        kind: "text",
+        content:
+          "I'll set this up on your Concerto workspace. Spawning a session now — it'll build the dashboard and weekly chart.",
+      },
+      {
+        kind: "tool",
+        toolName: "spawn_claude_code_session",
+        params: {
+          project: "etsy-dashboard",
+          prompt: "Build an Etsy sales dashboard with weekly bar chart.",
+        },
+        expand: true,
+      },
+      {
+        kind: "text",
+        content: "Session running. Let me check progress.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Good — the dashboard is being built. The weekly chart layout is done, wiring up the data import now.",
+      },
+      {
+        kind: "tool",
+        toolName: "get_claude_session",
+        params: {},
+        expand: false,
+      },
+      {
+        kind: "text",
+        content:
+          "Done. Your Etsy dashboard is live on your workspace. You'll see weekly sales with a bar chart. Want me to add a date filter or export to CSV?",
+      },
+    ],
+    sidebarProjects: [
+      { name: "etsy-dashboard", active: true },
+      { name: "product-photos", active: false },
+      { name: "shop-analytics", active: false },
+    ],
+    sidebarRecents: [
+      "Weekly sales chart",
+      "Product rankings",
+      "Revenue trends",
+      "Export to CSV",
+    ],
+  },
+]
+
+export const HERO_TIMINGS = {
+  typingStartMs: 800,
+  typingSpeedMs: 48,
+  sentDelayMs: 300,
+  streamingSpeedMs: 9,
+  afterTextToToolMs: 700,
+  toolExpandDelayMs: 600,
+  afterTool1Ms: 3000,
+  afterTool2Ms: 1000,
+  afterTool3Ms: 4000,
+  donePauseMs: 2000,
+  fadeMs: 700,
+  loopMs: 19000,
 }

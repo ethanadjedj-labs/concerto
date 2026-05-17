@@ -3,7 +3,7 @@ import { getLegalContent } from "@/lib/legal"
 
 export const metadata: Metadata = {
   title: "Refund Policy",
-  description: "Concerto Refund Policy — our commitment to fair refunds on BYOC and Hosted plans.",
+  description: "Concerto Refund Policy — our commitment to fair refunds on Solo and Pro plans.",
   openGraph: { title: "Refund Policy — Concerto", url: "https://concerto.run/legal/refund" },
 }
 
