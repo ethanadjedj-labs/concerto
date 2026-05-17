@@ -13,9 +13,7 @@ const config: Config = {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       colors: {
@@ -52,25 +50,54 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        violet: {
+          50:  "#f5f3ff",
+          100: "#ede9fe",
+          200: "#ddd6fe",
+          300: "#c4b5fd",
+          400: "#a78bfa",
+          500: "#8b5cf6",
+          600: "#7c3aed",
+          700: "#6d28d9",
+          800: "#5b21b6",
+          900: "#4c1d95",
+          950: "#2e1065",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "ui-monospace", "monospace"],
       },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+          to:   { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+          to:   { height: "0" },
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        "accordion-down": "accordion-down 0.22s cubic-bezier(0.16,1,0.3,1)",
+        "accordion-up":   "accordion-up   0.22s cubic-bezier(0.16,1,0.3,1)",
+      },
+      backgroundImage: {
+        "violet-radial": "radial-gradient(ellipse at center, rgba(139,92,246,0.15) 0%, transparent 70%)",
+      },
+      boxShadow: {
+        "violet-sm":  "0 0 0 1px rgba(139,92,246,0.2)",
+        "violet-md":  "0 4px 24px rgba(139,92,246,0.12), 0 0 0 1px rgba(139,92,246,0.15)",
+        "violet-lg":  "0 8px 40px rgba(139,92,246,0.18), 0 0 0 1px rgba(139,92,246,0.2)",
+        "surface-sm": "0 1px 3px rgba(0,0,0,0.4)",
+        "surface-md": "0 4px 16px rgba(0,0,0,0.5)",
       },
     },
   },
