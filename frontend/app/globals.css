@@ -2,29 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --card: 240 8% 5%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 8% 5%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 5% 10%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5% 10%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 263 70% 50%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 11%;
-    --input: 240 6% 9%;
-    --ring: 263 70% 60%;
-    --radius: 0.625rem;
-  }
+/* ─── Claude-native design tokens ─────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:     #0f0d10;
+  --bg-surface:  #1a161c;
+  --bg-elevated: #221c25;
+
+  /* Accents */
+  --accent-warm:        #d97757;
+  --accent-warm-hover:  #c66647;
+  --accent-violet:      #8b7fff;
+  --accent-violet-soft: #6b5fdb;
+
+  /* Typography */
+  --text-primary:   #f5f0e9;
+  --text-secondary: #c4b8aa;
+  --text-tertiary:  #877c70;
+
+  /* Borders */
+  --border-subtle: rgba(245, 240, 233, 0.08);
+  --border-warm:   rgba(217, 119, 87, 0.20);
+
+  /* shadcn/ui token mapping */
+  --background:             282  9%  6%;
+  --foreground:              37 57% 94%;
+  --card:                   285 12%  9%;
+  --card-foreground:         37 57% 94%;
+  --popover:                285 12%  9%;
+  --popover-foreground:      37 57% 94%;
+  --primary:                 19 63% 59%;
+  --primary-foreground:      37 57% 94%;
+  --secondary:              282  9% 11%;
+  --secondary-foreground:    37 57% 94%;
+  --muted:                  282  9% 11%;
+  --muted-foreground:        28 18% 55%;
+  --accent:                 250 100% 74%;
+  --accent-foreground:       37 57% 94%;
+  --destructive:              0 72% 51%;
+  --destructive-foreground:  37 57% 94%;
+  --border:                 285  8% 13%;
+  --input:                  285  8% 11%;
+  --ring:                   250 100% 74%;
+  --radius:                 0.5rem;
 }
 
 @layer base {
@@ -33,10 +53,12 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-size: 17px;
+    line-height: 1.65;
   }
   ::selection {
-    background: rgba(139, 92, 246, 0.35);
-    color: white;
+    background: rgba(217, 119, 87, 0.28);
+    color: #f5f0e9;
   }
 }
 
@@ -45,7 +67,7 @@
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(22px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -59,13 +81,13 @@
 }
 
 @keyframes glow-breathe {
-  0%, 100% { opacity: 0.12; }
-  50%       { opacity: 0.28; }
+  0%, 100% { opacity: 0.08; }
+  50%       { opacity: 0.22; }
 }
 
 @keyframes copy-flash {
   0%   { background-color: transparent; }
-  30%  { background-color: rgba(134, 239, 172, 0.12); }
+  30%  { background-color: rgba(217, 119, 87, 0.10); }
   100% { background-color: transparent; }
 }
 
@@ -74,23 +96,33 @@
   50%       { opacity: 0.3; }
 }
 
+@keyframes orbit-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
 /* ─── Animation utilities ─────────────────────────────────────── */
 
 @layer utilities {
   .animate-fade-up {
-    animation: fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: fade-up 0.65s ease-out both;
   }
   .animate-fade-in {
     animation: fade-in 0.5s ease both;
   }
   .animate-glow-breathe {
-    animation: glow-breathe 5s ease-in-out infinite;
+    animation: glow-breathe 6s ease-in-out infinite;
   }
   .animate-copy-flash {
     animation: copy-flash 0.5s ease;
   }
   .animate-dot-blink {
-    animation: dot-blink 1.4s ease-in-out infinite;
+    animation: dot-blink 1.6s ease-in-out infinite;
   }
 
   /* Stagger delay utilities */
@@ -106,34 +138,47 @@
   /* Scroll-reveal (toggled by IntersectionObserver) */
   .reveal {
     opacity: 0;
-    transform: translateY(28px);
-    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(12px);
+    transition: opacity 0.5s ease-out,
+                transform 0.5s ease-out;
   }
   .reveal.visible {
     opacity: 1;
     transform: translateY(0);
   }
-  .reveal-d1 { transition-delay: 80ms; }
+  .reveal-d1 { transition-delay:  80ms; }
   .reveal-d2 { transition-delay: 160ms; }
   .reveal-d3 { transition-delay: 240ms; }
   .reveal-d4 { transition-delay: 320ms; }
   .reveal-d5 { transition-delay: 400ms; }
   .reveal-d6 { transition-delay: 480ms; }
 
-  /* Glass surface */
+  /* Warm-tinted glass surface */
   .glass {
-    background: rgba(255, 255, 255, 0.028);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(245, 240, 233, 0.025);
+    border: 1px solid var(--border-subtle);
     backdrop-filter: blur(8px);
   }
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.046);
-    border-color: rgba(139, 92, 246, 0.22);
+    background: rgba(245, 240, 233, 0.045);
+    border-color: var(--border-warm);
   }
 }
 
+/* ─── Orbital hero animation ──────────────────────────────────── */
+
+/* GPU-accelerated rotation around the SVG viewport center.
+   transform-box: view-box ensures the origin is in SVG coordinates,
+   not the element's own bounding box. */
+.orbital-dot-cw,
+.orbital-dot-ccw {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
 /* ─── Reduced motion ──────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
   .reveal,
   .reveal.visible {
@@ -146,7 +191,8 @@
     animation: none !important;
     opacity: 1 !important;
   }
-  .hero-orbit {
-    display: none;
+  .orbital-dot-cw,
+  .orbital-dot-ccw {
+    animation: none !important;
   }
 }
