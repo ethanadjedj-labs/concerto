@@ -234,6 +234,50 @@ export default function DashboardPage({ params }: { params: { token: string } })
           </div>
         </div>
 
+        {/* Hosted: subscription panel */}
+        {isHosted && (
+          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-violet-400" />
+              <span className="text-[14px] font-semibold text-white">Subscription</span>
+            </div>
+            <div className="h-px bg-white/[0.07]" />
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-white/40">Status</span>
+              <span className="text-white/70 capitalize">{dashData?.subscription_status ?? "active"}</span>
+            </div>
+            {nextRenewal && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-white/40">Next renewal</span>
+                <span className="text-white/70">{nextRenewal}</span>
+              </div>
+            )}
+            <div className="h-px bg-white/[0.07]" />
+            {cancelDone ? (
+              <div className="flex items-start gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/8 px-4 py-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
+                <p className="text-[13px] text-yellow-300">
+                  Cancellation requested. Your droplet stays live for 72 hours.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={cancelSubscription}
+                disabled={cancelling}
+                className="w-full rounded-xl border border-red-500/20 bg-transparent px-4 py-2.5 text-[13px] text-red-400/70 transition-colors hover:border-red-500/30 hover:bg-red-500/8 hover:text-red-300 disabled:opacity-50"
+              >
+                {cancelling ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Cancelling…
+                  </span>
+                ) : (
+                  "Cancel subscription"
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Support */}
         <p className="pb-4 text-center text-[13px] text-white/25">
           Need help?{" "}
