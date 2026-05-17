@@ -23,18 +23,22 @@ import {
   Star,
 } from "lucide-react"
 
-/* ─── Logo mark — works on cream background ──────────────────── */
+/* ─── Logo mark — bubble+baton, works on cream background ───── */
 
 function LogoMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 200 200" fill="none" aria-hidden="true">
-      <path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#cc785c" strokeWidth={13} strokeLinecap="round"/>
-      <path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90"   fill="none" stroke="#2a2925" strokeWidth={13} strokeLinecap="round" opacity={0.55}/>
-      <path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#2a2925" strokeWidth={13} strokeLinecap="round" opacity={0.35}/>
-      <circle cx="115.56" cy="115.56" r={14} fill="#cc785c"/>
-      <circle cx="61.36"  cy="89.65"  r={14} fill="#2a2925" opacity={0.55}/>
-      <circle cx="150.23" cy="71.00"  r={14} fill="#2a2925" opacity={0.35}/>
-      <circle cx="100"    cy="100"    r={20} fill="#191919"/>
+    <svg width={size} height={size} viewBox="0 0 128 128" fill="none" aria-hidden="true">
+      <defs>
+        <clipPath id="nav-bubble-clip">
+          <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
+        </clipPath>
+      </defs>
+      <g clipPath="url(#nav-bubble-clip)">
+        <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" strokeWidth={12} strokeLinecap="butt"/>
+        <circle cx="104" cy="18" r="9" fill="#cc785c"/>
+      </g>
+      <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
+        fill="none" stroke="#1f1e1c" strokeWidth={4} strokeLinejoin="round"/>
     </svg>
   )
 }
