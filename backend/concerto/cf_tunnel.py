@@ -106,14 +106,16 @@ async def destroy_named_tunnel(tunnel_id: str) -> None:
     headers = {"Authorization": f"Bearer {cf_token}", "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(timeout=30) as client:
-        # Delete the tunnel (CF also cleans up associated DNS when tunnel deleted)
+        # Delete the tunnel with force=true (works even if cloudflared is still connected)
         try:
             resp = await client.delete(
                 f"{_CF_API}/accounts/{account_id}/cfd_tunnel/{tunnel_id}",
                 headers=headers,
+                params={"force": "true"},
             )
             if resp.status_code not in (200, 404):
-                logger.warning("CF tunnel delete %s returned %s", tunnel_id, resp.status_code)
+                logger.warning("CF tunnel delete %s returned %s: %s",
+                               tunnel_id, resp.status_code, resp.text[:200])
             else:
                 logger.info("Deleted CF tunnel %s", tunnel_id)
         except Exception as exc:
