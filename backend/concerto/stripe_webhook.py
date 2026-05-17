@@ -283,6 +283,9 @@ async def stripe_webhook(request: Request):
         event = stripe.Webhook.construct_event(payload, sig_header, _WEBHOOK_SECRET)
     except stripe.SignatureVerificationError:
         raise HTTPException(status_code=401, detail="Invalid Stripe signature")
+    except (AttributeError, KeyError, ValueError) as exc:
+        # Stripe SDK ≥15 raises AttributeError on malformed payloads missing top-level 'object'
+        raise HTTPException(status_code=400, detail=f"Malformed webhook payload: {exc}")
 
     event_id = event["id"]
     event_type = event["type"]
