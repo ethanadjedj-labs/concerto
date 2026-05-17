@@ -202,8 +202,9 @@ async def provision_droplet(
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
 
-    # Create named CF tunnel before droplet so the stable hostname is ready
-    is_hosted = mode in ("solo", "pro")
+    # Create named CF tunnel before droplet so the stable hostname is ready.
+    # Covers solo/pro/trial (all use the platform DO account); byoc gets ephemeral tunnel.
+    is_hosted = mode in ("solo", "pro", "trial")
     tunnel_info: dict = {}
     if is_hosted:
         tunnel_info = await create_named_tunnel(token)
@@ -225,8 +226,8 @@ async def provision_droplet(
 
     tag = f"concerto-{mode}-{token[:8]}" if is_hosted else f"concerto-byoc-{token[:8]}"
 
-    # For hosted plans use our DO token; size comes from PLAN_TO_SIZE
-    if is_hosted:
+    # For platform-hosted plans use PLAN_TO_SIZE (trial keeps its caller-supplied size)
+    if mode in ("solo", "pro"):
         size = PLAN_TO_SIZE.get(mode, "s-2vcpu-4gb")
 
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
@@ -238,8 +239,8 @@ async def provision_droplet(
             client, f"concerto-{token[:8]}", region, size, cloud_init, tag
         )
 
-        # Register hosted droplets immediately in the pool
-        if is_hosted:
+        # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
+        if mode in ("solo", "pro"):
             await db.upsert_hosted_pool(
                 droplet_id=droplet_id,
                 buyer_token=token,
@@ -262,7 +263,7 @@ async def provision_droplet(
                 for net in d.get("networks", {}).get("v4", []):
                     if net["type"] == "public":
                         ipv4 = net["ip_address"]
-                        if is_hosted:
+                        if mode in ("solo", "pro"):
                             await db.upsert_hosted_pool(
                                 droplet_id=droplet_id,
                                 buyer_token=token,
