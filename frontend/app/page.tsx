@@ -1,4 +1,5 @@
 import Link from "next/link"
+import LegalFooter from "@/components/LegalFooter"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -388,26 +389,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-12 px-6">
-        <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded bg-gradient-to-br from-violet-500 to-indigo-600" />
-            <span className="text-white/50 text-sm font-medium">Maestro</span>
-          </div>
-          <p className="text-white/25 text-sm">
-            © {new Date().getFullYear()} Maestro. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            <a
-              href="mailto:support@maestro.run"
-              className="text-white/30 text-sm hover:text-white/60 transition-colors"
-            >
-              support@maestro.run
-            </a>
-          </div>
-        </div>
-      </footer>
+      <LegalFooter />
     </div>
   )
 }
