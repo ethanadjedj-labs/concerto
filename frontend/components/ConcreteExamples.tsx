@@ -2,20 +2,20 @@
 
 const cards = [
   {
-    quote: "Create a landing page",
-    body: "Claude launches one session for the frontend, one for deployment, one for DNS/checks, then reports the live URL.",
+    quote: "Build and deploy this landing page",
+    body: "Claude breaks it into frontend, deployment, DNS, and verification sessions. You get the live URL back in chat.",
   },
   {
-    quote: "Fix this bug",
-    body: "Claude launches debugging sessions, reads logs, tests fixes, and tells you what changed.",
+    quote: "Fix this bug in my repo",
+    body: "Claude reads the failing logs, launches debug sessions, tests fixes, and tells you exactly what changed.",
   },
   {
-    quote: "Try three approaches",
-    body: "Claude runs three Claude Code sessions in parallel, compares the outputs, and recommends the best one.",
+    quote: "Run three implementation attempts in parallel",
+    body: "Claude launches three Claude Code sessions with different approaches, compares the outputs, and recommends the best one.",
   },
   {
-    quote: "Audit my project",
-    body: "Claude launches sessions for repo structure, security, tests, and deployment, then gives you a clean report.",
+    quote: "Audit my repo, tests, and deployment setup",
+    body: "Claude launches sessions for repo structure, test coverage, and deploy config, then gives you a clean report.",
   },
 ]
 

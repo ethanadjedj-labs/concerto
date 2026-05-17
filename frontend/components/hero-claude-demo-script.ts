@@ -3,12 +3,12 @@
 
 export const DEMO_TEXTS = {
   userMessage:
-    "Build me a small website to track my freelance invoices.",
+    "Build and deploy this landing page.",
   assistantProse1:
-    "I'll set this up. Let me spawn a session on your remote machine — it'll handle the project setup and build out the pages.",
+    "On it. I'll spawn two sessions — one to build the frontend, one to handle deployment. Both starting now.",
   assistantProse2: "Both sessions running. I'll check progress in a moment.",
   assistantProse3:
-    "The invoice tracker is ready. You can add clients, log invoices, mark them paid. Want me to add anything — a monthly summary, payment reminders?",
+    "Frontend build is done. Deploy session is live — your site is up. Want me to run end-to-end tests or add DNS verification?",
 }
 
 // All timing values in milliseconds, measured from loop start.
