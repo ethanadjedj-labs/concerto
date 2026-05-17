@@ -12,60 +12,74 @@ export default function TwitterImage() {
         style={{
           width: 1200,
           height: 600,
-          background: "#0a0a0b",
+          background: "#0f0d10",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "monospace",
+          fontFamily: "system-ui, sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Concentric arc background pattern */}
+        {/* Orbital ring background — warm + violet */}
         <svg
           width="1200"
           height="600"
           style={{ position: "absolute", top: 0, left: 0 }}
         >
-          {[80, 160, 240, 320, 400, 480].map((r) => (
+          {[90, 180, 275, 375, 490, 610].map((r, i) => (
             <ellipse
               key={r}
               cx="600"
               cy="650"
-              rx={r * 2.2}
+              rx={r * 2.1}
               ry={r}
               fill="none"
-              stroke="rgba(124,58,237,0.12)"
+              stroke={i % 2 === 0 ? "rgba(217,119,87,0.09)" : "rgba(139,127,255,0.07)"}
               strokeWidth="1"
             />
           ))}
           <ellipse
             cx="600"
             cy="650"
-            rx={160 * 2.2}
-            ry={160}
+            rx={180 * 2.1}
+            ry={180}
             fill="none"
-            stroke="rgba(124,58,237,0.3)"
+            stroke="rgba(217,119,87,0.26)"
             strokeWidth="1.5"
           />
+          <ellipse
+            cx="600"
+            cy="650"
+            rx={275 * 2.1}
+            ry={275}
+            fill="none"
+            stroke="rgba(139,127,255,0.20)"
+            strokeWidth="1"
+          />
+          <radialGradient id="tw-glow" cx="50%" cy="108%" r="40%">
+            <stop offset="0%" stopColor="#d97757" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#0f0d10" stopOpacity="0" />
+          </radialGradient>
+          <rect width="1200" height="600" fill="url(#tw-glow)" />
         </svg>
 
-        {/* Logo mark */}
+        {/* Logo mark — warm gradient */}
         <div
           style={{
             width: 64,
             height: 64,
             borderRadius: 16,
-            background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+            background: "linear-gradient(135deg, #d97757 0%, #8b7fff 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 24,
-            boxShadow: "0 0 40px rgba(124,58,237,0.5)",
+            boxShadow: "0 0 44px rgba(217,119,87,0.38)",
           }}
         >
-          <span style={{ color: "white", fontSize: 38, fontWeight: 700, lineHeight: 1 }}>
+          <span style={{ color: "#f5f0e9", fontSize: 38, fontWeight: 600, lineHeight: 1 }}>
             C
           </span>
         </div>
@@ -74,8 +88,8 @@ export default function TwitterImage() {
         <div
           style={{
             fontSize: 76,
-            fontWeight: 700,
-            color: "white",
+            fontWeight: 600,
+            color: "#f5f0e9",
             letterSpacing: "-0.02em",
             marginBottom: 18,
           }}
@@ -87,9 +101,8 @@ export default function TwitterImage() {
         <div
           style={{
             fontSize: 26,
-            color: "rgba(255,255,255,0.55)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
+            color: "#c4b8aa",
+            letterSpacing: "0.03em",
             fontWeight: 400,
           }}
         >
@@ -103,13 +116,14 @@ export default function TwitterImage() {
             bottom: 36,
             display: "flex",
             alignItems: "center",
-            gap: 12,
-            color: "rgba(124,58,237,0.8)",
+            gap: 10,
+            color: "#d97757",
             fontSize: 16,
-            letterSpacing: "0.08em",
+            letterSpacing: "0.06em",
+            opacity: 0.85,
           }}
         >
-          <span style={{ color: "rgba(124,58,237,0.6)", fontSize: 12 }}>▶</span>
+          <span style={{ color: "#8b7fff", fontSize: 10 }}>●</span>
           <span>concerto.run</span>
         </div>
       </div>

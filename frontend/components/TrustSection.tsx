@@ -49,7 +49,7 @@ function StatusIndicator() {
       href="https://status.concerto.run"
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-[12px] text-white/55 transition-colors hover:border-white/15 hover:text-white/80"
+      className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,240,233,0.08)] bg-[rgba(245,240,233,0.03)] px-3.5 py-1.5 text-[12px] text-[#c4b8aa] transition-colors hover:border-[rgba(245,240,233,0.15)] hover:text-[#f5f0e9]"
     >
       <StatusDot level={status.level} />
       <span className="text-white/60">Concerto infrastructure</span>
@@ -73,9 +73,9 @@ function SecurityBadge({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3.5 py-2.5 text-[12px] text-white/50 transition-colors hover:border-white/12 hover:text-white/75"
+      className="flex items-center gap-2 rounded-lg border border-[rgba(245,240,233,0.07)] bg-[rgba(245,240,233,0.025)] px-3.5 py-2.5 text-[12px] text-[#877c70] transition-colors hover:border-[rgba(217,119,87,0.2)] hover:text-[#c4b8aa]"
     >
-      <span className="text-violet-400/80">{icon}</span>
+      <span className="text-[#d97757]/75">{icon}</span>
       {label}
     </a>
   )
@@ -101,7 +101,7 @@ function TestimonialCard() {
           <div className="h-2 w-16 rounded bg-white/[0.05]" />
         </div>
       </div>
-      <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0b]/60 backdrop-blur-[2px]">
+      <div className="absolute inset-0 flex items-center justify-center bg-[#0f0d10]/60 backdrop-blur-[2px]">
         <span className="cursor-default rounded-full border border-white/[0.12] bg-white/[0.06] px-3 py-1 text-[11px] text-white/45 transition-all hover:border-white/20 hover:bg-white/[0.09] hover:text-white/70">
           Coming soon — be one of the first to share your story
         </span>
@@ -124,7 +124,7 @@ export function TrustSection() {
             href="https://github.com/ethanadjedj-labs/concerto"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1.5 text-[12px] text-white/60 transition-colors hover:border-white/20 hover:text-white/90"
+            className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,240,233,0.10)] bg-[rgba(245,240,233,0.04)] px-3.5 py-1.5 text-[12px] text-[#c4b8aa] transition-colors hover:border-[rgba(217,119,87,0.25)] hover:text-[#f5f0e9]"
           >
             <GitBranch className="h-3.5 w-3.5" />
             View on GitHub →
@@ -163,8 +163,8 @@ export function TrustSection() {
         </div>
 
         {/* Comparison teaser */}
-        <div className="mx-auto max-w-xl rounded-xl border border-white/[0.07] bg-white/[0.025] p-5 text-center">
-          <p className="mb-2 text-[13px] font-medium text-white/70">
+        <div className="mx-auto max-w-xl rounded-xl border border-[rgba(245,240,233,0.07)] bg-[#1a161c] shadow-[inset_0_1px_0_rgba(245,240,233,0.05)] p-5 text-center">
+          <p className="mb-2 text-[13px] font-medium text-[#c4b8aa]">
             Why not Cursor / Devin / raw Claude Code?
           </p>
           <p className="text-[12px] leading-relaxed text-white/40">
@@ -175,7 +175,7 @@ export function TrustSection() {
           </p>
           <Link
             href="/docs/COMPETITIVE_MATRIX.md"
-            className="mt-3 inline-block text-[12px] text-violet-400 hover:text-violet-300"
+            className="mt-3 inline-block text-[12px] text-[#d97757] hover:underline"
           >
             Full comparison →
           </Link>

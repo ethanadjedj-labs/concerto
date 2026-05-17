@@ -12,61 +12,79 @@ export default function OgImage() {
         style={{
           width: 1200,
           height: 630,
-          background: "#0a0a0b",
+          background: "#0f0d10",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "monospace",
+          fontFamily: "system-ui, sans-serif",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Concentric arc background pattern */}
+        {/* Orbital ring background — warm + violet palette */}
         <svg
           width="1200"
           height="630"
           style={{ position: "absolute", top: 0, left: 0 }}
         >
-          {[80, 160, 240, 320, 400, 480, 560].map((r, i) => (
+          {/* Warm orbital rings */}
+          {[100, 200, 310, 430, 560, 700].map((r, i) => (
             <ellipse
-              key={r}
+              key={`w${r}`}
               cx="600"
               cy="680"
-              rx={r * 2.2}
+              rx={r * 2.1}
               ry={r}
               fill="none"
-              stroke="rgba(124,58,237,0.12)"
+              stroke={i % 2 === 0 ? "rgba(217,119,87,0.09)" : "rgba(139,127,255,0.07)"}
               strokeWidth="1"
             />
           ))}
-          {/* Accent glow */}
+          {/* Warm accent glow ring */}
           <ellipse
             cx="600"
             cy="680"
-            rx={160 * 2.2}
-            ry={160}
+            rx={200 * 2.1}
+            ry={200}
             fill="none"
-            stroke="rgba(124,58,237,0.3)"
+            stroke="rgba(217,119,87,0.28)"
             strokeWidth="1.5"
           />
+          {/* Violet accent ring */}
+          <ellipse
+            cx="600"
+            cy="680"
+            rx={310 * 2.1}
+            ry={310}
+            fill="none"
+            stroke="rgba(139,127,255,0.22)"
+            strokeWidth="1"
+          />
+          {/* Center glow */}
+          <radialGradient id="og-glow" cx="50%" cy="108%" r="40%">
+            <stop offset="0%" stopColor="#d97757" stopOpacity="0.18" />
+            <stop offset="60%" stopColor="#8b7fff" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#0f0d10" stopOpacity="0" />
+          </radialGradient>
+          <rect width="1200" height="630" fill="url(#og-glow)" />
         </svg>
 
-        {/* Logo mark */}
+        {/* Logo mark — warm gradient */}
         <div
           style={{
             width: 72,
             height: 72,
             borderRadius: 18,
-            background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+            background: "linear-gradient(135deg, #d97757 0%, #8b7fff 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 28,
-            boxShadow: "0 0 40px rgba(124,58,237,0.5)",
+            boxShadow: "0 0 48px rgba(217,119,87,0.40)",
           }}
         >
-          <span style={{ color: "white", fontSize: 42, fontWeight: 700, lineHeight: 1 }}>
+          <span style={{ color: "#f5f0e9", fontSize: 42, fontWeight: 600, lineHeight: 1 }}>
             C
           </span>
         </div>
@@ -75,8 +93,8 @@ export default function OgImage() {
         <div
           style={{
             fontSize: 80,
-            fontWeight: 700,
-            color: "white",
+            fontWeight: 600,
+            color: "#f5f0e9",
             letterSpacing: "-0.02em",
             marginBottom: 20,
           }}
@@ -88,29 +106,29 @@ export default function OgImage() {
         <div
           style={{
             fontSize: 28,
-            color: "rgba(255,255,255,0.55)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
+            color: "#c4b8aa",
+            letterSpacing: "0.03em",
             fontWeight: 400,
           }}
         >
           Remote Workshop for Claude Code Agents
         </div>
 
-        {/* Bottom accent bar */}
+        {/* Bottom accent */}
         <div
           style={{
             position: "absolute",
             bottom: 40,
             display: "flex",
             alignItems: "center",
-            gap: 12,
-            color: "rgba(124,58,237,0.8)",
+            gap: 10,
+            color: "#d97757",
             fontSize: 18,
-            letterSpacing: "0.08em",
+            letterSpacing: "0.06em",
+            opacity: 0.85,
           }}
         >
-          <span style={{ color: "rgba(124,58,237,0.6)", fontSize: 14 }}>▶</span>
+          <span style={{ color: "#8b7fff", fontSize: 12 }}>●</span>
           <span>concerto.run</span>
         </div>
       </div>
