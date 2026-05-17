@@ -14,12 +14,12 @@ import { TrustSection } from "@/components/TrustSection"
 import {
   Zap,
   Cloud,
-  DollarSign,
   Check,
   Terminal,
-  Globe,
   Shield,
   ArrowRight,
+  GitBranch,
+  MessageSquare,
 } from "lucide-react"
 
 /* ─── Hero orbital SVG ────────────────────────────────────────── */
@@ -38,68 +38,43 @@ function HeroOrbit() {
         <pattern id="hero-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
           <circle cx="0.5" cy="0.5" r="0.75" fill="rgba(255,255,255,0.045)" />
         </pattern>
-        {/* Ellipse paths for animateMotion */}
         <path id="mp-1" d="M700,340 A100,50 0 1,0 500,340 A100,50 0 1,0 700,340Z" />
         <path id="mp-2" d="M800,340 A200,100 0 1,0 400,340 A200,100 0 1,0 800,340Z" />
         <path id="mp-3" d="M920,340 A320,155 0 1,0 280,340 A320,155 0 1,0 920,340Z" />
         <path id="mp-4" d="M1070,340 A470,215 0 1,0 130,340 A470,215 0 1,0 1070,340Z" />
       </defs>
 
-      {/* Dot grid */}
       <rect width="1200" height="680" fill="url(#hero-grid)" />
 
-      {/* Orbital rings */}
       <use href="#mp-1" stroke="rgba(139,92,246,0.28)" strokeWidth="1" />
       <use href="#mp-2" stroke="rgba(139,92,246,0.18)" strokeWidth="1" />
       <use href="#mp-3" stroke="rgba(139,92,246,0.11)" strokeWidth="1" />
       <use href="#mp-4" stroke="rgba(139,92,246,0.06)" strokeWidth="1" />
 
-      {/* Center node glow layers */}
       <circle cx="600" cy="340" r="56" fill="rgba(139,92,246,0.05)" />
       <circle cx="600" cy="340" r="24" fill="rgba(139,92,246,0.14)" />
       <circle cx="600" cy="340" r="9"  fill="rgba(167,139,250,0.95)" />
 
-      {/* Orbit 1 — 2 agents */}
       <circle r="4" fill="#a78bfa">
-        <animateMotion dur="6s" repeatCount="indefinite">
-          <mpath href="#mp-1" />
-        </animateMotion>
+        <animateMotion dur="6s" repeatCount="indefinite"><mpath href="#mp-1" /></animateMotion>
       </circle>
       <circle r="3" fill="#60a5fa" opacity="0.75">
-        <animateMotion dur="6s" begin="-3s" repeatCount="indefinite">
-          <mpath href="#mp-1" />
-        </animateMotion>
+        <animateMotion dur="6s" begin="-3s" repeatCount="indefinite"><mpath href="#mp-1" /></animateMotion>
       </circle>
-
-      {/* Orbit 2 — 2 agents */}
       <circle r="4.5" fill="#a78bfa" opacity="0.85">
-        <animateMotion dur="10s" repeatCount="indefinite">
-          <mpath href="#mp-2" />
-        </animateMotion>
+        <animateMotion dur="10s" repeatCount="indefinite"><mpath href="#mp-2" /></animateMotion>
       </circle>
       <circle r="3.5" fill="#34d399" opacity="0.65">
-        <animateMotion dur="10s" begin="-4.5s" repeatCount="indefinite">
-          <mpath href="#mp-2" />
-        </animateMotion>
+        <animateMotion dur="10s" begin="-4.5s" repeatCount="indefinite"><mpath href="#mp-2" /></animateMotion>
       </circle>
-
-      {/* Orbit 3 — 2 agents */}
       <circle r="5" fill="#a78bfa" opacity="0.65">
-        <animateMotion dur="16s" repeatCount="indefinite">
-          <mpath href="#mp-3" />
-        </animateMotion>
+        <animateMotion dur="16s" repeatCount="indefinite"><mpath href="#mp-3" /></animateMotion>
       </circle>
       <circle r="3.5" fill="#f472b6" opacity="0.5">
-        <animateMotion dur="16s" begin="-7s" repeatCount="indefinite">
-          <mpath href="#mp-3" />
-        </animateMotion>
+        <animateMotion dur="16s" begin="-7s" repeatCount="indefinite"><mpath href="#mp-3" /></animateMotion>
       </circle>
-
-      {/* Orbit 4 — 1 agent */}
       <circle r="5.5" fill="#a78bfa" opacity="0.38">
-        <animateMotion dur="26s" repeatCount="indefinite">
-          <mpath href="#mp-4" />
-        </animateMotion>
+        <animateMotion dur="26s" repeatCount="indefinite"><mpath href="#mp-4" /></animateMotion>
       </circle>
     </svg>
   )
@@ -162,8 +137,8 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-5">
-            <Link href="#features" className="hidden text-sm text-white/45 transition-colors hover:text-white md:block">
-              Features
+            <Link href="#how-it-works" className="hidden text-sm text-white/45 transition-colors hover:text-white md:block">
+              How it works
             </Link>
             <Link href="#pricing" className="hidden text-sm text-white/45 transition-colors hover:text-white md:block">
               Pricing
@@ -176,7 +151,7 @@ export default function LandingPage() {
                 size="sm"
                 className="h-8 rounded-lg bg-white px-4 text-xs font-semibold text-black hover:bg-white/90"
               >
-                Get started
+                Start in 5 minutes
               </Button>
             </form>
           </div>
@@ -185,88 +160,131 @@ export default function LandingPage() {
 
       {/* ── Hero ────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pb-16 pt-36 md:pb-24 md:pt-40">
-        {/* Orbital SVG background */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <HeroOrbit />
-          {/* Radial gradient overlay — fades SVG into the page background */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(124,58,237,0.14)_0%,transparent_70%)]" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0b]/50 to-[#0a0a0b]" />
         </div>
 
         <div className="relative mx-auto max-w-4xl px-6 text-center">
-          {/* Badge */}
           <div className="animate-fade-up mb-6 flex justify-center">
             <Badge
               variant="outline"
               className="border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-xs font-medium text-violet-300"
             >
               <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-violet-400 animate-dot-blink" />
-              Now available · Claude Code remote workshop
+              Works with Claude Pro and Max
             </Badge>
           </div>
 
-          {/* Headline */}
           <h1 className="animate-fade-up delay-100 mb-6 text-5xl font-bold leading-[1.04] tracking-[-0.03em] sm:text-6xl md:text-7xl">
-            Pilot{" "}
+            Run Claude Code{" "}
             <span className="bg-gradient-to-r from-violet-300 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              Claude Code
-            </span>{" "}
-            <br className="hidden sm:block" />
-            workers from your browser
+              from Claude chat.
+            </span>
           </h1>
 
-          {/* Sub-headline */}
-          <p className="animate-fade-up delay-200 mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/45 md:text-xl">
-            Never open a terminal. Ship code with autonomous AI agents running
-            24/7 in your own cloud.
+          <p className="animate-fade-up delay-200 mx-auto mb-4 max-w-2xl text-lg leading-relaxed text-white/45 md:text-xl">
+            Talk to Claude. Claude runs Claude Code on a remote workspace.
+            No terminal. No GitHub juggling. No sandbox.
           </p>
 
-          {/* CTAs */}
+          <p className="animate-fade-up delay-200 mb-8 text-sm text-white/30">
+            Works with your Claude Pro or Max subscription.
+          </p>
+
           <div className="animate-fade-up delay-300 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <form action="/api/checkout?plan=hosted" method="POST">
               <Button
                 size="lg"
                 className="h-12 rounded-xl bg-violet-600 px-8 text-base font-semibold text-white shadow-[0_0_0_1px_rgba(139,92,246,0.3),0_4px_20px_rgba(139,92,246,0.2)] hover:bg-violet-500"
               >
-                Get Hosted Concerto — $39/mo
+                Start in 5 minutes — $39/month
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
-            <p className="text-sm text-white/28">Or <a href="#pricing" className="underline underline-offset-2 hover:text-white/50">BYOC $99 once</a> · Your own cloud</p>
+            <p className="text-sm text-white/28">
+              Or{" "}
+              <a href="#pricing" className="underline underline-offset-2 hover:text-white/50">
+                use your own cloud — $99 once
+              </a>
+            </p>
           </div>
 
-          {/* Interactive hero demo */}
           <div className="animate-fade-up delay-500 mt-16 px-2">
             <HeroDemo />
           </div>
         </div>
       </section>
 
-      {/* ── How it works ────────────────────────────────────────── */}
+      {/* ── Problem block ───────────────────────────────────────── */}
       <section className="px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Live in under 10 minutes
+              Claude Code is powerful. Running it is not.
             </h2>
-            <p className="mx-auto max-w-lg text-white/40">
-              Four steps from payment to your first autonomous agent running in the cloud.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <FeatureCard
+              revealDelay="reveal-d1"
+              icon={<Terminal className="h-5 w-5 text-orange-400" />}
+              iconBg="bg-orange-500/15"
+              title="No more terminal"
+              description="Claude Code lives in a CLI. Forget that. Concerto puts it inside Claude chat — you type, Claude acts."
+            />
+            <FeatureCard
+              revealDelay="reveal-d2"
+              icon={<GitBranch className="h-5 w-5 text-blue-400" />}
+              iconBg="bg-blue-500/15"
+              title="No more GitHub juggling"
+              description="Cloning, branches, PRs handled on the remote workspace. You stay in Claude chat the whole time."
+            />
+            <FeatureCard
+              revealDelay="reveal-d3"
+              icon={<Shield className="h-5 w-5 text-emerald-400" />}
+              iconBg="bg-emerald-500/15"
+              title="No more sandbox limits"
+              description="Sandboxed environments cap what Claude Code can do. Your own VPS runs real git, real tests, real deploys."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ────────────────────────────────────────── */}
+      <section id="how-it-works" className="px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="reveal mb-14 text-center">
+            <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
+              Three steps, then you&apos;re done.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { n: "01", title: "Choose your plan", desc: "Hosted $39/mo (we manage the VPS) or BYOC $99 once (your DO account). Secure Stripe checkout." },
-              { n: "02", title: "Enter DO key", desc: "Paste your DigitalOcean API key — Concerto provisions your own droplet." },
-              { n: "03", title: "Authenticate", desc: "One browser-based OAuth flow for your Claude Max account." },
-              { n: "04", title: "Start building", desc: "Paste the connector config into claude.ai. Agents ready." },
+              {
+                n: "01",
+                title: "Pay $39/month",
+                desc: "We spin up your remote workspace. Provisioning takes about 3 minutes. You get an email when it is ready.",
+              },
+              {
+                n: "02",
+                title: "Connect Claude chat",
+                desc: "One click opens the connector setup. Paste 3 fields into claude.ai. Takes about 2 minutes.",
+              },
+              {
+                n: "03",
+                title: "Chat normally.",
+                desc: "Claude does the rest. Tell it what to build. It writes code, runs tests, opens PRs — on your workspace.",
+              },
             ].map((step, i) => (
               <div key={step.n} className={`reveal reveal-d${i + 1} relative rounded-xl border border-white/[0.07] bg-white/[0.025] p-6`}>
                 <div className="mb-4 font-mono text-[11px] font-medium tracking-widest text-violet-500">{step.n}</div>
                 <h3 className="mb-2 text-[15px] font-semibold text-white">{step.title}</h3>
                 <p className="text-sm leading-relaxed text-white/40">{step.desc}</p>
-                {i < 3 && (
-                  <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-1/2 lg:block">
+                {i < 2 && (
+                  <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 translate-x-1/2 sm:block">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.08] bg-[#0a0a0b]">
                       <ArrowRight className="h-3 w-3 text-white/25" />
                     </div>
@@ -275,64 +293,57 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+
+          <p className="reveal mt-6 text-center text-sm text-white/30">
+            Average setup time: 5 minutes. Most of it is automatic.
+          </p>
         </div>
       </section>
 
-      {/* ── Features ────────────────────────────────────────────── */}
-      <section id="features" className="px-6 py-24">
+      {/* ── What you'll actually do ──────────────────────────────── */}
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Everything you need to run agents at scale
+              What you&apos;ll actually do.
             </h2>
-            <p className="mx-auto max-w-xl text-white/40">
-              Concerto handles provisioning, authentication, and monitoring — so you can focus on shipping.
-            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FeatureCard
-              revealDelay="reveal-d1"
-              icon={<Zap className="h-5 w-5 text-violet-400" />}
-              iconBg="bg-violet-500/15"
-              title="Parallel agents, 24/7"
-              description="Spawn multiple Claude Code workers simultaneously. Run long tasks overnight without babysitting a terminal. Your agents work while you sleep."
-            />
-            <FeatureCard
-              revealDelay="reveal-d2"
-              icon={<Cloud className="h-5 w-5 text-blue-400" />}
-              iconBg="bg-blue-500/15"
-              title="Your cloud, your billing"
-              description="Concerto provisions a DigitalOcean droplet directly in your account. You own the infrastructure — no markup, no vendor lock-in."
-            />
-            <FeatureCard
-              revealDelay="reveal-d3"
-              icon={<DollarSign className="h-5 w-5 text-emerald-400" />}
-              iconBg="bg-emerald-500/15"
-              title="No token-by-token cost"
-              description="Uses your existing Claude Max plan. No per-token API fees, no surprise bills. Run as many tasks as you want — model cost already covered."
-            />
-            <FeatureCard
-              revealDelay="reveal-d4"
-              icon={<Terminal className="h-5 w-5 text-orange-400" />}
-              iconBg="bg-orange-500/15"
-              title="Browser terminal"
-              description="Full-featured web terminal embedded in your dashboard. SSH into your droplet from any device — no client software required."
-            />
-            <FeatureCard
-              revealDelay="reveal-d5"
-              icon={<Globe className="h-5 w-5 text-pink-400" />}
-              iconBg="bg-pink-500/15"
-              title="MCP integration"
-              description="Connect to claude.ai in 3 copy-paste steps. Your remote agents appear as MCP tools in the Claude interface — send tasks from anywhere."
-            />
-            <FeatureCard
-              revealDelay="reveal-d6"
-              icon={<Shield className="h-5 w-5 text-cyan-400" />}
-              iconBg="bg-cyan-500/15"
-              title="Isolated environment"
-              description="Each customer gets a dedicated droplet. Your code, keys, and agent sessions are completely isolated from other users."
-            />
+            {[
+              {
+                prompt: "“Refactor my auth module to JWT. Run tests. Open a PR.”",
+                result: "Concerto spawns a session, edits files, runs pytest, opens a GitHub PR. You read the result in chat.",
+                delay: "reveal-d1",
+                iconBg: "bg-violet-500/15",
+                icon: <MessageSquare className="h-5 w-5 text-violet-400" />,
+              },
+              {
+                prompt: "“Run a 3-hour migration script on my staging database overnight.”",
+                result: "Concerto launches it, monitors the run, kills it if stuck, and reports back when done.",
+                delay: "reveal-d2",
+                iconBg: "bg-blue-500/15",
+                icon: <Cloud className="h-5 w-5 text-blue-400" />,
+              },
+              {
+                prompt: "“Try 3 different implementations of this feature in parallel.”",
+                result: "Concerto spawns 3 sessions side-by-side. You read each result in chat and pick the best one.",
+                delay: "reveal-d3",
+                iconBg: "bg-emerald-500/15",
+                icon: <Zap className="h-5 w-5 text-emerald-400" />,
+              },
+            ].map(({ prompt, result, delay, iconBg, icon }) => (
+              <div
+                key={prompt}
+                className={`reveal ${delay} group rounded-xl border border-white/[0.07] bg-white/[0.025] p-6 transition-all duration-200 hover:-translate-y-1 hover:border-violet-500/25 hover:bg-white/[0.045] hover:shadow-violet-md`}
+              >
+                <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
+                  {icon}
+                </div>
+                <p className="mb-3 font-mono text-[13px] leading-snug text-violet-300">{prompt}</p>
+                <p className="text-sm leading-relaxed text-white/40">{result}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -345,9 +356,11 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="mb-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Two ways to run Concerto
+              Two ways to start.
             </h2>
-            <p className="text-white/40">Hosted if you want zero setup. BYOC if you already use DigitalOcean.</p>
+            <p className="text-white/40">
+              Don&apos;t have a cloud account? Pick Hosted. We handle everything.
+            </p>
           </div>
 
           <div className="reveal mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
@@ -358,25 +371,23 @@ export default function LandingPage() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(124,58,237,0.12)_0%,transparent_70%)]" />
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-semibold text-white">Concerto Hosted</span>
+                  <span className="text-lg font-semibold text-white">Hosted</span>
                   <Badge className="border-violet-500/40 bg-violet-500/25 text-xs text-violet-300">
                     Most popular
                   </Badge>
                 </div>
+                <p className="mb-1 text-sm text-white/40">We host the workspace</p>
                 <div className="mt-5 flex items-baseline gap-2">
                   <span className="text-6xl font-bold tracking-tight text-white">$39</span>
                   <span className="text-sm text-white/35">/month</span>
                 </div>
-                <p className="mt-1.5 text-sm text-white/35">We host the VPS · Zero setup</p>
                 <Separator className="my-6 bg-white/[0.07]" />
                 <ul className="space-y-3.5">
                   {[
-                    "Zero setup — no DigitalOcean account needed",
-                    "3–5 parallel Claude Code agents",
-                    "4 GB RAM / 2 vCPU dedicated droplet",
-                    "Browser terminal + MCP connector",
-                    "30-day support included",
-                    "Cancel anytime, 72h data grace",
+                    "Zero setup. We provision the VPS.",
+                    "3–5 parallel Claude Code sessions",
+                    "30-day email + Discord support",
+                    "Cancel anytime",
                   ].map((feature) => (
                     <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
@@ -387,7 +398,7 @@ export default function LandingPage() {
                     type="submit"
                     className="h-12 w-full rounded-xl bg-violet-600 text-base font-semibold text-white hover:bg-violet-500"
                   >
-                    Get Hosted Concerto →
+                    Start with Hosted
                   </Button>
                 </form>
                 <p className="mt-3 text-center text-xs text-white/25">
@@ -400,25 +411,23 @@ export default function LandingPage() {
             <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8">
               <div className="relative">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-semibold text-white">Concerto BYOC</span>
+                  <span className="text-lg font-semibold text-white">BYOC</span>
                   <Badge className="border-white/15 bg-white/10 text-xs text-white/50">
                     One-time
                   </Badge>
                 </div>
+                <p className="mb-1 text-sm text-white/40">Bring your DigitalOcean account</p>
                 <div className="mt-5 flex items-baseline gap-2">
                   <span className="text-6xl font-bold tracking-tight text-white">$99</span>
                   <span className="text-sm text-white/35">once</span>
                 </div>
-                <p className="mt-1.5 text-sm text-white/35">Your cloud account · Full control</p>
                 <Separator className="my-6 bg-white/[0.07]" />
                 <ul className="space-y-3.5">
                   {[
-                    "Bring your own DigitalOcean account",
-                    "Full control over infrastructure",
-                    "Choose your droplet size & region",
-                    "Browser terminal + MCP connector",
-                    "30-day support included",
-                    "Pay once, own forever",
+                    "Workspace lives in your DigitalOcean account",
+                    "You pay DigitalOcean directly (~$24/month)",
+                    "Full control over the VPS",
+                    "30-day email + Discord support",
                   ].map((feature) => (
                     <CheckItem key={feature}>{feature}</CheckItem>
                   ))}
@@ -429,7 +438,7 @@ export default function LandingPage() {
                     type="submit"
                     className="h-12 w-full rounded-xl bg-white text-base font-semibold text-black hover:bg-white/92"
                   >
-                    Get BYOC Concerto →
+                    Start with BYOC
                   </Button>
                 </form>
                 <p className="mt-3 text-center text-xs text-white/25">
@@ -440,12 +449,11 @@ export default function LandingPage() {
 
           </div>
 
-          {/* Plan picker FAQ */}
           <div className="reveal mx-auto mt-8 max-w-xl rounded-xl border border-white/[0.07] bg-white/[0.02] px-6 py-4">
-            <p className="mb-1 text-sm font-medium text-white/60">Which plan should I pick?</p>
-            <p className="text-sm leading-relaxed text-white/35">
-              Hosted if you don&apos;t already use DigitalOcean — zero setup, we handle the VPS.
-              BYOC if you do and want full control over your infrastructure and billing.
+            <p className="text-sm leading-relaxed text-white/40">
+              Not sure which?{" "}
+              <span className="text-white/60">&rarr; Pick Hosted.</span>{" "}
+              You can always switch later.
             </p>
           </div>
 
@@ -464,24 +472,44 @@ export default function LandingPage() {
           <Accordion type="single" collapsible className="reveal space-y-1">
             {[
               {
-                q: "What do I need to get started?",
-                a: "A Claude Max subscription (for unlimited Claude Code usage) and a credit card. With Hosted, that's it — we provision the VPS. With BYOC, you also need a DigitalOcean account. No server knowledge required in either case.",
+                q: "Do I need Claude Pro or Max?",
+                a: "Yes. Concerto uses your Anthropic subscription via the MCP connector. Pro ($20/mo) or Max ($200/mo) both work. You keep paying Anthropic directly — Concerto is a separate charge.",
               },
               {
-                q: "How is this different from running Claude Code locally?",
-                a: "Local Claude Code ties up your machine and stops when you close the lid. Concerto runs on a dedicated cloud VPS 24/7 — agents keep working while your laptop is off. You control everything from a browser tab with no SSH client needed.",
+                q: "What if I don't have a cloud account?",
+                a: "Pick Hosted. We handle the VPS — no DigitalOcean signup needed. You pay $39/month and we provision, manage, and monitor the workspace for you.",
               },
               {
-                q: "Who pays for the DigitalOcean droplet?",
-                a: "With Hosted: the $39/mo covers the droplet — we manage it on our account. With BYOC: you pay DigitalOcean directly (~$24/mo), we never see your infrastructure costs.",
+                q: "What if I already use DigitalOcean?",
+                a: "Pick BYOC. You bring your DO account, we set up the workspace on a droplet in it, and you pay DigitalOcean directly (~$24/month). One-time $99 setup fee to Concerto.",
               },
               {
-                q: "What happens to my droplet if I cancel?",
-                a: "Hosted: your droplet stays live for 72 hours after cancellation so you can export data, then it's destroyed. BYOC: the droplet is in your own DigitalOcean account — you control it fully, forever.",
+                q: "Can I cancel anytime?",
+                a: "Yes. Hosted: cancel anytime, workspace is destroyed after a 72-hour data grace period. BYOC is a one-time purchase — no subscription to cancel, and the droplet stays in your account.",
               },
               {
-                q: "Can I run multiple agents in parallel?",
-                a: "Yes. The default 2 vCPU / 4 GB droplet handles 2–4 parallel Claude Code sessions comfortably. For heavier workloads, choose a larger size during setup (4 vCPU / 8 GB available). Claude Max plan rate limits apply regardless of hardware.",
+                q: "Where is my code?",
+                a: "On your workspace VPS. With Hosted, that's a VPS we provision on our account but dedicate entirely to you. With BYOC, it's in your own DigitalOcean account. We never see or store your code.",
+              },
+              {
+                q: "Where are my Claude conversations?",
+                a: "In your Claude chat history, with Anthropic. Concerto only receives tool calls — it never sees the conversation itself.",
+              },
+              {
+                q: "What can Claude Code do via Concerto that it can't do otherwise?",
+                a: "Run multi-hour tasks without you watching, work on real repos with real git history, deploy to staging, run actual test suites, and run 3–5 sessions in parallel. Claude Code's built-in sandbox can't do any of this.",
+              },
+              {
+                q: "How fast is '5 minutes setup'?",
+                a: "About 3 minutes for provisioning to complete, then about 2 minutes to copy-paste the connector config into claude.ai. Total: typically 5 minutes.",
+              },
+              {
+                q: "What is the refund policy?",
+                a: "14-day full refund if provisioning fails on our end. After successful provisioning, no refund — you've used the service (Hosted) or own the setup (BYOC).",
+              },
+              {
+                q: "Who built this?",
+                a: "Solo operator. No funding, no VCs, no telemetry beyond what's needed to provision your workspace. View the project on GitHub.",
               },
             ].map(({ q, a }) => (
               <AccordionItem key={q} value={q} className="border-white/[0.07]">
@@ -506,10 +534,10 @@ export default function LandingPage() {
 
             <div className="relative">
               <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
-                Ready to run agents without a terminal?
+                Stop juggling tools. Let Claude do it.
               </h2>
               <p className="mx-auto mb-8 max-w-md text-white/40">
-                Get set up in under 10 minutes. Your first agent runs before you finish your coffee.
+                Setup takes 5 minutes. You&apos;ll wonder why you didn&apos;t do this sooner.
               </p>
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <form action="/api/checkout?plan=hosted" method="POST">
@@ -518,7 +546,7 @@ export default function LandingPage() {
                     size="lg"
                     className="h-12 rounded-xl bg-violet-600 px-10 text-base font-semibold text-white hover:bg-violet-500"
                   >
-                    Get Hosted — $39/mo
+                    Start with Hosted ($39/mo)
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
@@ -529,7 +557,7 @@ export default function LandingPage() {
                     variant="outline"
                     className="h-12 rounded-xl border-white/20 bg-transparent px-10 text-base font-semibold text-white hover:bg-white/10"
                   >
-                    BYOC — $99 once
+                    Use my own cloud ($99 once)
                   </Button>
                 </form>
               </div>
@@ -550,7 +578,7 @@ export default function LandingPage() {
               </svg>
               <span className="text-sm font-medium text-white/40">Concerto</span>
             </div>
-            <p className="text-sm text-white/20">© {new Date().getFullYear()} Concerto. All rights reserved.</p>
+            <p className="text-sm text-white/20">&copy; {new Date().getFullYear()} Concerto. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
               {[
                 { href: "/legal/terms",   label: "Terms" },
@@ -568,6 +596,7 @@ export default function LandingPage() {
               </a>
             </div>
           </div>
+          <p className="mt-6 text-center text-xs text-white/15">Built by an operator in Almaty.</p>
         </div>
       </footer>
 
@@ -578,7 +607,7 @@ export default function LandingPage() {
             type="submit"
             className="h-12 w-full rounded-xl bg-violet-600 text-base font-semibold text-white hover:bg-violet-500"
           >
-            Get Hosted — $39/mo
+            Start in 5 minutes — $39/mo
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </form>
