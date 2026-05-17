@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Concerto</title>
+  <style>
+    body { margin:0;padding:0;background:#0d0d0d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#e8e8e8; }
+    .wrapper { max-width:560px;margin:40px auto;padding:0 20px; }
+    .logo { font-size:18px;font-weight:700;letter-spacing:.05em;color:#fff;margin-bottom:32px; }
+    .card { background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:32px; }
+    .badge { display:inline-block;background:rgba(34,197,94,.12);color:#4ade80;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:20px;margin-bottom:20px; }
+    h1 { font-size:22px;font-weight:600;color:#fff;margin:0 0 12px; }
+    p { font-size:15px;line-height:1.6;color:#c0c0c0;margin:0 0 16px; }
+    .steps { background:#1a1a1a;border-radius:6px;padding:16px 20px;margin:20px 0;font-size:14px;color:#aaa;line-height:2; }
+    .steps span { color:#fff;font-weight:600; }
+    .cta { display:inline-block;background:#ffffff;color:#0d0d0d;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:6px;margin-top:8px; }
+    .footer { font-size:12px;color:#444;margin-top:32px;text-align:center; }
+    .footer a { color:#666;text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="logo">Concerto</div>
+    <div class="card">
+      <div class="badge">Welcome aboard</div>
+      <h1>You're now on {{plan_name}}.</h1>
+      <p>
+        Your payment is confirmed. We're spinning up your dedicated workspace now —
+        it'll be ready in about 3 minutes.
+      </p>
+      <div class="steps">
+        <span>1.</span> Open your dashboard when provisioning completes<br>
+        <span>2.</span> Copy the connector config into claude.ai → Settings → Connectors<br>
+        <span>3.</span> Start any conversation — Claude Code is live on your workspace
+      </div>
+      <a href="{{setup_url}}" class="cta">Open Dashboard →</a>
+      <p style="margin-top:20px;font-size:13px;color:#666;">
+        You tried it for free and decided it was worth it — that's the whole idea.
+        Welcome to the full experience.
+      </p>
+    </div>
+    <div class="footer">
+      <p>Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="https://discord.gg/concerto">Discord</a></p>
+    </div>
+  </div>
+</body>
+</html>

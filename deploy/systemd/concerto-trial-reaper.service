@@ -1,0 +1,11 @@
+[Unit]
+Description=Concerto trial reaper — destroy expired 30-min trial droplets
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/concerto/backend/.venv/bin/python -m concerto.trial_reaper
+EnvironmentFile=-/etc/cortex/env
+Environment="CONCERTO_DB_PATH=/var/lib/concerto/concerto.db"
+StandardOutput=journal
+StandardError=journal

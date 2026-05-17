@@ -35,6 +35,10 @@ async def buyer_status(token: str):
         resp["subscription_status"] = buyer.get("subscription_status")
         resp["next_renewal_at"] = buyer.get("next_renewal_at")
 
+    # Trial-only fields
+    if buyer.get("plan") == "trial":
+        resp["expires_at"] = buyer.get("expires_at")
+
     # Extra fields for error UX
     if buyer.get("failure_reason"):
         resp["failure_reason"] = buyer["failure_reason"]

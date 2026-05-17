@@ -9,6 +9,7 @@ import {
   CalendarClock, AlertTriangle, Loader2,
   CreditCard, Ban, RefreshCw, RotateCcw,
 } from "lucide-react"
+import { TrialCountdownBanner } from "@/components/TrialCountdownBanner"
 
 /* ─── Copy field ──────────────────────────────────────────────── */
 
@@ -250,6 +251,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
     next_renewal_at?: number
     refund_eligible?: boolean
     refund_window_open?: boolean
+    expires_at?: number
   } | null>(null)
   const [cancelling, setCancelling]     = useState(false)
   const [cancelDone, setCancelDone]     = useState(false)
@@ -272,6 +274,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
         next_renewal_at: d.next_renewal_at,
         refund_eligible: d.refund_eligible,
         refund_window_open: d.refund_window_open,
+        expires_at: d.expires_at,
       }))
       .catch(() => {})
   }, [backendUrl, params.token])
@@ -279,6 +282,7 @@ export default function DashboardPage({ params }: { params: { token: string } })
   const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
   const bearerToken = dashData?.bearer_token ?? "Loading..."
   const isHosted    = dashData?.plan === "hosted"
+  const isTrial     = dashData?.plan === "trial"
   const status      = dashData?.status ?? "active"
   const vpsIp       = dashData?.vps_ip ?? ""
 
@@ -341,6 +345,9 @@ export default function DashboardPage({ params }: { params: { token: string } })
       <main className="mx-auto max-w-5xl space-y-4 px-6 py-8">
 
         {/* Status banners */}
+        {isTrial && dashData?.expires_at && (
+          <TrialCountdownBanner token={params.token} expiresAt={dashData.expires_at} />
+        )}
         {isPastDue   && <PastDueBanner />}
         {isSuspended && <SuspendedBanner />}
         {isRefunded  && <RefundedBanner />}
