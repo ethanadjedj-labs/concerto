@@ -18,6 +18,18 @@ _CLOUD_INIT_TEMPLATE = os.path.join(
 )
 _CONCERTO_API_BASE = os.getenv("CONCERTO_API_BASE", "https://api.concerto.run")
 
+# Hosted plan → DigitalOcean droplet size mapping
+PLAN_TO_SIZE: dict[str, str] = {
+    "solo": "s-2vcpu-4gb",
+    "pro":  "s-2vcpu-8gb",
+}
+
+# Hosted plan → DigitalOcean droplet size mapping
+PLAN_TO_SIZE: dict[str, str] = {
+    "solo": "s-2vcpu-4gb",
+    "pro":  "s-2vcpu-8gb",
+}
+
 # Region fallback order: if chosen region is unavailable (422), try these.
 _REGION_FALLBACK: dict[str, list[str]] = {
     "nyc1": ["nyc3", "sfo3"],
@@ -159,13 +171,14 @@ async def provision_droplet(
     size: str,
     token: str,
     customer_email: str = "",
-    mode: Literal["byoc", "hosted", "trial"] = "byoc",
+    mode: Literal["byoc", "hosted", "solo", "pro"] = "byoc",
 ) -> tuple[str, str, str, str]:
     """Returns (droplet_id, ipv4, ssh_private_key_path, ttyd_password).
 
-    mode='hosted': Ethan's DO account, s-2vcpu-4gb, tagged concerto-hosted-<prefix>,
-                   registered in concerto_hosted_pool.
-    mode='byoc':   customer's DO key, customer-chosen size, tagged concerto.
+    mode='solo': Ethan's DO account, s-2vcpu-4gb, tagged concerto-solo-<prefix>.
+    mode='pro':  Ethan's DO account, s-2vcpu-8gb, tagged concerto-pro-<prefix>.
+    mode='hosted': Legacy alias for 'solo' (grandfathered).
+    mode='byoc':   customer's DO key, customer-chosen size, tagged concerto-byoc-<prefix>.
 
     Raises:
         DOAuthError: DO API token is invalid (401).
@@ -173,6 +186,10 @@ async def provision_droplet(
         DropletBootError: Droplet entered error state during boot.
         TimeoutError: Droplet did not become active within 5 minutes.
     """
+    # Normalise legacy 'hosted' → 'solo'
+    if mode == "hosted":
+        mode = "solo"
+
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
 
@@ -188,12 +205,13 @@ async def provision_droplet(
         ttyd_password=ttyd_password,
     )
 
-    if mode == "trial":
-        tag = f"concerto-trial-{token[:8]}"
-    elif mode == "hosted":
-        tag = f"concerto-hosted-{token[:8]}"
-    else:
-        tag = "concerto"
+    is_hosted = mode in ("solo", "pro")
+    tag = f"concerto-{mode}-{token[:8]}" if is_hosted else f"concerto-byoc-{token[:8]}"
+
+    # For hosted plans use our DO token; size comes from PLAN_TO_SIZE
+    if is_hosted:
+        size = PLAN_TO_SIZE.get(mode, "s-2vcpu-4gb")
+
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(
@@ -204,7 +222,7 @@ async def provision_droplet(
         )
 
         # Register hosted droplets immediately in the pool
-        if mode == "hosted":
+        if is_hosted:
             await db.upsert_hosted_pool(
                 droplet_id=droplet_id,
                 buyer_token=token,
@@ -227,7 +245,7 @@ async def provision_droplet(
                 for net in d.get("networks", {}).get("v4", []):
                     if net["type"] == "public":
                         ipv4 = net["ip_address"]
-                        if mode == "hosted":
+                        if is_hosted:
                             await db.upsert_hosted_pool(
                                 droplet_id=droplet_id,
                                 buyer_token=token,

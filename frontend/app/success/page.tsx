@@ -64,7 +64,7 @@ export default function SuccessPage() {
               <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
                 support@concerto.run
               </a>{" "}
-              or join Discord (link in your email).
+              Questions? Email support@concerto.run — a human replies within 24 hours.
             </div>
 
             <Button

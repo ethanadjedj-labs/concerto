@@ -2,7 +2,7 @@
 
 > **Audience**: Ethan only. Every command is copy-paste ready. Every decision tree ends in a concrete action.
 > **Last updated**: 2026-05-17
-> **Related docs**: `MANAGER_STATE.md` (strategic state), `SUPPORT_SETUP.md` (Discord/email infra), `CUSTOM_STYLE.md` (operator kit)
+> **Related docs**: `MANAGER_STATE.md` (strategic state), `SUPPORT_SETUP.md` (email support infra), `CUSTOM_STYLE.md` (operator kit)
 
 ---
 
@@ -93,8 +93,6 @@ systemctl restart <unit>
 
 ### Communications infrastructure
 
-- [ ] Discord server live at permanent invite link — test join from incognito
-- [ ] `NEXT_PUBLIC_DISCORD_INVITE_URL` set in Vercel env vars
 - [ ] Send email to `support@concerto.run`, verify receipt in mailbox (Migadu)
 - [ ] Status page green: visit `https://status.concerto.run` — all indicators green
 
@@ -186,7 +184,7 @@ sqlite3 /var/lib/concerto/concerto.db \
 
 ### 1:00 — Welcome nudge
 
-If customer hasn't joined Discord: send a manual welcome DM via the email they used at purchase. See template "Welcome, you're in!" in section 8.
+Send a follow-up email to the address they used at purchase. See template "Welcome, you're in!" in section 8.
 
 ---
 
@@ -318,7 +316,7 @@ curl http://127.0.0.1:8090/api/buyer/<token>/oauth-status
 **This is a UX friction issue, not a backend failure.**
 
 **Remediate**:
-1. Invite customer to Discord — offer a 10 min screenshare
+1. Offer a 10 min screenshare — email support@concerto.run to schedule
 2. Walk through: claude.ai → Settings → Integrations → Add MCP Server → paste URL + token
 3. Common mistakes: trailing space in token, wrong URL field, missing `https://`
 4. If claude.ai UI has changed, consult latest claude.ai documentation
@@ -364,7 +362,7 @@ Was provisioning successful?
     NO → Day count?
       < 3 days → Full refund (good faith)
       3–7 days → 50% refund or escalate
-      > 7 days → Decline, offer Discord support
+      > 7 days → Decline, offer email support (support@concerto.run)
     YES → Service was used → Decline
        → Exception: documented technical failure → Full refund
 ```
@@ -435,9 +433,9 @@ Any row stuck in `provisioning` for >30 min needs manual investigation (see sect
 - Stripe Dashboard → Payments → filter by "Failed"
 - Also check: Radar → Reviews for any flagged payments
 
-### 4.3 Check Discord
+### 4.3 Check support email
 
-Open Discord server → scan `#support` and `#general` for unanswered messages. SLA target: reply within 4h during waking hours.
+Open support@concerto.run inbox — reply to all unanswered messages. SLA target: reply within 24 hours.
 
 ### 4.4 Check status page
 
@@ -485,7 +483,7 @@ Flag if refund count >2/week or churn rate >10%.
 
 ### 5.5 Customer feedback synthesis
 
-- Read all Discord `#feedback` messages from the past week
+- Read all support email replies from the past week
 - Reply to at least one active customer with a personal email acknowledging their usage
 - Document any feature request patterns in `MANAGER_STATE.md`
 
@@ -497,7 +495,7 @@ Flag if refund count >2/week or churn rate >10%.
 |--------|-----------|--------|
 | Hosted droplets (concurrent) | 10+ | Create dedicated DO subaccount; separate billing from personal projects |
 | Daily MCP relay requests | 25+ | Profile concerto-backend with `py-spy`; increase worker count in systemd unit `LimitNOFILE` |
-| Total customers | 50+ | Hire VA for first-line Discord support; automate Discord moderation with Carl-bot auto-mod |
+| Total customers | 50+ | Hire VA for first-line email support |
 | Total customers | 100+ | Move SQLite → PostgreSQL on dedicated VPS; split empire into API + DB nodes |
 | Empire CPU sustained >70% | — | Upgrade Hetzner VPS tier (CX21 → CX31, ~€2 more/month) |
 | Status page outage >30 min | 3rd occurrence | Set up uptime monitoring with PagerDuty or BetterStack alert to phone |
@@ -563,7 +561,7 @@ Flag if refund count >2/week or churn rate >10%.
 > 2. Paste the MCP connector URL + token into claude.ai → Settings → Integrations
 > 3. Try your first prompt — your fleet of agents is standing by
 >
-> If you hit any snag, join our Discord: [DISCORD_INVITE_URL] — I'm usually there within a few hours.
+> If you hit any snag, email support@concerto.run — a human replies within 24 hours.
 >
 > Welcome aboard,
 > Ethan
@@ -612,7 +610,7 @@ Flag if refund count >2/week or churn rate >10%.
 >
 > Got your message — I'm looking into it now. Typical turnaround is under 4 hours for anything infra-related.
 >
-> I'll follow up as soon as I have more info. If it's urgent, ping me on Discord: [DISCORD_INVITE_URL]
+> I'll follow up as soon as I have more info. If it's urgent, email support@concerto.run.
 >
 > Ethan
 

@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { MessageCircle, X, ExternalLink, Mail, BookOpen, Wifi, WifiOff, Zap } from "lucide-react"
+import { MessageCircle, X, ExternalLink, Mail, BookOpen, WifiOff, Zap } from "lucide-react"
 
-const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "https://discord.gg/concerto"
 const SUPPORT_EMAIL = "support@concerto.run"
 const FAQ_URL = "/help"
 
@@ -36,7 +35,6 @@ export function SupportWidget() {
     return () => mq.removeEventListener("change", handler)
   }, [])
 
-  // Close on outside click (desktop only)
   useEffect(() => {
     if (!open || isMobile) return
     function handle(e: MouseEvent) {
@@ -48,7 +46,6 @@ export function SupportWidget() {
     return () => document.removeEventListener("mousedown", handle)
   }, [open, isMobile])
 
-  // Lock body scroll on mobile sheet
   useEffect(() => {
     if (isMobile) {
       document.body.style.overflow = open ? "hidden" : ""
@@ -58,7 +55,6 @@ export function SupportWidget() {
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isMobile && open && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -66,7 +62,6 @@ export function SupportWidget() {
         />
       )}
 
-      {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close support" : "Open support"}
@@ -79,7 +74,6 @@ export function SupportWidget() {
         )}
       </button>
 
-      {/* Panel — desktop: floating card; mobile: bottom sheet */}
       {open && (
         <div
           ref={panelRef}
@@ -91,7 +85,6 @@ export function SupportWidget() {
               : "fixed bottom-20 right-5 z-50 w-80 rounded-2xl border border-white/10 bg-[#0d0d14] p-5 shadow-2xl"
           }
         >
-          {/* Handle bar (mobile only) */}
           {isMobile && (
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
           )}
@@ -101,38 +94,32 @@ export function SupportWidget() {
             <span className="text-sm font-semibold text-white">Concerto Support</span>
           </div>
 
-          {/* Quick links */}
-          <div className="mb-5 grid grid-cols-3 gap-2">
-            <a
-              href={DISCORD_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] p-3 text-center text-xs text-white/70 transition-colors hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white"
-            >
-              <Wifi className="h-5 w-5 text-violet-400" />
-              Discord
-            </a>
+          {/* Quick links — email only */}
+          <div className="mb-5 grid grid-cols-2 gap-2">
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
               className="flex flex-col items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] p-3 text-center text-xs text-white/70 transition-colors hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white"
             >
               <Mail className="h-5 w-5 text-violet-400" />
-              Email
+              Email support
             </a>
             <a
               href={FAQ_URL}
               className="flex flex-col items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] p-3 text-center text-xs text-white/70 transition-colors hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-white"
             >
               <BookOpen className="h-5 w-5 text-violet-400" />
-              Help
+              Help center
             </a>
           </div>
 
-          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30">
+          <p className="mb-1 text-[11px] text-white/35 leading-relaxed">
+            Human reply within 24 hours · support@concerto.run
+          </p>
+
+          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/30 mt-3">
             Common issues
           </p>
 
-          {/* Accordion quick issues */}
           <div className="space-y-2">
             {QUICK_ISSUES.map((item, i) => (
               <div

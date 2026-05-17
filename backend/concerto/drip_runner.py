@@ -20,7 +20,6 @@ from pathlib import Path
 DB_PATH = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", "Concerto <noreply@concerto.run>")
-DISCORD_URL = os.getenv("DISCORD_INVITE_URL", "https://discord.gg/concerto")
 FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 DRIP_SCHEDULE = [
@@ -54,7 +53,6 @@ def _load_template(name: str, buyer: dict) -> str | None:
         "{{setup_url}}": setup_url,
         "{{dashboard_url}}": dashboard_url,
         "{{portal_url}}": portal_url,
-        "{{discord_url}}": DISCORD_URL,
         "{{survey_url}}": survey_url,
         "{{renewal_date}}": renewal_date,
         "{{email}}": email,

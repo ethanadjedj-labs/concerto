@@ -56,8 +56,6 @@ const ERROR_STATES: ProvisionStatus[] = [
   "api_key_invalid", "account_no_credit", "failed_install", "error",
 ]
 
-/* ─── Bilingual error cards ─────────────────────────────────────── */
-
 interface ErrorCardDef {
   title: string
   titleFr: string
@@ -176,9 +174,11 @@ function ErrorCard({
   )
 }
 
+type PlanType = "solo" | "pro" | "byoc" | null
+
 export default function SetupPage({ params }: { params: { token: string } }) {
   const router = useRouter()
-  const [plan, setPlan]           = useState<"hosted" | "byoc" | null>(null)
+  const [plan, setPlan]           = useState<PlanType>(null)
   const [doKey, setDoKey]         = useState("")
   const [doKeyErr, setDoKeyErr]   = useState("")
   const [showKey, setShowKey]     = useState(false)
@@ -189,21 +189,31 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   const [retrying, setRetrying]   = useState(false)
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
+  const isHosted = plan === "solo" || plan === "pro"
 
   useEffect(() => {
     fetch(`${backendUrl}/api/buyer/${params.token}/status`)
       .then((r) => r.json())
-      .then((d) => setPlan(d.plan === "hosted" ? "hosted" : "byoc"))
+      .then((d) => {
+        const p = d.plan as string
+        if (p === "solo" || p === "pro" || p === "byoc") {
+          setPlan(p)
+        } else if (p === "hosted") {
+          setPlan("solo") // legacy grandfathered
+        } else {
+          setPlan("byoc")
+        }
+      })
       .catch(() => setPlan("byoc"))
   }, [backendUrl, params.token])
 
   const validateKey = useCallback((val: string): string => {
-    if (plan === "hosted") return ""
+    if (isHosted) return ""
     if (!val.trim()) return "API key is required."
     if (!DO_TOKEN_RE.test(val.trim()))
       return "Invalid format — DigitalOcean tokens start with dop_v1_ followed by 64 hex characters."
     return ""
-  }, [plan])
+  }, [isHosted])
 
   function pollStatus(token: string) {
     let attempts = 0
@@ -244,7 +254,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
     try {
       // Pre-flight: validate DO key before provisioning (BYOC only)
-      if (plan === "byoc") {
+      if (!isHosted) {
         const pf = await fetch(`${backendUrl}/api/preflight-do-key`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -264,7 +274,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          plan === "hosted"
+          isHosted
             ? { token: params.token, region }
             : { token: params.token, do_api_key: doKey.trim(), region, size }
         ),
@@ -288,6 +298,14 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   const errorDef         = ERROR_CARD_DEFS[status]
   const showForm         = !isProvisioning || retrying
 
+  const hostedSpec = plan === "pro"
+    ? "Includes an 8 GB / 2-vCPU droplet — handles up to 6–8 parallel sessions."
+    : "Includes a 4 GB / 2-vCPU droplet — handles up to 2 parallel sessions."
+
+  const setupSubtitle = isHosted
+    ? `Pick a region — we'll provision your ${plan === "pro" ? "8 GB / 2-vCPU" : "4 GB / 2-vCPU"} droplet automatically.`
+    : "Enter your DigitalOcean API key to provision your dedicated droplet."
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b] px-6 py-16 text-white">
       <div className="w-full max-w-[440px]">
@@ -300,11 +318,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             <circle cx="11" cy="11" r="2" fill="white" />
           </svg>
           <h1 className="mt-3 text-2xl font-bold tracking-tight">Set up your Concerto</h1>
-          <p className="text-sm text-white/40">
-            {plan === "hosted"
-              ? "Pick a region — we'll provision your 4 GB / 2-vCPU droplet automatically."
-              : "Enter your DigitalOcean API key to provision your dedicated droplet."}
-          </p>
+          <p className="text-sm text-white/40">{setupSubtitle}</p>
         </div>
 
         {/* Bilingual error card */}
@@ -323,18 +337,17 @@ export default function SetupPage({ params }: { params: { token: string } }) {
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
                 {/* Hosted: info banner */}
-                {plan === "hosted" && (
+                {isHosted && (
                   <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
                     <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
                     <p className="text-[13px] text-violet-300">
-                      Includes a 4 GB / 2-vCPU droplet — handles 3–5 parallel agents.
-                      No DigitalOcean account required.
+                      {hostedSpec} No DigitalOcean account required.
                     </p>
                   </div>
                 )}
 
                 {/* BYOC: DO API Key */}
-                {plan !== "hosted" && (
+                {!isHosted && (
                   <div className="space-y-2">
                     <Label htmlFor="do-key" className="text-[13px] font-medium text-white/60">
                       DigitalOcean API Key
@@ -410,7 +423,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                 </div>
 
                 {/* Size picker — BYOC only */}
-                {plan !== "hosted" && (
+                {!isHosted && (
                   <div className="space-y-2">
                     <Label className="text-[13px] font-medium text-white/60">VPS Size</Label>
                     <div className="grid grid-cols-3 gap-2">

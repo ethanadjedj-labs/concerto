@@ -21,10 +21,11 @@ _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 
-_HOSTED_REGION = "nyc1"
-_HOSTED_SIZE = "s-2vcpu-4gb"
 _CANCEL_GRACE_SECONDS = 72 * 3600
 _PAST_DUE_SUSPEND_DAYS = 7
+
+# Plans that Concerto hosts (subscription-based)
+_HOSTED_PLANS = {"solo", "pro"}
 
 stripe.api_key = _STRIPE_SECRET
 
@@ -52,15 +53,16 @@ def _mark_processed(event_id: str, event_type: str) -> bool:
 
 async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
     setup_url = f"{_SETUP_BASE}/{token}"
-    if plan == "hosted":
-        subject = "Welcome to Concerto Hosted — provision your workspace"
+    if plan in _HOSTED_PLANS:
+        ram = "8GB" if plan == "pro" else "4GB"
+        subject = f"Welcome to Concerto {plan.capitalize()} — provision your workspace"
         body_extra = (
-            "<p>Good news: you don't need a DigitalOcean account — "
-            "we host the VPS for you. Just click below to pick a region "
-            "and provision your Concerto in seconds.</p>"
+            f"<p>Good news: you don't need a DigitalOcean account — "
+            f"we host the VPS for you ({ram} / 2-vCPU droplet). Just click below to pick a region "
+            f"and provision your Concerto workspace in seconds.</p>"
         )
     else:
-        subject = "Welcome to Concerto — provision your remote workspace"
+        subject = "Welcome to Concerto BYOC — provision your remote workspace"
         body_extra = (
             "<p>Click the link below to connect your DigitalOcean account "
             "and provision your remote Claude Code workspace.</p>"
@@ -75,6 +77,7 @@ async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
             f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
             f"Set up my Concerto</a></p>"
             "<p>This link is unique to your account — keep it safe.</p>"
+            "<p>Questions? Reply to this email — a human will respond within 24 hours.</p>"
         ),
     )
 
@@ -91,6 +94,7 @@ async def _send_payment_failed_email(to_email: str, day: int) -> None:
             f"to avoid suspension.</p>"
             f"<p>If payment is not resolved within 7 days, "
             f"your workspace will be suspended (not deleted — just paused).</p>"
+            f"<p>Questions? Email support@concerto.run — a human will reply within 24 hours.</p>"
         ),
     )
 
@@ -105,6 +109,7 @@ async def _send_suspended_email(to_email: str) -> None:
             "<p>Your data is safe. Update your payment method at "
             '<a href="https://billing.stripe.com">billing.stripe.com</a> '
             "to resume instantly.</p>"
+            "<p>Questions? Email support@concerto.run</p>"
         ),
     )
 
@@ -233,16 +238,19 @@ async def _handle_payment_failed(obj: dict) -> None:
 # ─── Hosted provisioning helper ────────────────────────────────────────────────
 
 
-async def _provision_hosted_async(token: str, region: str, customer_email: str) -> None:
+async def _provision_hosted_async(token: str, region: str, customer_email: str, plan: str = "solo") -> None:
+    """Provision a managed droplet for solo or pro plan."""
     if not _CONCERTO_DO_API_TOKEN:
         await db.update_buyer(token, status="pending_operator_do_token")
         return
+    # Determine droplet size from plan
+    size = provisioner.PLAN_TO_SIZE.get(plan, "s-2vcpu-4gb")
     try:
         droplet_id, vps_ip, ssh_key_path, ttyd_password = await provisioner.provision_droplet(
-            mode="hosted",
+            mode=plan,
             do_api_key=_CONCERTO_DO_API_TOKEN,
             region=region,
-            size=_HOSTED_SIZE,
+            size=size,
             token=token,
             customer_email=customer_email,
         )

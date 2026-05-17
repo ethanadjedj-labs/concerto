@@ -21,6 +21,7 @@ import {
   ArrowRight,
   GitBranch,
   MessageSquare,
+  Star,
 } from "lucide-react"
 
 /* ─── Logo mark — works on cream background ──────────────────── */
@@ -105,7 +106,7 @@ export default function LandingPage() {
             <Link href="#faq" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               FAQ
             </Link>
-            <form action="/api/checkout?plan=hosted" method="POST">
+            <form action="/api/checkout?plan=solo" method="POST">
               <Button
                 size="sm"
                 className="h-8 rounded-[6px] bg-[#cc785c] px-4 text-xs font-medium text-[#faf9f5] hover:bg-[#b86747]"
@@ -155,19 +156,19 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <form action="/api/checkout?plan=hosted" method="POST">
+                <form action="/api/checkout?plan=solo" method="POST">
                   <Button
                     size="lg"
                     className="h-12 rounded-[6px] bg-[#cc785c] px-8 text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
                   >
-                    Start in 5 minutes — $39/month
+                    Start with Solo — $49/month
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
                 <p className="text-sm text-[#8a847b]">
                   Or{" "}
                   <a href="#pricing" className="text-[#555049] underline underline-offset-2 hover:text-[#191919]">
-                    use your own cloud — $99 once
+                    use your own cloud — $129 once
                   </a>
                 </p>
               </div>
@@ -235,8 +236,8 @@ export default function LandingPage() {
             {[
               {
                 n: "01",
-                title: "Pay $39/month",
-                desc: "We spin up your remote workspace. Provisioning takes about 3 minutes. You get an email when it is ready.",
+                title: "Pick a plan",
+                desc: "Solo ($49/mo) or Pro ($99/mo) — we spin up your workspace. BYOC ($129 once) if you have DigitalOcean. Provisioning takes about 3 minutes.",
               },
               {
                 n: "02",
@@ -329,103 +330,119 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
-              Two ways to start.
+              Pick your plan.
             </h2>
             <p className="text-[#8a847b]">
-              Don&apos;t have a cloud account? Pick Hosted. We handle everything.
+              Not sure? Most users start with Solo and upgrade to Pro when they hit the session limit.
             </p>
           </div>
 
-          <div className="reveal mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="reveal mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
 
-            {/* Hosted — featured with peach border */}
-            <div className="relative overflow-hidden rounded-xl border border-[rgba(204,120,92,0.45)] bg-white p-8 shadow-[0_2px_12px_rgba(204,120,92,0.08)]">
-              <div className="relative">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-medium text-[#191919]">Hosted</span>
-                  <span className="rounded bg-[rgba(204,120,92,0.10)] px-2.5 py-1 text-xs font-medium text-[#cc785c]">
-                    Most popular
-                  </span>
-                </div>
-                <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
-                <div className="mt-5 flex items-baseline gap-2">
-                  <span className="font-display text-6xl font-[400] tracking-tight text-[#191919]">$39</span>
-                  <span className="text-sm text-[#8a847b]">/month</span>
-                </div>
-                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-                <ul className="space-y-3.5">
-                  {[
-                    "Zero setup. We provision the VPS.",
-                    "3–5 parallel Claude Code sessions",
-                    "30-day email + Discord support",
-                    "Cancel anytime",
-                  ].map((feature) => (
-                    <CheckItem key={feature}>{feature}</CheckItem>
-                  ))}
-                </ul>
-                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-                <form action="/api/checkout?plan=hosted" method="POST">
-                  <Button
-                    type="submit"
-                    className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
-                  >
-                    Start with Hosted
-                  </Button>
-                </form>
-                <p className="mt-3 text-center text-xs text-[#8a847b]">
-                  Secure payment via Stripe · Cancel anytime
-                </p>
+                        {/* Solo */}
+            <div className="relative overflow-hidden rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
+              <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
+                <span className="text-sm text-[#8a847b]">/month</span>
+              </div>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <ul className="space-y-3.5">
+                {[
+                  "We provision the 4GB droplet",
+                  "Up to 2 parallel sessions",
+                  "30-day email support",
+                  "Cancel anytime",
+                ].map((feature) => (
+                  <CheckItem key={feature}>{feature}</CheckItem>
+                ))}
+              </ul>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <form action="/api/checkout?plan=solo" method="POST">
+                <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
+                  Start with Solo
+                </Button>
+              </form>
+              <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
+            </div>
+
+            {/* Pro — FEATURED */}
+            <div className="relative overflow-hidden rounded-xl border border-[rgba(204,120,92,0.45)] bg-white p-8 shadow-[0_2px_12px_rgba(204,120,92,0.08)] md:-mt-3 md:mb-[-12px]">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-lg font-medium text-[#191919]">Pro</span>
+                <span className="flex items-center gap-1 rounded bg-[rgba(204,120,92,0.10)] px-2.5 py-1 text-xs font-medium text-[#cc785c]">
+                  <Star className="h-3 w-3 fill-current" /> Most popular
+                </span>
+              </div>
+              <p className="mb-1 text-sm text-[#8a847b]">We host the workspace</p>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
+                <span className="text-sm text-[#8a847b]">/month</span>
+              </div>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <ul className="space-y-3.5">
+                {[
+                  "We provision the 8GB droplet",
+                  "Up to 6–8 parallel sessions",
+                  "30-day email support",
+                  "Cancel anytime",
+                ].map((feature) => (
+                  <CheckItem key={feature}>{feature}</CheckItem>
+                ))}
+              </ul>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <form action="/api/checkout?plan=pro" method="POST">
+                <Button type="submit" className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]">
+                  Start with Pro
+                </Button>
+              </form>
+              <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
             </div>
 
             {/* BYOC */}
             <div className="relative overflow-hidden rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-8 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
-              <div className="relative">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-lg font-medium text-[#191919]">BYOC</span>
-                  <span className="rounded bg-[rgba(25,25,25,0.05)] px-2.5 py-1 text-xs font-medium text-[#8a847b]">
-                    One-time
-                  </span>
-                </div>
-                <p className="mb-1 text-sm text-[#8a847b]">Bring your DigitalOcean account</p>
-                <div className="mt-5 flex items-baseline gap-2">
-                  <span className="font-display text-6xl font-[400] tracking-tight text-[#191919]">$99</span>
-                  <span className="text-sm text-[#8a847b]">once</span>
-                </div>
-                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-                <ul className="space-y-3.5">
-                  {[
-                    "Workspace lives in your DigitalOcean account",
-                    "You pay DigitalOcean directly (~$24/month)",
-                    "Full control over the VPS",
-                    "30-day email + Discord support",
-                  ].map((feature) => (
-                    <CheckItem key={feature}>{feature}</CheckItem>
-                  ))}
-                </ul>
-                <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
-                <form action="/api/checkout?plan=byoc" method="POST">
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]"
-                  >
-                    Start with BYOC
-                  </Button>
-                </form>
-                <p className="mt-3 text-center text-xs text-[#8a847b]">
-                  Secure payment via Stripe · 30-day refund policy
-                </p>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-lg font-medium text-[#191919]">BYOC</span>
+                <span className="rounded bg-[rgba(25,25,25,0.05)] px-2.5 py-1 text-xs font-medium text-[#8a847b]">One-time</span>
               </div>
+              <p className="mb-1 text-sm text-[#8a847b]">Bring your DigitalOcean account</p>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$129</span>
+                <span className="text-sm text-[#8a847b]">once</span>
+              </div>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <ul className="space-y-3.5">
+                {[
+                  "Your DigitalOcean account",
+                  "As many sessions as your droplet handles",
+                  "30-day email support",
+                  "One-time, no subscription",
+                ].map((feature) => (
+                  <CheckItem key={feature}>{feature}</CheckItem>
+                ))}
+              </ul>
+              <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
+              <form action="/api/checkout?plan=byoc" method="POST">
+                <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
+                  Start with BYOC
+                </Button>
+              </form>
+              <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · 30-day refund policy</p>
             </div>
 
           </div>
 
-          <div className="reveal mx-auto mt-8 max-w-xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4">
+          <div className="reveal mx-auto mt-8 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4">
             <p className="text-sm leading-relaxed text-[#8a847b]">
-              Not sure which?{" "}
-              <span className="text-[#555049]">&rarr; Pick Hosted.</span>{" "}
-              You can always switch later.
+              Not sure which? <span className="text-[#555049]">Most users start with Solo.</span> Upgrade to Pro for more parallel sessions. BYOC if you already have DigitalOcean.
+            </p>
+          </div>
+          <div className="reveal mx-auto mt-4 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4 text-center">
+            <p className="text-sm text-[#8a847b]">
+              Real human email support in every plan. <span className="text-[#555049]">No community forums.</span> Write to support@concerto.run — reply within 24 hours.
             </p>
           </div>
 
@@ -455,20 +472,24 @@ export default function LandingPage() {
                 a: "Yes. Concerto uses your Anthropic subscription via the MCP connector. Pro ($20/mo) or Max ($200/mo) both work. You keep paying Anthropic directly — Concerto is a separate charge.",
               },
               {
-                q: "What if I don't have a cloud account?",
-                a: "Pick Hosted. We handle the VPS — no DigitalOcean signup needed. You pay $39/month and we provision, manage, and monitor the workspace for you.",
+                q: "Which plan should I pick?",
+                a: "Most users start with Solo ($49/mo). If you often run 3+ parallel sessions, upgrade to Pro ($99/mo). Choose BYOC ($129 once) if you already have DigitalOcean.",
+              },
+              {
+                q: "Can I upgrade from Solo to Pro?",
+                a: "Yes. Email support@concerto.run and we'll migrate your droplet to 8GB — no downtime, prorated billing.",
               },
               {
                 q: "What if I already use DigitalOcean?",
-                a: "Pick BYOC. You bring your DO account, we set up the workspace on a droplet in it, and you pay DigitalOcean directly (~$24/month). One-time $99 setup fee to Concerto.",
+                a: "Pick BYOC. You bring your DO account, we set up the workspace on a droplet in it, and you pay DigitalOcean directly. One-time $129 setup fee to Concerto.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes. Hosted: cancel anytime, workspace is destroyed after a 72-hour data grace period. BYOC is a one-time purchase — no subscription to cancel, and the droplet stays in your account.",
+                a: "Yes. Solo and Pro: cancel anytime, workspace is destroyed after a 72-hour data grace period. BYOC is a one-time purchase — no subscription to cancel, and the droplet stays in your account.",
               },
               {
                 q: "Where is my code?",
-                a: "On your workspace VPS. With Hosted, that's a VPS we provision on our account but dedicate entirely to you. With BYOC, it's in your own DigitalOcean account. We never see or store your code.",
+                a: "On your workspace VPS. With Solo/Pro, that's a VPS we provision on our account but dedicate entirely to you. With BYOC, it's in your own DigitalOcean account. We never see or store your code.",
               },
               {
                 q: "Where are my Claude conversations?",
@@ -484,7 +505,7 @@ export default function LandingPage() {
               },
               {
                 q: "What is the refund policy?",
-                a: "14-day full refund if provisioning fails on our end. After successful provisioning, no refund — you've used the service (Hosted) or own the setup (BYOC).",
+                a: "14-day full refund if provisioning fails on our end. After successful provisioning, no refund — you've used the service (Solo/Pro) or own the setup (BYOC).",
               },
               {
                 q: "Who built this?",
@@ -515,24 +536,20 @@ export default function LandingPage() {
             Setup takes 5 minutes. You&apos;ll wonder why you didn&apos;t do this sooner.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <form action="/api/checkout?plan=hosted" method="POST">
-              <Button
-                type="submit"
-                size="lg"
-                className="h-12 rounded-[6px] bg-[#faf9f5] px-10 text-base font-medium text-[#2a2925] hover:bg-[#e9b8a4]"
-              >
-                Start with Hosted ($39/mo)
+            <form action="/api/checkout?plan=solo" method="POST">
+              <Button type="submit" size="lg" variant="outline" className="h-12 rounded-[6px] border-[rgba(250,249,245,0.25)] px-8 text-base font-medium text-[#faf9f5] hover:bg-white/10">
+                Start with Solo ($49/mo)
+              </Button>
+            </form>
+            <form action="/api/checkout?plan=pro" method="POST">
+              <Button type="submit" size="lg" className="h-12 rounded-[6px] bg-[#faf9f5] px-10 text-base font-medium text-[#2a2925] hover:bg-[#e9b8a4]">
+                Start with Pro ($99/mo)
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
             <form action="/api/checkout?plan=byoc" method="POST">
-              <Button
-                type="submit"
-                size="lg"
-                variant="outline"
-                className="h-12 rounded-[6px] border-[rgba(250,249,245,0.25)] px-10 text-base font-medium text-[#faf9f5] hover:bg-white/10"
-              >
-                Use my own cloud ($99 once)
+              <Button type="submit" size="lg" variant="outline" className="h-12 rounded-[6px] border-[rgba(250,249,245,0.25)] px-8 text-base font-medium text-[#faf9f5] hover:bg-white/10">
+                BYOC ($129 once)
               </Button>
             </form>
           </div>
@@ -571,12 +588,12 @@ export default function LandingPage() {
 
       {/* ── Mobile sticky CTA (hidden on md+) ───────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgba(25,25,25,0.10)] bg-[#faf9f5]/95 px-4 py-3 backdrop-blur-xl [padding-bottom:max(12px,env(safe-area-inset-bottom))] md:hidden">
-        <form action="/api/checkout?plan=hosted" method="POST">
+        <form action="/api/checkout?plan=solo" method="POST">
           <Button
             type="submit"
             className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
           >
-            Start in 5 minutes — $39/mo
+            Start with Solo — $49/mo
           </Button>
         </form>
       </div>

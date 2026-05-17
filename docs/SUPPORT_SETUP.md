@@ -1,91 +1,13 @@
 # Concerto Operator Support Setup Runbook
 
-This document covers everything you need to stand up support infrastructure for Concerto: Discord community, support email routing, and auto-responder templates.
+This document covers everything you need to stand up support infrastructure for Concerto: email support routing and auto-responder templates.
 
 ---
 
-## 1. Discord Server — "Concerto Operators"
+## 1. Support channel
 
-### 1.1 Create the server
-
-1. Open Discord → "+" (Add a Server) → **Create My Own** → **For a club or community**.
-2. Server name: **Concerto Operators**. Upload the Concerto logo as the icon.
-3. Delete the auto-created `#general` channel — you'll replace it with the channels below.
-
-### 1.2 Channel structure
-
-Create channels in this order (click "+" beside "TEXT CHANNELS"):
-
-| Channel | Purpose |
-|---------|---------|
-| `#announcements` | Product updates, new features, maintenance windows. **Read-only for members.** |
-| `#welcome` | First channel members see. Pinned post explains roles + where to go. |
-| `#help` | Main support channel. Members ask questions; team replies. |
-| `#show-and-tell` | Members share workflows, prompts, and results. |
-| `#feature-requests` | Structured feature requests. Consider a bot to collect upvotes. |
-
-**Category layout** (drag channels into categories):
-```
-📢 ANNOUNCEMENTS
-   #announcements
-👋 COMMUNITY
-   #welcome
-   #show-and-tell
-   #feature-requests
-🛠️ SUPPORT
-   #help
-```
-
-### 1.3 Roles
-
-Create two member roles under **Server Settings → Roles**:
-
-| Role | Color | Permissions | Assignment trigger |
-|------|-------|-------------|-------------------|
-| `Hosted` | Violet (#7c3aed) | Read all channels, send messages | Stripe webhook: `price_1TY4q2AIsRiuuZrfI7yr2gBw` (monthly plan) |
-| `BYOC` | Indigo (#4f46e5) | Read all channels, send messages | Stripe webhook: `price_...` (one-time $99) |
-
-**Role auto-assignment via Stripe webhook** (pending implementation):
-When a `checkout.session.completed` webhook fires, the backend should POST to the Discord API:
-```
-PUT /guilds/{GUILD_ID}/members/{DISCORD_USER_ID}/roles/{ROLE_ID}
-Authorization: Bot {DISCORD_BOT_TOKEN}
-```
-This requires collecting the buyer's Discord username during onboarding (add field to `/setup/{token}` page). Until that is wired, assign roles manually via server member list.
-
-### 1.4 Bot setup (Carl-bot — free tier)
-
-1. Visit https://carl.gg → "Invite" → select **Concerto Operators** server.
-2. Grant permissions: Manage Roles, Manage Messages, Read/Send Messages, Embed Links.
-3. In Carl-bot dashboard → **Autoroles**: set `Hosted` to auto-assign on join (temporary default until Stripe webhook is live).
-4. In Carl-bot dashboard → **Welcome**: set #welcome as the welcome channel. Template:
-   ```
-   Welcome {mention}! You've joined the Concerto Operators community.
-   • Check #welcome for orientation
-   • Ask questions in #help
-   • Share what you build in #show-and-tell
-   ```
-5. **Automod** (optional): enable anti-spam and block invite links in #help.
-
-Alternative: **MEE6 free tier** (mee6.xyz) — similar feature set. Carl-bot has a better free tier for role automation; MEE6 has a cleaner moderation dashboard. Either works.
-
-### 1.5 Invite link generation
-
-Server Settings → **Invites** → Create Invite:
-- Channel: `#welcome`
-- Expiry: **Never**
-- Max uses: **Unlimited**
-- Copy the link. Use this URL everywhere: in onboarding emails, the dashboard, and the landing page.
-
-Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel env vars.
-
-### 1.6 Basic moderation
-
-- In **#announcements**: edit channel permissions → remove "Send Messages" from `@everyone`. Keep it for `@Moderator` or `@Admin` only.
-- Pin a welcome message in `#welcome` explaining the server structure.
-- Appoint a moderator role early; Discord's built-in timeout (right-click → Timeout) handles most issues.
-
----
+Concerto support is **email only**: support@concerto.run via Migadu.
+Email only — no community forums. Every reply is from a real human within 24 hours.
 
 ## 2. Support Email — support@concerto.run
 
@@ -125,7 +47,7 @@ Persist the invite URL: add `DISCORD_INVITE_URL` to `/etc/cortex/env` and Vercel
 
 **Pros**:
 - Already integrated with transactional outbound (Resend API key in `/etc/cortex/env`)
-- Webhook-based inbound — easy to wire into a Slack notification or ticket system
+- Webhook-based inbound — easy to wire into a ticket system
 - Same dashboard for inbound + outbound
 
 **Cons**:
@@ -156,7 +78,7 @@ Thanks for reaching out to Concerto support. We've received your message and wil
 
 While you wait, you might find an answer in our:
 • Help center: https://concerto.run/help
-• Community Discord: {{discord_invite_url}}
+• Email: support@concerto.run (human reply within 24 hours)
 
 — The Concerto team
 support@concerto.run | https://concerto.run
@@ -173,7 +95,7 @@ Merci de nous avoir contacté. Votre message a bien été reçu et nous vous ré
 
 En attendant, vous trouverez peut-être une réponse dans :
 • Notre centre d'aide : https://concerto.run/help
-• Notre communauté Discord : {{discord_invite_url}}
+• Email : support@concerto.run (réponse humaine sous 24 heures)
 
 — L'équipe Concerto
 support@concerto.run | https://concerto.run
@@ -191,7 +113,7 @@ Add these to the pending operator actions list:
 
 - [ ] **Acquire concerto.run** and delegate NS to Cloudflare (prerequisite for all email setup)
 - [ ] **Migadu**: sign up, add domain, add DNS records in Cloudflare, create `support@concerto.run` mailbox
-- [ ] **Discord**: create server, configure channels, generate permanent invite link, store as `DISCORD_INVITE_URL` env var
+- [ ] **Email**: set up support@concerto.run Migadu mailbox (see section 2)
 - [ ] **Carl-bot**: invite, configure autorole + welcome message
-- [ ] **Stripe webhook**: wire Discord role assignment when buyer Discord username is collected
+- [ ] **Stripe webhook**: verify checkout.session.completed sends confirmation email
 - [ ] **status.concerto.run DNS**: add CNAME → Vercel (once status page is deployed)
