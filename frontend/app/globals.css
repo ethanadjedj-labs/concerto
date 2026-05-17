@@ -2,48 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Claude-native design tokens ─────────────────────────────── */
+/* ─── Anthropic-aesthetic design tokens (cream + peach) ─────── */
 :root {
   /* Backgrounds */
-  --bg-base:     #0f0d10;
-  --bg-surface:  #1a161c;
-  --bg-elevated: #221c25;
+  --bg-base:    #faf9f5;            /* Anthropic cream */
+  --bg-surface: #ffffff;            /* pure white card surfaces */
+  --bg-subtle:  #f3efe5;            /* slightly warmer cream for sections */
+  --bg-deep:    #2a2925;            /* warm off-black for inverted sections */
 
-  /* Accents */
-  --accent-warm:        #d97757;
-  --accent-warm-hover:  #c66647;
-  --accent-violet:      #8b7fff;
-  --accent-violet-soft: #6b5fdb;
+  /* Accents — peach only, no violet */
+  --accent:       #cc785c;          /* Anthropic peach */
+  --accent-hover: #b86747;
+  --accent-soft:  #e9b8a4;          /* lighter peach for backgrounds */
 
   /* Typography */
-  --text-primary:   #f5f0e9;
-  --text-secondary: #c4b8aa;
-  --text-tertiary:  #877c70;
+  --text-primary:   #191919;        /* warm off-black */
+  --text-secondary: #555049;        /* muted warm gray */
+  --text-tertiary:  #8a847b;
+  --text-on-deep:   #faf9f5;        /* cream text on dark sections */
 
   /* Borders */
-  --border-subtle: rgba(245, 240, 233, 0.08);
-  --border-warm:   rgba(217, 119, 87, 0.20);
+  --border-subtle: rgba(25, 25, 25, 0.08);
+  --border-warm:   rgba(204, 120, 92, 0.25);
 
-  /* shadcn/ui token mapping */
-  --background:             282  9%  6%;
-  --foreground:              37 57% 94%;
-  --card:                   285 12%  9%;
-  --card-foreground:         37 57% 94%;
-  --popover:                285 12%  9%;
-  --popover-foreground:      37 57% 94%;
-  --primary:                 19 63% 59%;
-  --primary-foreground:      37 57% 94%;
-  --secondary:              282  9% 11%;
-  --secondary-foreground:    37 57% 94%;
-  --muted:                  282  9% 11%;
-  --muted-foreground:        28 18% 55%;
-  --accent:                 250 100% 74%;
-  --accent-foreground:       37 57% 94%;
-  --destructive:              0 72% 51%;
-  --destructive-foreground:  37 57% 94%;
-  --border:                 285  8% 13%;
-  --input:                  285  8% 11%;
-  --ring:                   250 100% 74%;
+  /* shadcn/ui token mapping — light mode */
+  --background:             48  33%  97%;
+  --foreground:              0   0%  10%;
+  --card:                    0   0% 100%;
+  --card-foreground:         0   0%  10%;
+  --popover:                 0   0% 100%;
+  --popover-foreground:      0   0%  10%;
+  --primary:                15  52%  58%;
+  --primary-foreground:     48  33%  97%;
+  --secondary:              43  37%  93%;
+  --secondary-foreground:    0   0%  10%;
+  --muted:                  43  37%  93%;
+  --muted-foreground:       36   6%  51%;
+  --accent:                 17  61%  78%;
+  --accent-foreground:       0   0%  10%;
+  --destructive:             0  72%  51%;
+  --destructive-foreground:  0   0% 100%;
+  --border:                 43  10%  91%;
+  --input:                  43  10%  91%;
+  --ring:                   15  52%  58%;
   --radius:                 0.5rem;
 }
 
@@ -55,10 +56,12 @@
     @apply bg-background text-foreground antialiased;
     font-size: 17px;
     line-height: 1.65;
+    background-color: #faf9f5;
+    color: #191919;
   }
   ::selection {
-    background: rgba(217, 119, 87, 0.28);
-    color: #f5f0e9;
+    background: rgba(204, 120, 92, 0.22);
+    color: #191919;
   }
 }
 
@@ -80,30 +83,15 @@
   to   { opacity: 1; }
 }
 
-@keyframes glow-breathe {
-  0%, 100% { opacity: 0.08; }
-  50%       { opacity: 0.22; }
-}
-
 @keyframes copy-flash {
   0%   { background-color: transparent; }
-  30%  { background-color: rgba(217, 119, 87, 0.10); }
+  30%  { background-color: rgba(204, 120, 92, 0.10); }
   100% { background-color: transparent; }
 }
 
 @keyframes dot-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.3; }
-}
-
-@keyframes orbit-cw {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes orbit-ccw {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(-360deg); }
 }
 
 /* ─── Animation utilities ─────────────────────────────────────── */
@@ -114,9 +102,6 @@
   }
   .animate-fade-in {
     animation: fade-in 0.5s ease both;
-  }
-  .animate-glow-breathe {
-    animation: glow-breathe 6s ease-in-out infinite;
   }
   .animate-copy-flash {
     animation: copy-flash 0.5s ease;
@@ -152,29 +137,6 @@
   .reveal-d4 { transition-delay: 320ms; }
   .reveal-d5 { transition-delay: 400ms; }
   .reveal-d6 { transition-delay: 480ms; }
-
-  /* Warm-tinted glass surface */
-  .glass {
-    background: rgba(245, 240, 233, 0.025);
-    border: 1px solid var(--border-subtle);
-    backdrop-filter: blur(8px);
-  }
-  .glass-hover:hover {
-    background: rgba(245, 240, 233, 0.045);
-    border-color: var(--border-warm);
-  }
-}
-
-/* ─── Orbital hero animation ──────────────────────────────────── */
-
-/* GPU-accelerated rotation around the SVG viewport center.
-   transform-box: view-box ensures the origin is in SVG coordinates,
-   not the element's own bounding box. */
-.orbital-dot-cw,
-.orbital-dot-ccw {
-  transform-box: view-box;
-  transform-origin: 50% 50%;
-  will-change: transform;
 }
 
 /* ─── Reduced motion ──────────────────────────────────────────── */
@@ -190,9 +152,5 @@
   .animate-fade-in {
     animation: none !important;
     opacity: 1 !important;
-  }
-  .orbital-dot-cw,
-  .orbital-dot-ccw {
-    animation: none !important;
   }
 }
