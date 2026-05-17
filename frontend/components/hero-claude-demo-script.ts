@@ -1,203 +1,54 @@
-export type Segment =
-  | { kind: "text"; content: string }
-  | { kind: "tool"; toolName: string; params: Record<string, unknown>; expand: boolean }
+// Demo content and timing constants — edit this file to change what the demo shows.
+// Animation script: 18s loop demonstrating parallel Claude Code sessions via Concerto MCP.
 
-export interface ScriptVariant {
-  userPrompt: string
-  projectName: string
-  segments: Segment[]
-  sidebarProjects: Array<{ name: string; active: boolean }>
-  sidebarRecents: string[]
+export const DEMO_TEXTS = {
+  userMessage:
+    "Build me a small website to track my freelance invoices.",
+  assistantProse1:
+    "I'll set this up. Let me spawn a session on your remote machine — it'll handle the project setup and build out the pages.",
+  assistantProse2: "Both sessions running. I'll check progress in a moment.",
+  assistantProse3:
+    "The invoice tracker is ready. You can add clients, log invoices, mark them paid. Want me to add anything — a monthly summary, payment reminders?",
 }
 
-export const HERO_SCRIPTS: ScriptVariant[] = [
-  {
-    userPrompt:
-      "Build me a small website to track my freelance invoices — clients, amounts, paid/unpaid.",
-    projectName: "invoice-tracker",
-    segments: [
-      {
-        kind: "text",
-        content:
-          "I'll set this up on your remote machine. Spawning a session now — it'll create the project, build the pages, and have something running you can click through.",
-      },
-      {
-        kind: "tool",
-        toolName: "spawn_claude_code_session",
-        params: {
-          project: "invoice-tracker",
-          prompt: "Build a small invoice tracker with clients, amounts, paid/unpaid status.",
-        },
-        expand: true,
-      },
-      {
-        kind: "text",
-        content: "Session running. Let me check progress.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Good — project is set up, the clients and invoices pages are being built. Should be ready in a minute.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Done. Your invoice tracker is live on your machine. You can add clients, log invoices, mark them paid. Want me to send you the machine URL or add anything else — like a monthly summary view?",
-      },
-    ],
-    sidebarProjects: [
-      { name: "invoice-tracker", active: true },
-      { name: "freelance-site", active: false },
-      { name: "client-portal", active: false },
-    ],
-    sidebarRecents: [
-      "Invoice reminders",
-      "Client list import",
-      "Payment status",
-      "Monthly totals",
-    ],
-  },
-  {
-    userPrompt:
-      "Help me set up a simple booking page for my photography sessions. Calendar + email confirmation.",
-    projectName: "booking-page",
-    segments: [
-      {
-        kind: "text",
-        content:
-          "I'll set this up on your remote machine. Spawning a session now — it'll build the booking page and wire up email confirmation.",
-      },
-      {
-        kind: "tool",
-        toolName: "spawn_claude_code_session",
-        params: {
-          project: "booking-page",
-          prompt:
-            "Build a photography session booking page with calendar and email confirmation.",
-        },
-        expand: true,
-      },
-      {
-        kind: "text",
-        content: "Session running. Let me check progress.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Good — the booking page and calendar are being built. Setting up the email confirmation flow too.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Done. Your booking page is live on your machine. Clients can pick a session slot and you'll get an email confirmation. Want me to add anything — like a deposit payment option?",
-      },
-    ],
-    sidebarProjects: [
-      { name: "booking-page", active: true },
-      { name: "portfolio-site", active: false },
-      { name: "client-gallery", active: false },
-    ],
-    sidebarRecents: [
-      "Booking confirmation",
-      "Calendar setup",
-      "Email templates",
-      "Payment deposits",
-    ],
-  },
-  {
-    userPrompt: "Create a small dashboard showing my Etsy sales by week with a chart.",
-    projectName: "etsy-dashboard",
-    segments: [
-      {
-        kind: "text",
-        content:
-          "I'll set this up on your remote machine. Spawning a session now — it'll build the dashboard and weekly chart.",
-      },
-      {
-        kind: "tool",
-        toolName: "spawn_claude_code_session",
-        params: {
-          project: "etsy-dashboard",
-          prompt: "Build an Etsy sales dashboard with weekly bar chart.",
-        },
-        expand: true,
-      },
-      {
-        kind: "text",
-        content: "Session running. Let me check progress.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Good — the dashboard is being built. The weekly chart layout is done, wiring up the data import now.",
-      },
-      {
-        kind: "tool",
-        toolName: "get_claude_session",
-        params: {},
-        expand: false,
-      },
-      {
-        kind: "text",
-        content:
-          "Done. Your Etsy dashboard is live on your machine. You'll see weekly sales with a bar chart. Want me to add a date filter or export to CSV?",
-      },
-    ],
-    sidebarProjects: [
-      { name: "etsy-dashboard", active: true },
-      { name: "product-photos", active: false },
-      { name: "shop-analytics", active: false },
-    ],
-    sidebarRecents: [
-      "Weekly sales chart",
-      "Product rankings",
-      "Revenue trends",
-      "Export to CSV",
-    ],
-  },
-]
+// All timing values in milliseconds, measured from loop start.
+export const DEMO_TIMINGS = {
+  // T=0s: user message slides in
+  userMessageAt: 0,
 
-export const HERO_TIMINGS = {
-  typingStartMs: 800,
-  typingSpeedMs: 48,
-  sentDelayMs: 300,
-  streamingSpeedMs: 9,
-  afterTextToToolMs: 700,
-  toolExpandDelayMs: 600,
-  afterTool1Ms: 3000,
-  afterTool2Ms: 1000,
-  afterTool3Ms: 4000,
-  donePauseMs: 2000,
-  fadeMs: 700,
-  loopMs: 19000,
+  // T=1s: first assistant prose begins streaming word-by-word
+  prose1At: 1_000,
+
+  // T=4s: first "Start claude session" chip appears (active, pulsing)
+  chip1At: 4_000,
+
+  // T=6s: second chip appears in parallel — the WOW moment
+  chip2At: 6_000,
+
+  // T=9s: first chip transitions to complete (checkmark, loader disappears)
+  chip1CompleteAt: 9_000,
+
+  // T=10s: second chip completes
+  chip2CompleteAt: 10_000,
+
+  // T=11s: assistant follow-up prose
+  prose2At: 11_000,
+
+  // T=13s: "Get claude session" chip (brief)
+  chip3At: 13_000,
+
+  // T=14.5s: third chip completes
+  chip3CompleteAt: 14_500,
+
+  // T=15s: final assistant prose
+  prose3At: 15_000,
+
+  // T=17s: fade-out begins
+  fadeOutAt: 17_000,
+
+  // T=18s: loop restarts
+  loopDuration: 18_000,
+
+  // Character streaming speed (ms per character)
+  streamMs: 10,
 }
