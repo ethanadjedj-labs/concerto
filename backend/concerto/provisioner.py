@@ -9,6 +9,7 @@ import httpx
 from jinja2 import Template
 
 from concerto import db
+from concerto.cf_tunnel import create_named_tunnel, destroy_named_tunnel
 
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _DEFAULT_IMAGE = "ubuntu-22-04-x64"
@@ -24,23 +25,23 @@ PLAN_TO_SIZE: dict[str, str] = {
     "pro":  "s-2vcpu-8gb",
 }
 
-# Hosted plan → DigitalOcean droplet size mapping
-PLAN_TO_SIZE: dict[str, str] = {
-    "solo": "s-2vcpu-4gb",
-    "pro":  "s-2vcpu-8gb",
-}
-
 # Region fallback order: if chosen region is unavailable (422), try these.
+# Cross-continent backups ensure 422 only fires if NO DO region has capacity.
 _REGION_FALLBACK: dict[str, list[str]] = {
-    "nyc1": ["nyc3", "sfo3"],
-    "nyc3": ["nyc1", "sfo3"],
-    "sfo3": ["nyc3", "nyc1"],
-    "fra1": ["ams3", "lon1"],
-    "ams3": ["fra1", "lon1"],
-    "lon1": ["fra1", "ams3"],
-    "sgp1": ["blr1", "syd1"],
-    "blr1": ["sgp1", "syd1"],
-    "syd1": ["sgp1", "blr1"],
+    # US
+    "nyc1": ["nyc3", "sfo3", "sfo2", "tor1", "ams3", "fra1"],
+    "nyc3": ["nyc1", "sfo3", "sfo2", "tor1", "ams3", "fra1"],
+    "sfo3": ["nyc3", "nyc1", "sfo2", "tor1", "ams3", "fra1"],
+    "sfo2": ["sfo3", "nyc3", "nyc1", "tor1", "ams3", "fra1"],
+    "tor1": ["nyc3", "nyc1", "sfo3", "ams3", "lon1", "fra1"],
+    # EU
+    "fra1": ["ams3", "lon1", "nyc1", "nyc3", "sfo3"],
+    "ams3": ["fra1", "lon1", "nyc1", "nyc3", "sfo3"],
+    "lon1": ["fra1", "ams3", "nyc1", "nyc3", "sfo3"],
+    # APAC
+    "sgp1": ["blr1", "syd1", "fra1", "ams3", "nyc1"],
+    "blr1": ["sgp1", "syd1", "fra1", "ams3", "nyc1"],
+    "syd1": ["sgp1", "blr1", "fra1", "ams3", "nyc1"],
 }
 
 _STUB_CLOUD_INIT = """\
@@ -141,7 +142,12 @@ async def _create_droplet_with_fallback(
         if resp.status_code == 402:
             raise DOCreditError("DigitalOcean account has insufficient credit")
         if resp.status_code == 422:
-            last_error = Exception(f"Region/size unavailable: {r}/{size}")
+            try:
+                err_body = resp.json()
+            except Exception:
+                err_body = {"raw": resp.text[:500]}
+            logger.error("DO 422 for region=%s size=%s body=%s", r, size, err_body)
+            last_error = Exception(f"Region/size unavailable: {r}/{size} - {err_body}")
             continue
         resp.raise_for_status()
         droplet_id = str(resp.json()["droplet"]["id"])
@@ -155,14 +161,17 @@ async def _create_droplet_with_fallback(
     raise last_error or Exception("All regions unavailable for this size")
 
 
-async def destroy_droplet(do_api_key: str, droplet_id: str) -> None:
-    """Destroy a droplet. Silently ignores errors (404 = already gone)."""
+async def destroy_droplet(do_api_key: str, droplet_id: str, cf_tunnel_id: str = "") -> None:
+    """Destroy a droplet and its associated CF tunnel. Silently ignores errors."""
     headers = {"Authorization": f"Bearer {do_api_key}", "Content-Type": "application/json"}
     try:
         async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
             await client.delete(f"/droplets/{droplet_id}")
     except Exception:
         pass
+
+    if cf_tunnel_id:
+        await destroy_named_tunnel(cf_tunnel_id)
 
 
 async def provision_droplet(
@@ -193,6 +202,13 @@ async def provision_droplet(
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
 
+    # Create named CF tunnel before droplet so the stable hostname is ready
+    is_hosted = mode in ("solo", "pro")
+    tunnel_info: dict = {}
+    if is_hosted:
+        tunnel_info = await create_named_tunnel(token)
+        await db.update_buyer(token, cf_tunnel_id=tunnel_info["tunnel_id"])
+
     cloud_init = Template(_load_cloud_init_template()).render(
         token=token,
         ssh_public_key=public_key,
@@ -203,9 +219,10 @@ async def provision_droplet(
         concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
         customer_email=customer_email,
         ttyd_password=ttyd_password,
+        tunnel_token=tunnel_info.get("tunnel_token", ""),
+        tunnel_hostname=tunnel_info.get("hostname", ""),
     )
 
-    is_hosted = mode in ("solo", "pro")
     tag = f"concerto-{mode}-{token[:8]}" if is_hosted else f"concerto-byoc-{token[:8]}"
 
     # For hosted plans use our DO token; size comes from PLAN_TO_SIZE

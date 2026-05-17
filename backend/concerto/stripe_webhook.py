@@ -291,7 +291,12 @@ async def stripe_webhook(request: Request):
     if not _mark_processed(event_id, event_type):
         return {"ignored": True, "reason": "duplicate event"}
 
-    obj = event["data"]["object"]
+    obj_raw = event["data"]["object"]
+    # Stripe SDK returns StripeObject. Use proper recursive dict conversion.
+    if hasattr(obj_raw, "to_dict"):
+        obj = obj_raw.to_dict()
+    else:
+        obj = dict(obj_raw) if hasattr(obj_raw, "keys") else obj_raw
     metadata = obj.get("metadata") or {}
 
     # ── checkout.session.completed ────────────────────────────────────────
@@ -313,7 +318,7 @@ async def stripe_webhook(request: Request):
         if subscription_id:
             try:
                 sub = stripe.Subscription.retrieve(subscription_id)
-                next_renewal_at = sub.get("current_period_end")
+                next_renewal_at = getattr(sub, "current_period_end", None)
             except Exception:
                 pass
 
@@ -321,10 +326,13 @@ async def stripe_webhook(request: Request):
         if trial_token:
             trial_buyer = await db.get_buyer(trial_token)
             if trial_buyer and trial_buyer.get("plan") == "trial":
-                # Destroy the trial droplet in the background
+                # Destroy the trial droplet + CF tunnel in the background
                 trial_vps_id = trial_buyer.get("vps_id", "")
+                trial_cf_tunnel = trial_buyer.get("cf_tunnel_id", "")
                 if trial_vps_id and _CONCERTO_DO_API_TOKEN:
-                    asyncio.create_task(provisioner.destroy_droplet(_CONCERTO_DO_API_TOKEN, trial_vps_id))
+                    asyncio.create_task(provisioner.destroy_droplet(
+                        _CONCERTO_DO_API_TOKEN, trial_vps_id, trial_cf_tunnel
+                    ))
 
                 await db.update_buyer(
                     trial_token,

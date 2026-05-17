@@ -31,6 +31,7 @@ write_files:
       CONCERTO_CALLBACK_URL={{ concerto_callback_url }}
       CONCERTO_TOKEN={{ concerto_token }}
       CUSTOMER_EMAIL={{ customer_email }}
+      TUNNEL_HOSTNAME={{ tunnel_hostname }}
 
   # Version stamp
   - path: /etc/concerto/version
@@ -500,24 +501,26 @@ write_files:
       WantedBy=multi-user.target
 
   # -- systemd: cloudflared tunnel ---------------------------------------------
-  # F5: stdout/stderr redirect to log file so provision_complete.sh can poll
-  # the file directly rather than racing against journald sync.
+  # Named tunnel (solo/pro): cloudflared authenticates via --token, exposes a
+  # stable *.workspaces.concerto.run hostname. Survives reboots.
+  # Ephemeral tunnel (trial/byoc): falls back to --url quick tunnel.
   - path: /etc/systemd/system/concerto-tunnel.service
     owner: root:root
     permissions: '0644'
     content: |
       [Unit]
-      Description=Concerto Cloudflared Quick Tunnel
+      Description=Concerto Cloudflared Tunnel
       Documentation=https://github.com/ethanadjedja-labs/concerto
       After=network.target concerto-mcp.service concerto-ttyd.service nginx.service
 
       [Service]
       Type=simple
-      ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
-      Restart=on-failure
-      RestartSec=10
+      {% if tunnel_token %}ExecStart=/usr/local/bin/cloudflared tunnel run --token {{ tunnel_token }}
+      {% else %}ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
       StandardOutput=append:/var/log/cloudflared-quicktunnel.log
       StandardError=append:/var/log/cloudflared-quicktunnel.log
+      {% endif %}Restart=on-failure
+      RestartSec=10
 
       [Install]
       WantedBy=multi-user.target
@@ -574,10 +577,12 @@ write_files:
         echo "[concerto] SSH authorized_keys OK ($(wc -l < /root/.ssh/authorized_keys) key(s))"
       fi
 
-      # -- F5: wait for cloudflared to log the tunnel URL -----------------------
-      # concerto-tunnel.service writes to /var/log/cloudflared-quicktunnel.log.
-      # Poll the file directly (avoids journald sync race).
-      echo "[concerto] Waiting for cloudflare tunnel URL (max 60s)..."
+      # -- Resolve tunnel URL ---------------------------------------------------
+      # Named tunnel (solo/pro): hostname is stable and already known.
+      # Ephemeral tunnel (trial/byoc): poll the log for the trycloudflare URL.
+      {% if tunnel_hostname %}TUNNEL_URL="https://{{ tunnel_hostname }}"
+      echo "[concerto] Named tunnel URL: ${TUNNEL_URL}"
+      {% else %}echo "[concerto] Waiting for ephemeral cloudflare tunnel URL (max 60s)..."
       TUNNEL_URL=""
       for i in $(seq 1 30); do
         if [ -f /var/log/cloudflared-quicktunnel.log ]; then
@@ -596,7 +601,8 @@ write_files:
         exit 1
       fi
 
-      echo "[concerto] Tunnel URL: ${TUNNEL_URL}"
+      echo "[concerto] Ephemeral tunnel URL: ${TUNNEL_URL}"
+      {% endif %}
 
       # -- Read the freshly-generated bearer token -------------------------------
       BEARER_TOKEN=$(cat /etc/concerto/token)
