@@ -11,7 +11,7 @@ from maestro.status_router import router as status_router
 from maestro.terminal_router import router as terminal_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
-_MIGRATIONS = ["001_init.sql", "002_ttyd_credentials.sql"]
+_MIGRATIONS = ["001_init.sql", "002_ttyd_credentials.sql", "003_hosted_plan.sql"]
 
 
 @asynccontextmanager

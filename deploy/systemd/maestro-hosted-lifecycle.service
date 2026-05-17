@@ -1,0 +1,12 @@
+[Unit]
+Description=Maestro hosted plan lifecycle reconciler
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/cortex/env
+WorkingDirectory=/opt/maestro/backend
+ExecStart=/opt/maestro/.venv/bin/python -m maestro.hosted_lifecycle
+StandardOutput=journal
+StandardError=journal
