@@ -9,9 +9,17 @@ from maestro.stripe_webhook import router as stripe_router
 from maestro.provision_router import router as provision_router
 from maestro.status_router import router as status_router
 from maestro.terminal_router import router as terminal_router
+from maestro.hosted_lifecycle import router as hosted_lifecycle_router
+from maestro.oauth_status_router import router as oauth_status_router
+from maestro.first_call_detector import router as first_call_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
-_MIGRATIONS = ["001_init.sql", "002_ttyd_credentials.sql", "003_hosted_plan.sql"]
+_MIGRATIONS = [
+    "001_init.sql",
+    "002_ttyd_credentials.sql",
+    "003_hosted_plan.sql",
+    "004_operator_kit.sql",
+]
 
 
 @asynccontextmanager
@@ -42,3 +50,6 @@ app.include_router(stripe_router)
 app.include_router(provision_router)
 app.include_router(status_router)
 app.include_router(terminal_router)
+app.include_router(hosted_lifecycle_router)
+app.include_router(oauth_status_router)
+app.include_router(first_call_router)
