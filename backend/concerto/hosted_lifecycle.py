@@ -11,6 +11,7 @@ import time
 import httpx
 
 from concerto import db
+from concerto.cf_tunnel import destroy_named_tunnel
 
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
@@ -61,6 +62,14 @@ async def reconcile() -> dict:
             if now >= destroy_at:
                 ok = await _do_delete_droplet(droplet_id)
                 if ok:
+                    # Destroy associated CF tunnel (Bug #23)
+                    buyer_row = await db.get_buyer(buyer_token)
+                    cf_tunnel_id = (buyer_row or {}).get("cf_tunnel_id") or ""
+                    if cf_tunnel_id:
+                        try:
+                            await destroy_named_tunnel(cf_tunnel_id)
+                        except Exception:
+                            pass
                     destroyed += 1
                     # Mark destroyed
                     def _mark(did=droplet_id, ts=now):
