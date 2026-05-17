@@ -539,7 +539,7 @@ write_files:
       [Service]
       Type=simple
       EnvironmentFile=/etc/concerto/ttyd.env
-      ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 -W \
+      ExecStart=/usr/bin/ttyd -p 7681 -i 127.0.0.1 \
         --credential concerto:${TTYD_PASSWORD} \
         --client-option disableLeaveAlert=true \
         --client-option titleFixed=Concerto \
@@ -661,6 +661,8 @@ runcmd:
   # Start nginx + MCP + ttyd first, then tunnel (which depends on them).
   # F4: SSH is ready (ssh_authorized_keys processed) before we reach here.
   - ["systemctl", "daemon-reload"]
+  # Disable Ubuntu apt's default ttyd service (port 7681 conflict with concerto-ttyd)
+  - ["bash", "-c", "systemctl stop ttyd.service 2>/dev/null; systemctl disable ttyd.service 2>/dev/null; true"]
   - ["bash", "-c",
      "systemctl enable concerto-mcp concerto-ttyd concerto-tunnel nginx && systemctl start nginx concerto-mcp concerto-ttyd"]
   # F5: brief pause to let ttyd fully bind before cloudflared starts
