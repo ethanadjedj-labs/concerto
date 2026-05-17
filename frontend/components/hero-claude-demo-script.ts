@@ -19,7 +19,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "I'll set this up on your Concerto workspace. Spawning a session now — it'll create the project, build the pages, and have something running you can click through.",
+          "I'll set this up on your remote machine. Spawning a session now — it'll create the project, build the pages, and have something running you can click through.",
       },
       {
         kind: "tool",
@@ -54,7 +54,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "Done. Your invoice tracker is live on your workspace. You can add clients, log invoices, mark them paid. Want me to send you the workspace URL or add anything else — like a monthly summary view?",
+          "Done. Your invoice tracker is live on your machine. You can add clients, log invoices, mark them paid. Want me to send you the machine URL or add anything else — like a monthly summary view?",
       },
     ],
     sidebarProjects: [
@@ -77,7 +77,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "I'll set this up on your Concerto workspace. Spawning a session now — it'll build the booking page and wire up email confirmation.",
+          "I'll set this up on your remote machine. Spawning a session now — it'll build the booking page and wire up email confirmation.",
       },
       {
         kind: "tool",
@@ -113,7 +113,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "Done. Your booking page is live on your workspace. Clients can pick a session slot and you'll get an email confirmation. Want me to add anything — like a deposit payment option?",
+          "Done. Your booking page is live on your machine. Clients can pick a session slot and you'll get an email confirmation. Want me to add anything — like a deposit payment option?",
       },
     ],
     sidebarProjects: [
@@ -135,7 +135,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "I'll set this up on your Concerto workspace. Spawning a session now — it'll build the dashboard and weekly chart.",
+          "I'll set this up on your remote machine. Spawning a session now — it'll build the dashboard and weekly chart.",
       },
       {
         kind: "tool",
@@ -170,7 +170,7 @@ export const HERO_SCRIPTS: ScriptVariant[] = [
       {
         kind: "text",
         content:
-          "Done. Your Etsy dashboard is live on your workspace. You'll see weekly sales with a bar chart. Want me to add a date filter or export to CSV?",
+          "Done. Your Etsy dashboard is live on your machine. You'll see weekly sales with a bar chart. Want me to add a date filter or export to CSV?",
       },
     ],
     sidebarProjects: [
