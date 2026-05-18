@@ -15,6 +15,7 @@ from concerto.first_call_detector import router as first_call_router
 from concerto.customer_portal import router as customer_portal_router
 from concerto.preflight_router import router as preflight_router
 from concerto.trial_router import router as trial_router
+from concerto.github_router import router as github_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -31,6 +32,7 @@ _MIGRATIONS = [
     "010_email_dead_letter.sql",
     "012_plan_check_solo_pro.sql",
     "013_cf_tunnel_tracking.sql",
+    "015_github_token.sql",
 ]
 
 
@@ -73,3 +75,4 @@ app.include_router(first_call_router)
 app.include_router(customer_portal_router)
 app.include_router(preflight_router)
 app.include_router(trial_router)
+app.include_router(github_router)

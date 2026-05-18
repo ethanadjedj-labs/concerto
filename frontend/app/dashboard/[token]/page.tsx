@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Eye, EyeOff, ExternalLink, RefreshCw } from "lucide-react"
+import { Copy, Check, Eye, EyeOff, ExternalLink, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
 
 /* ─── Brand tokens ────────────────────────────────────────────────
    cream:   #faf9f5
@@ -446,6 +446,9 @@ export default function DashboardPage({
   const [oauthSuccess, setOauthSuccess] = useState(false)
   // Increments on manual retry to restart the polling effect
   const [fetchTrigger, setFetchTrigger] = useState(0)
+  // Code-source selector state (step3)
+  const [codeSource, setCodeSource] = useState<"github" | "elsewhere" | "fresh" | null>(null)
+  const [githubConnected, setGithubConnected] = useState(false)
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
@@ -672,6 +675,34 @@ export default function DashboardPage({
     }, 5000)
     return () => clearInterval(id)
   }, [uiState, backendUrl, params.token])
+
+  // Read ?github=connected from the URL on mount (set after GitHub OAuth callback)
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    if (sp.get("github") === "connected") {
+      setGithubConnected(true)
+      setCodeSource("github")
+    }
+  }, [])
+
+  // Poll /github/status while on step3 and not yet confirmed connected
+  useEffect(() => {
+    if (uiState !== "step3" || githubConnected) return
+    const id = setInterval(async () => {
+      try {
+        const r = await fetch(
+          `${backendUrl}/api/buyer/${params.token}/github/status`
+        )
+        if (r.ok) {
+          const d = await r.json()
+          if (d.connected) setGithubConnected(true)
+        }
+      } catch {
+        // network blip — ignore
+      }
+    }, 10000)
+    return () => clearInterval(id)
+  }, [uiState, githubConnected, backendUrl, params.token])
 
   const mcpUrl = dashData?.mcp_url ?? "Loading..."
 
@@ -1375,6 +1406,144 @@ export default function DashboardPage({
             >
               Open Claude <ExternalLink className="h-4 w-4" />
             </a>
+
+            {/* Connect your code — 3-door selector */}
+            <div className="mt-5 w-full">
+              <p
+                className="mb-2 w-full text-left text-[11px] font-medium uppercase tracking-widest"
+                style={{ color: "#b5ab9c" }}
+              >
+                Connect your code
+              </p>
+              <div className="flex flex-col gap-2">
+                {/* Door 1: GitHub */}
+                <div
+                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                  style={{
+                    backgroundColor: codeSource === "github" ? "#fef8f5" : "#fff",
+                    borderColor: codeSource === "github" ? "#cc785c" : "#f3efe5",
+                  }}
+                  onClick={() =>
+                    setCodeSource(codeSource === "github" ? null : "github")
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[14px] font-medium"
+                      style={{ color: "#191919" }}
+                    >
+                      I have a project on GitHub
+                    </span>
+                    {codeSource === "github" ? (
+                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    )}
+                  </div>
+                  {codeSource === "github" && (
+                    <div className="mt-3">
+                      {githubConnected ? (
+                        <div
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium"
+                          style={{ backgroundColor: "#f0fdf4", color: "#15803d" }}
+                        >
+                          <Check className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
+                          GitHub connected — your VPS can clone and push your repos
+                        </div>
+                      ) : (
+                        <button
+                          className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: "#24292f", color: "#fff" }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.location.href = `${backendUrl}/api/buyer/${params.token}/github/connect`
+                          }}
+                        >
+                          Connect GitHub
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Door 2: Code elsewhere */}
+                <div
+                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                  style={{
+                    backgroundColor: codeSource === "elsewhere" ? "#fef8f5" : "#fff",
+                    borderColor: codeSource === "elsewhere" ? "#cc785c" : "#f3efe5",
+                  }}
+                  onClick={() =>
+                    setCodeSource(codeSource === "elsewhere" ? null : "elsewhere")
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[14px] font-medium"
+                      style={{ color: "#191919" }}
+                    >
+                      My code is elsewhere
+                    </span>
+                    {codeSource === "elsewhere" ? (
+                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    )}
+                  </div>
+                  {codeSource === "elsewhere" && (
+                    <p
+                      className="mt-2 text-[13px] leading-relaxed"
+                      style={{ color: "#8a847b" }}
+                    >
+                      Ask Claude to{" "}
+                      <code
+                        className="rounded px-1 py-0.5 text-[12px]"
+                        style={{ backgroundColor: "#f3efe5", color: "#191919" }}
+                      >
+                        git clone
+                      </code>{" "}
+                      any URL. For private repos, paste a personal access token or
+                      deploy key in the terminal — Claude will help you set it up.
+                    </p>
+                  )}
+                </div>
+
+                {/* Door 3: Starting fresh */}
+                <div
+                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                  style={{
+                    backgroundColor: codeSource === "fresh" ? "#fef8f5" : "#fff",
+                    borderColor: codeSource === "fresh" ? "#cc785c" : "#f3efe5",
+                  }}
+                  onClick={() =>
+                    setCodeSource(codeSource === "fresh" ? null : "fresh")
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[14px] font-medium"
+                      style={{ color: "#191919" }}
+                    >
+                      I&apos;m starting fresh
+                    </span>
+                    {codeSource === "fresh" ? (
+                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
+                    )}
+                  </div>
+                  {codeSource === "fresh" && (
+                    <p
+                      className="mt-2 text-[13px] leading-relaxed"
+                      style={{ color: "#8a847b" }}
+                    >
+                      Nothing to connect — just ask Claude to create the project.
+                      It&apos;ll scaffold, write, and iterate from scratch.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Go further — directly under the CTA */}
             <div className="mt-3 w-full">

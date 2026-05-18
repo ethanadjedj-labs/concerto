@@ -1082,6 +1082,82 @@ write_files:
 
       echo "[concerto] Provisioning complete."
 
+  # -- git credentials polling script -----------------------------------------
+  # Polls the backend for a GitHub token every 30s for the first 30 min.
+  # Runs on BOTH prewarmed and fresh droplets (not inside the prewarmed block).
+  - path: /opt/concerto/setup_git_credentials.sh
+    owner: root:root
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      # Pulls stored GitHub token from the Concerto backend and writes it to
+      # /root/.git-credentials so the VPS can clone/push private repos.
+      # The user connects GitHub AFTER provisioning; this polls until the token
+      # appears, then stops the timer once credentials are configured.
+
+      source /etc/concerto/env || exit 0
+      source /etc/concerto/ttyd.env || exit 0
+
+      CONCERTO_API_BASE="${CONCERTO_CALLBACK_URL%%/api/*}"
+      CREDS_FILE="/root/.git-credentials"
+
+      UPTIME_S=$(awk '{print int($1)}' /proc/uptime 2>/dev/null) || UPTIME_S=0
+      if [ "$UPTIME_S" -gt 1800 ]; then
+          systemctl stop concerto-git-credentials.timer 2>/dev/null || true
+          exit 0
+      fi
+
+      if [ -f "$CREDS_FILE" ] && grep -q "github.com" "$CREDS_FILE" 2>/dev/null; then
+          systemctl stop concerto-git-credentials.timer 2>/dev/null || true
+          exit 0
+      fi
+
+      RESPONSE=$(curl -sf -m 10 \
+          -H "X-Callback-Secret: ${TTYD_PASSWORD}" \
+          "${CONCERTO_API_BASE}/api/buyer/${CONCERTO_TOKEN}/git-credentials" \
+          2>/dev/null || echo '{}')
+
+      GITHUB_TOKEN=$(echo "$RESPONSE" | python3 -c \
+          "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('github_token',''))" \
+          2>/dev/null || true)
+
+      [ -z "${GITHUB_TOKEN:-}" ] && exit 0
+
+      git config --global credential.helper store
+      printf 'https://x-access-token:%s@github.com\n' "$GITHUB_TOKEN" > "$CREDS_FILE"
+      chmod 600 "$CREDS_FILE"
+      echo "[concerto] GitHub git credentials configured."
+      systemctl stop concerto-git-credentials.timer 2>/dev/null || true
+
+  # -- systemd: git credentials polling service --------------------------------
+  - path: /etc/systemd/system/concerto-git-credentials.service
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Concerto: pull git credentials from backend
+      After=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/opt/concerto/setup_git_credentials.sh
+
+  # -- systemd: git credentials polling timer ----------------------------------
+  - path: /etc/systemd/system/concerto-git-credentials.timer
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Concerto: git credentials polling timer
+
+      [Timer]
+      OnBootSec=30
+      OnUnitActiveSec=30
+      Unit=concerto-git-credentials.service
+
+      [Install]
+      WantedBy=timers.target
+
 # --- runcmd (runs on first boot as root, sequentially) -----------------------
 
 runcmd:
@@ -1140,6 +1216,9 @@ runcmd:
      "systemctl enable concerto-mcp concerto-ttyd concerto-tunnel nginx && systemctl start nginx concerto-mcp concerto-ttyd"]
   # F5: brief pause to let ttyd fully bind before cloudflared starts
   - ["bash", "-c", "sleep 3 && systemctl start concerto-tunnel"]
+
+  # -- 11b. Git credentials polling timer (prewarmed-safe: outside prewarmed block)
+  - ["bash", "-c", "systemctl enable concerto-git-credentials.timer && systemctl start concerto-git-credentials.timer"]
 
   # -- 12. Wait for tunnel URL and POST back to empire backend ---------------
   - ["/opt/concerto/provision_complete.sh"]
