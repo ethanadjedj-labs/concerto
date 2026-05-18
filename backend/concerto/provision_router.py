@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import os
 import time
 
@@ -16,6 +17,7 @@ _CLOUD_INIT_TIMEOUT_S = 8 * 60  # 8 minutes
 _MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 _HOSTED_SIZE = "s-2vcpu-4gb"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
+_FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 
 class ProvisionRequest(BaseModel):
@@ -238,13 +240,30 @@ async def droplet_ready(payload: DropletReadyPayload):
     if not buyer:
         raise HTTPException(status_code=404, detail="Token not found")
 
+    current_status = buyer.get("status", "")
+
+    # Idempotent: already past installing — 200 no-op
+    _PAST_INSTALLING = {
+        "awaiting_oauth", "active", "trial_expired", "trial_upgraded",
+        "cancelled", "refunded", "suspended",
+    }
+    if current_status in _PAST_INSTALLING:
+        return {"ok": True, "noop": True}
+
+    # Reject if not in a provisioning-in-progress state
+    if current_status not in ("installing", "provisioning"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unexpected buyer status for droplet-ready callback: {current_status}",
+        )
+
     # Cloudflared tunnel failed after retries — escalate to operator
     if payload.mcp_url == "tunnel_failed":
         _queue_tunnel_escalation(payload.token)
         await send_operator_alert(
             f"Cloudflared tunnel failed — token {payload.token[:8]}",
             f"Droplet provisioned but tunnel URL capture failed after 3 retries.\n"
-            f"Token: {payload.token}\nDroplet IP: {buyer.get('vps_ip', 'unknown')}",
+            f"Token: {payload.token}\nDroplet IP: {buyer.get(\'vps_ip\', \'unknown\')}",
         )
         await db.update_buyer(
             payload.token,
@@ -261,4 +280,19 @@ async def droplet_ready(payload: DropletReadyPayload):
         status="awaiting_oauth",
         installed_at=int(time.time()),
     )
+
+    # For trial buyers: send ready email at awaiting_oauth (moved from trial_router.py)
+    if buyer.get("plan") == "trial":
+        try:
+            from concerto.email_templates import trial_ready
+            from concerto.email_utils import send_email
+            email = buyer.get("email", "")
+            dashboard_url = f"{_FRONTEND_URL}/dashboard/{payload.token}"
+            expires_at = buyer.get("expires_at", 0)
+            minutes_left = max(1, math.ceil((expires_at - time.time()) / 60)) if expires_at else 25
+            tpl = trial_ready(dashboard_url=dashboard_url, email=email, minutes=minutes_left)
+            await send_email(email, tpl["subject"], tpl.get("html") or tpl["text"])
+        except Exception:
+            logger.exception("trial_ready email failed for token %.8s", payload.token)
+
     return {"ok": True}

@@ -670,6 +670,12 @@ runcmd:
   # cloud-init ssh_authorized_keys runs before runcmd, so key is already present.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true"]
 
+  # -- 8b. Lock root password to prevent PAM forced-change from blocking non-TTY SSH ---
+  # DigitalOcean marks the root account password-expired on new droplets; when SSHing
+  # with a key in BatchMode, PAM intercepts and blocks the session.  Locking the
+  # password removes the expiry check so key-based SSH works immediately.
+  - ["bash", "-c", "passwd -l root || true"]
+
   # -- 9. nginx: disable default site, test config ---------------------------
   - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]
 
