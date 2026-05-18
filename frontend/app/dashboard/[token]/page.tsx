@@ -1199,23 +1199,40 @@ export default function DashboardPage({
                 >
                   How to add it
                 </p>
-                <ol className="space-y-3">
+<ol className="space-y-3">
                   {(
                     [
                       <>
-                        Open Claude, click your name (bottom-left) →{" "}
+                        In Claude&apos;s{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
-                          Settings
-                        </strong>{" "}
-                        →{" "}
+                          left sidebar
+                        </strong>
+                        , click{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
                           Customize
+                        </strong>{" "}
+                        (just under{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Code
+                        </strong>
+                        )
+                      </>,
+                      <>
+                        Click{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Connectors
                         </strong>
                       </>,
                       <>
@@ -1276,9 +1293,9 @@ export default function DashboardPage({
                   className="text-[12px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  Don&apos;t see &ldquo;Customize&rdquo;? It may still say
-                  &ldquo;Connectors&rdquo; — same place, look under your
-                  Settings.
+                  Don&apos;t see &ldquo;Customize&rdquo; in the sidebar?
+                  Click &ldquo;More&rdquo; to expand it — it&apos;s just under
+                  &ldquo;Code&rdquo;.
                 </p>
 
                 <a
