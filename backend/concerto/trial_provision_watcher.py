@@ -133,8 +133,9 @@ async def _ssh_probe(vps_ip: str, key_path: str) -> dict | None:
         ttyd_active = lines[0].strip() == "active"
         bearer = lines[1].strip()
         tunnel_hostname = lines[2].strip() if len(lines) > 2 else ""
-        # 4th line: the REAL ephemeral tunnel URL (trycloudflare) scraped from
-        # the cloudflared log — authoritative for trial droplets.
+        # 4th line: trycloudflare URL scraped from the cloudflared quick-tunnel log.
+        # Empty for named-tunnel trials (which use tunnel run --token, not --url).
+        # Kept as fallback for in-flight trials provisioned before the named-tunnel migration.
         real_tunnel_url = lines[3].strip() if len(lines) > 3 else ""
         if not ttyd_active or bearer == "MISSING" or not bearer:
             return None
@@ -156,11 +157,11 @@ async def _promote(buyer: dict, probe: dict) -> None:
     tunnel_hostname = probe.get("tunnel_hostname", "")
     real_tunnel_url = probe.get("real_tunnel_url", "")
     # Resolve the MCP URL in priority order:
-    #   1. A configured named-tunnel hostname (hosted plans only).
-    #   2. The REAL ephemeral trycloudflare URL scraped from the droplet.
-    # NEVER fabricate a {token}.workspaces.concerto.run URL — that hostname
-    # only exists for hosted named tunnels and is unreachable for trials,
-    # which caused "Couldn't reach the MCP server" in Claude.
+    #   1. Named-tunnel hostname from TUNNEL_HOSTNAME env (trials and hosted plans both
+    #      now provision a named Concerto-domain tunnel, so this is the primary path).
+    #   2. The REAL ephemeral trycloudflare URL scraped from the droplet (fallback for
+    #      in-flight trials provisioned before the named-tunnel migration).
+    # NEVER fabricate a URL that doesn't have a working tunnel behind it.
     if tunnel_hostname:
         mcp_url = f"https://{tunnel_hostname}"
     elif real_tunnel_url:

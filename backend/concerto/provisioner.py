@@ -237,11 +237,12 @@ async def provision_droplet(
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
 
-    # Create named CF tunnel before droplet so the stable hostname is ready.
-    # trial/byoc use quick tunnel (trycloudflare.com) — ephemeral, no stable hostname needed.
-    is_hosted = mode in ("solo", "pro")
+    # Create named CF tunnel before droplet so the stable Concerto-domain hostname is ready.
+    # Trials now also get a named tunnel (no more trycloudflare.com URLs for customers).
+    # byoc uses customer-owned DO; we skip the CF tunnel there.
+    is_named_tunnel = mode in ("solo", "pro", "trial")
     tunnel_info: dict = {}
-    if is_hosted:
+    if is_named_tunnel:
         tunnel_info = await create_named_tunnel(token)
         await db.update_buyer(token, cf_tunnel_id=tunnel_info["tunnel_id"])
 
@@ -387,7 +388,7 @@ async def provision_droplet(
 
     except Exception:
         # CF tunnel was created but droplet creation/boot failed — clean it up
-        if is_hosted and tunnel_info.get("tunnel_id"):
+        if is_named_tunnel and tunnel_info.get("tunnel_id"):
             try:
                 await destroy_named_tunnel(tunnel_info["tunnel_id"])
             except Exception:
