@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Concerto MCP server — runs on the customer's VPS.
+"""Concerto MCP server -- runs on the customer's VPS.
 
-FastMCP server (streamable HTTP transport, mcp>=1.2) with Bearer auth.
+FastMCP server (streamable HTTP transport, mcp>=1.2) with OAuth 2.1 + PKCE.
 Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
 
-Auth: Bearer token read from /etc/concerto/token (generated at provision time).
+Auth: OAuth 2.1 Bearer tokens (issued by built-in AS) OR legacy Bearer token
+      from /etc/concerto/token for backward compatibility.
 Session state is in-process memory; sessions are lost on restart.
 """
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import json
 import os
 import time
 import uuid
@@ -19,15 +23,77 @@ from typing import Any
 import anyio
 from mcp.server.fastmcp import FastMCP
 
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
 TOKEN_PATH = Path(os.environ.get("CONCERTO_TOKEN_PATH", "/etc/concerto/token"))
 SESSION_DIR = Path("/var/lib/concerto/sessions")
+OAUTH_DIR = Path("/var/lib/concerto")
+CLIENTS_PATH = OAUTH_DIR / "oauth_clients.json"
+TOKENS_PATH = OAUTH_DIR / "oauth_tokens.json"
+
+# ---------------------------------------------------------------------------
+# In-memory state
+# ---------------------------------------------------------------------------
 
 _sessions: dict[str, dict[str, Any]] = {}
+
+# code -> {client_id, code_challenge, redirect_uri, expires_at}
+_auth_codes: dict[str, dict[str, Any]] = {}
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 
 def _read_token() -> str:
     return TOKEN_PATH.read_text().strip()
 
+
+def _base_url(request: Any) -> str:
+    proto = (
+        request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+        or "http"
+    )
+    host = (
+        request.headers.get("x-forwarded-host", "").split(",")[0].strip()
+        or request.headers.get("host", "localhost")
+    )
+    return f"{proto}://{host}"
+
+
+def _pkce_verify(verifier: str, challenge: str) -> bool:
+    digest = hashlib.sha256(verifier.encode()).digest()
+    computed = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return computed == challenge
+
+
+def _load_json(path: Path) -> dict:
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2))
+
+
+def _purge_expired_codes() -> None:
+    now = time.time()
+    expired = [k for k, v in _auth_codes.items() if v["expires_at"] < now]
+    for k in expired:
+        del _auth_codes[k]
+
+
+# ---------------------------------------------------------------------------
+# MCP server
+# ---------------------------------------------------------------------------
 
 mcp = FastMCP("concerto", stateless_http=True)
 
@@ -141,29 +207,392 @@ async def _run_claude(session_id: str, prompt: str, model: str) -> None:
         s.pop("_task", None)
 
 
-def main() -> None:
-    import uvicorn
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.requests import Request as _Request
+# ---------------------------------------------------------------------------
+# OAuth 2.1 endpoint handlers
+# ---------------------------------------------------------------------------
+
+
+async def as_metadata(request: Any) -> Any:
+    """GET /.well-known/oauth-authorization-server -- RFC 8414 AS metadata."""
+    from starlette.responses import JSONResponse
+    base = _base_url(request)
+    return JSONResponse({
+        "issuer": base,
+        "authorization_endpoint": f"{base}/authorize",
+        "token_endpoint": f"{base}/token",
+        "registration_endpoint": f"{base}/register",
+        "response_types_supported": ["code"],
+        "grant_types_supported": ["authorization_code", "refresh_token"],
+        "code_challenge_methods_supported": ["S256"],
+        "token_endpoint_auth_methods_supported": ["none"],
+    })
+
+
+async def pr_metadata(request: Any) -> Any:
+    """GET /.well-known/oauth-protected-resource[/mcp] -- RFC 9728 resource metadata."""
+    from starlette.responses import JSONResponse
+    base = _base_url(request)
+    return JSONResponse({
+        "resource": base,
+        "authorization_servers": [base],
+    })
+
+
+async def register(request: Any) -> Any:
+    """POST /register -- RFC 7591 Dynamic Client Registration."""
+    from starlette.responses import JSONResponse
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    client_id = uuid.uuid4().hex
+    now = int(time.time())
+    record = dict(body)
+    record["client_id"] = client_id
+    record["client_id_issued_at"] = now
+    record["token_endpoint_auth_method"] = "none"
+
+    clients = _load_json(CLIENTS_PATH)
+    clients[client_id] = record
+    _save_json(CLIENTS_PATH, clients)
+
+    return JSONResponse(record, status_code=201)
+
+
+async def authorize(request: Any) -> Any:
+    """GET /authorize -- OAuth 2.1 authorization code + PKCE (auto-approve)."""
+    from starlette.responses import JSONResponse, RedirectResponse
+    params = dict(request.query_params)
+
+    client_id = params.get("client_id", "")
+    redirect_uri = params.get("redirect_uri", "")
+    code_challenge = params.get("code_challenge", "")
+    code_challenge_method = params.get("code_challenge_method", "S256")
+    response_type = params.get("response_type", "")
+    state = params.get("state", "")
+
+    # Validate required parameters
+    missing = []
+    if not client_id:
+        missing.append("client_id")
+    if not redirect_uri:
+        missing.append("redirect_uri")
+    if not code_challenge:
+        missing.append("code_challenge")
+    if response_type != "code":
+        missing.append("response_type (must be 'code')")
+
+    if missing:
+        return JSONResponse(
+            {"error": "invalid_request", "error_description": f"Missing or invalid: {', '.join(missing)}"},
+            status_code=400,
+        )
+
+    if code_challenge_method != "S256":
+        return JSONResponse(
+            {"error": "invalid_request", "error_description": "Only S256 code_challenge_method is supported"},
+            status_code=400,
+        )
+
+    # Validate client_id exists (allow any if registry is empty for bootstrapping)
+    clients = _load_json(CLIENTS_PATH)
+    if clients and client_id not in clients:
+        return JSONResponse(
+            {"error": "invalid_client", "error_description": f"Unknown client_id: {client_id}"},
+            status_code=400,
+        )
+
+    # Auto-approve: generate code
+    _purge_expired_codes()
+    code = uuid.uuid4().hex + uuid.uuid4().hex
+    _auth_codes[code] = {
+        "client_id": client_id,
+        "code_challenge": code_challenge,
+        "redirect_uri": redirect_uri,
+        "expires_at": time.time() + 600,
+    }
+
+    # Build redirect
+    separator = "&" if "?" in redirect_uri else "?"
+    location = f"{redirect_uri}{separator}code={code}"
+    if state:
+        location = f"{location}&state={state}"
+
+    return RedirectResponse(url=location, status_code=302)
+
+
+async def token_endpoint(request: Any) -> Any:
+    """POST /token -- OAuth 2.1 token endpoint."""
     from starlette.responses import JSONResponse
 
-    class BearerAuth(BaseHTTPMiddleware):
-        async def dispatch(self, request: _Request, call_next):
-            if request.url.path == "/healthz":
-                return await call_next(request)
-            try:
-                expected = _read_token()
-            except OSError:
-                return JSONResponse({"error": "token file not readable"}, status_code=503)
-            auth = request.headers.get("Authorization", "")
-            if not auth.lower().startswith("bearer "):
-                return JSONResponse({"error": "missing bearer token"}, status_code=401)
-            if auth.split(" ", 1)[1].strip() != expected:
-                return JSONResponse({"error": "invalid bearer token"}, status_code=401)
-            return await call_next(request)
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+    else:
+        # form-encoded
+        try:
+            form = await request.form()
+            body = dict(form)
+        except Exception:
+            body = {}
 
-    app = mcp.streamable_http_app()
-    app.add_middleware(BearerAuth)
+    grant_type = body.get("grant_type", "")
+
+    if grant_type == "authorization_code":
+        code = body.get("code", "")
+        code_verifier = body.get("code_verifier", "")
+        redirect_uri = body.get("redirect_uri", "")
+        client_id = body.get("client_id", "")
+
+        if not code or not code_verifier:
+            return JSONResponse(
+                {"error": "invalid_request", "error_description": "Missing code or code_verifier"},
+                status_code=400,
+            )
+
+        _purge_expired_codes()
+        stored = _auth_codes.get(code)
+        if stored is None:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "Authorization code not found or expired"},
+                status_code=400,
+            )
+
+        if stored["expires_at"] < time.time():
+            del _auth_codes[code]
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "Authorization code expired"},
+                status_code=400,
+            )
+
+        if client_id and stored["client_id"] != client_id:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "client_id mismatch"},
+                status_code=400,
+            )
+
+        if redirect_uri and stored["redirect_uri"] != redirect_uri:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "redirect_uri mismatch"},
+                status_code=400,
+            )
+
+        if not _pkce_verify(code_verifier, stored["code_challenge"]):
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "PKCE verification failed"},
+                status_code=400,
+            )
+
+        # Consume the code
+        del _auth_codes[code]
+
+        # Issue tokens
+        access_token = uuid.uuid4().hex + uuid.uuid4().hex
+        refresh_token = uuid.uuid4().hex + uuid.uuid4().hex
+        expires_in = 3600
+        now = time.time()
+
+        tokens = _load_json(TOKENS_PATH)
+        tokens[access_token] = {
+            "client_id": stored["client_id"],
+            "refresh_token": refresh_token,
+            "expires_at": now + expires_in,
+            "scope": body.get("scope", ""),
+        }
+        # Also index by refresh_token for grant_type=refresh_token
+        tokens[f"rt:{refresh_token}"] = {
+            "client_id": stored["client_id"],
+            "access_token": access_token,
+            "expires_at": now + 86400 * 30,
+        }
+        _save_json(TOKENS_PATH, tokens)
+
+        return JSONResponse({
+            "access_token": access_token,
+            "token_type": "Bearer",
+            "expires_in": expires_in,
+            "refresh_token": refresh_token,
+        })
+
+    elif grant_type == "refresh_token":
+        refresh_token = body.get("refresh_token", "")
+        if not refresh_token:
+            return JSONResponse(
+                {"error": "invalid_request", "error_description": "Missing refresh_token"},
+                status_code=400,
+            )
+
+        tokens = _load_json(TOKENS_PATH)
+        rt_key = f"rt:{refresh_token}"
+        rt_record = tokens.get(rt_key)
+
+        if rt_record is None:
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "refresh_token not found"},
+                status_code=400,
+            )
+
+        if rt_record["expires_at"] < time.time():
+            return JSONResponse(
+                {"error": "invalid_grant", "error_description": "refresh_token expired"},
+                status_code=400,
+            )
+
+        # Revoke old access token if present
+        old_at = rt_record.get("access_token")
+        if old_at and old_at in tokens:
+            del tokens[old_at]
+
+        # Issue new access token
+        new_access_token = uuid.uuid4().hex + uuid.uuid4().hex
+        expires_in = 3600
+        now = time.time()
+        client_id = rt_record["client_id"]
+
+        tokens[new_access_token] = {
+            "client_id": client_id,
+            "refresh_token": refresh_token,
+            "expires_at": now + expires_in,
+            "scope": "",
+        }
+        tokens[rt_key]["access_token"] = new_access_token
+
+        _save_json(TOKENS_PATH, tokens)
+
+        return JSONResponse({
+            "access_token": new_access_token,
+            "token_type": "Bearer",
+            "expires_in": expires_in,
+            "refresh_token": refresh_token,
+        })
+
+    else:
+        return JSONResponse(
+            {"error": "unsupported_grant_type", "error_description": f"grant_type {grant_type!r} not supported"},
+            status_code=400,
+        )
+
+
+# ---------------------------------------------------------------------------
+# App assembly
+# ---------------------------------------------------------------------------
+
+# Paths that bypass authentication entirely
+_UNAUTH_EXACT = {"/healthz", "/authorize", "/register", "/token"}
+_UNAUTH_PREFIXES = ("/.well-known/",)
+
+# OAuth endpoint dispatch table: path -> (method, handler)
+_OAUTH_ROUTES: dict[str, tuple[str, Any]] = {
+    "/.well-known/oauth-authorization-server": ("GET", as_metadata),
+    "/.well-known/oauth-protected-resource": ("GET", pr_metadata),
+    "/.well-known/oauth-protected-resource/mcp": ("GET", pr_metadata),
+    "/register": ("POST", register),
+    "/authorize": ("GET", authorize),
+    "/token": ("POST", token_endpoint),
+}
+
+
+def _is_unauthenticated_path(path: str) -> bool:
+    if path in _UNAUTH_EXACT:
+        return True
+    for prefix in _UNAUTH_PREFIXES:
+        if path.startswith(prefix):
+            return True
+    return False
+
+
+def _check_bearer(request: Any) -> bool:
+    """Return True if the request carries a valid OAuth or legacy bearer token."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.lower().startswith("bearer "):
+        return False
+    token = auth.split(" ", 1)[1].strip()
+
+    # Check OAuth tokens store
+    tokens = _load_json(TOKENS_PATH)
+    record = tokens.get(token)
+    if record is not None:
+        if record.get("expires_at", 0) >= time.time():
+            return True
+
+    # Fall back to legacy static token
+    try:
+        expected = _read_token()
+        if token == expected:
+            return True
+    except OSError:
+        pass
+
+    return False
+
+
+class CombinedApp:
+    """ASGI application that handles OAuth endpoints directly and proxies the rest to mcp_app."""
+
+    def __init__(self, mcp_app: Any) -> None:
+        self.mcp_app = mcp_app
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        from starlette.requests import Request
+        from starlette.responses import JSONResponse, Response
+
+        if scope["type"] == "lifespan":
+            await self.mcp_app(scope, receive, send)
+            return
+
+        if scope["type"] != "http":
+            await self.mcp_app(scope, receive, send)
+            return
+
+        path = scope.get("path", "/")
+        method = scope.get("method", "GET")
+
+        # --- OAuth / public endpoints ---
+        if path in _OAUTH_ROUTES:
+            expected_method, handler = _OAUTH_ROUTES[path]
+            if method == expected_method:
+                request = Request(scope, receive)
+                response = await handler(request)
+                await response(scope, receive, send)
+                return
+            # Method not allowed
+            response = Response(status_code=405)
+            await response(scope, receive, send)
+            return
+
+        # --- Health check ---
+        if path == "/healthz":
+            response = JSONResponse({"status": "ok"})
+            await response(scope, receive, send)
+            return
+
+        # --- Auth check for all other paths ---
+        request = Request(scope, receive)
+        if not _check_bearer(request):
+            base = _base_url(request)
+            resource_meta = f"{base}/.well-known/oauth-protected-resource"
+            www_auth = f'Bearer resource_metadata="{resource_meta}"'
+            response = JSONResponse(
+                {"error": "unauthorized", "error_description": "Valid Bearer token required"},
+                status_code=401,
+                headers={"WWW-Authenticate": www_auth},
+            )
+            await response(scope, receive, send)
+            return
+
+        # Authenticated -- forward to MCP app
+        await self.mcp_app(scope, receive, send)
+
+
+def main() -> None:
+    import uvicorn
+
+    mcp_app = mcp.streamable_http_app()
+    app = CombinedApp(mcp_app)
     uvicorn.run(app, host="127.0.0.1", port=9876, log_level="info")
 
 
