@@ -44,6 +44,7 @@ tmpl = env.get_template("cloud_init.yaml.j2")
 rendered = tmpl.render(
     concerto_token="x", concerto_callback_url="https://x.example.com/cb",
     ssh_authorized_key="ssh-ed25519 AAAA fake@host", customer_email="x@x.com",
+    ttyd_password="x", concerto_token_prefix="x", tunnel_hostname="", tunnel_token="",
 )
 
 doc = yaml.safe_load(rendered)
@@ -103,6 +104,10 @@ out = tmpl.render(
     concerto_callback_url="https://empire.example.com/api/concerto/callback",
     ssh_authorized_key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFakeKeyForDryRunOnly dryrun@concerto",
     customer_email="dryrun@example.com",
+    ttyd_password="deadbeefcafebabe0123456789abcdef",
+    concerto_token_prefix="dryrun0",
+    tunnel_hostname="",
+    tunnel_token="",
 )
 with open("${RENDERED}", "w") as f:
     f.write(out)

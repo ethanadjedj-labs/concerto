@@ -4,7 +4,8 @@ terminal_router.py — WebSocket proxy to customer ttyd via trycloudflare URL.
 Findings applied:
   F1 — subprotocols=['tty'] forwarded on both client-accept and upstream connect
   F2 — Basic Auth injected upstream using per-buyer ttyd_password (transparent to browser)
-  F3 — /terminal/{token}/frame HTTP endpoint adds CSP frame-ancestors for iframe embedding
+  F3 — /terminal/{token}/frame HTTP endpoint adds CSP frame-ancestors header; branded HTML
+       error pages prevent iOS Safari reader-mode ("Impression élégante") overlay
   F6 — ping_interval keeps idle connections alive; upstream close triggers 1011 to client
 """
 import asyncio
@@ -28,6 +29,38 @@ _CSP_FRAME_ANCESTORS = (
     "frame-ancestors https://concerto.run https://*.vercel.app"
 )
 
+_HTML_SETTING_UP = (
+    '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+    "<style>body{margin:0;font-family:system-ui;background:#faf9f5;color:#191919;display:flex;"
+    "align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}"
+    ".box{max-width:320px}h2{font-size:16px;margin:0 0 8px;font-weight:500}"
+    "p{font-size:13px;color:#8a847b;margin:0;line-height:1.5}"
+    ".dot{display:inline-block;width:8px;height:8px;background:#cc785c;border-radius:50%;"
+    "margin:0 3px;animation:p 1.4s infinite ease-in-out both}"
+    ".dot:nth-child(1){animation-delay:-.32s}.dot:nth-child(2){animation-delay:-.16s}"
+    "@keyframes p{0%,80%,100%{transform:scale(0);opacity:0}40%{transform:scale(1);opacity:1}}"
+    "</style></head><body><div class=\"box\">"
+    '<div style="margin-bottom:16px"><span class="dot"></span><span class="dot"></span>'
+    '<span class="dot"></span></div>'
+    "<h2>Setting up</h2><p>Your environment is initializing.<br>This takes about 3 minutes.</p>"
+    "</div></body></html>"
+)
+
+_HTML_UNAVAILABLE = (
+    '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">'
+    "<style>body{margin:0;font-family:system-ui;background:#faf9f5;color:#191919;display:flex;"
+    "align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}"
+    ".box{max-width:320px}h2{font-size:16px;margin:0 0 8px;font-weight:500}"
+    "p{font-size:13px;color:#8a847b;margin:0;line-height:1.5}"
+    "</style></head><body><div class=\"box\">"
+    "<h2>Environment unavailable</h2>"
+    "<p>This environment is no longer available.<br>"
+    "Refresh the page to see your current account status.</p>"
+    "</div></body></html>"
+)
+
+_PROVISIONING_STATUSES = {"paid_unprovisioned", "provisioning", "installing"}
+
 
 def _ttyd_ws_url(ttyd_public_url: str) -> str:
     """Convert HTTP ttyd public URL to WebSocket URL (appends /ws)."""
@@ -43,10 +76,22 @@ def _basic_auth_header(ttyd_password: str) -> str:
 
 @router.get("/terminal/{token}/frame")
 async def terminal_frame(token: str):
-    """Proxy ttyd HTML for iframe embedding; injects CSP frame-ancestors header."""
+    """Proxy ttyd HTML for iframe embedding; branded error pages prevent iOS reader-mode."""
     buyer = await db.get_buyer(token)
     if not buyer or not buyer.get("ttyd_public_url"):
-        return Response(status_code=503, content="Terminal not yet ready")
+        if buyer and buyer.get("status") in _PROVISIONING_STATUSES:
+            return Response(
+                status_code=503,
+                content=_HTML_SETTING_UP,
+                media_type="text/html; charset=utf-8",
+                headers={"Content-Security-Policy": _CSP_FRAME_ANCESTORS},
+            )
+        return Response(
+            status_code=410,
+            content=_HTML_UNAVAILABLE,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Security-Policy": _CSP_FRAME_ANCESTORS},
+        )
 
     ttyd_url = buyer["ttyd_public_url"].rstrip("/") + "/"
     auth = _basic_auth_header(buyer.get("ttyd_password") or "")
@@ -66,7 +111,12 @@ async def terminal_frame(token: str):
         )
     except httpx.RequestError as exc:
         logger.warning("terminal_frame proxy error: %s", exc)
-        return Response(status_code=503, content="Terminal unreachable")
+        return Response(
+            status_code=503,
+            content=_HTML_UNAVAILABLE,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Security-Policy": _CSP_FRAME_ANCESTORS},
+        )
 
 
 @router.websocket("/terminal/{token}")

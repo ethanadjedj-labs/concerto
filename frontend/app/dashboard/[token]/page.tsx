@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Eye, EyeOff, ExternalLink } from "lucide-react"
+import { Copy, Check, Eye, EyeOff, ExternalLink, RefreshCw } from "lucide-react"
 
 /* ─── Brand tokens ────────────────────────────────────────────────
    cream:   #faf9f5
@@ -14,6 +14,67 @@ import { Copy, Check, Eye, EyeOff, ExternalLink } from "lucide-react"
    card:    #fff
    divider: #f3efe5
 ─────────────────────────────────────────────────────────────────── */
+
+// ─── State machine ────────────────────────────────────────────────
+type UIState =
+  | "loading"         // first fetch pending / null status
+  | "preparing"       // paid_unprovisioned — simple spinner
+  | "setting_up"      // provisioning | installing — spinner + timeline
+  | "failed"          // provisioning_failed
+  | "step1"           // awaiting_oauth
+  | "step2"           // oauth_complete | mcp_active
+  | "step3"           // connector_first_call_detected | active
+  | "trial_expired"
+  | "cancelled"       // cancelled | subscription_cancelled
+  | "refunded"
+  | "suspended"
+  | "network_error"
+
+function deriveUIState(status: string | null): UIState {
+  switch (status) {
+    case null:
+    case undefined:
+      return "loading"
+    case "paid_unprovisioned":
+      return "preparing"
+    case "provisioning":
+    case "installing":
+      return "setting_up"
+    case "provisioning_failed":
+      return "failed"
+    case "awaiting_oauth":
+      return "step1"
+    case "oauth_complete":
+    case "mcp_active":
+      return "step2"
+    case "connector_first_call_detected":
+    case "active":
+      return "step3"
+    case "trial_expired":
+      return "trial_expired"
+    case "cancelled":
+    case "subscription_cancelled":
+      return "cancelled"
+    case "refunded":
+      return "refunded"
+    case "suspended":
+      return "suspended"
+    default:
+      return "loading"
+  }
+}
+
+const POLLING_STATES: UIState[] = ["loading", "preparing", "setting_up"]
+
+function formatDate(ts: number): string {
+  return new Date(ts * 1000).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+// ─── Shared primitives ────────────────────────────────────────────
 
 function LogoMark({ size = 28 }: { size?: number }) {
   return (
@@ -28,7 +89,6 @@ function LogoMark({ size = 28 }: { size?: number }) {
 }
 
 function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
-  const labels = ["Sign in to Claude", "Connect to claude.ai", "You're ready"]
   return (
     <div className="flex flex-col items-center gap-2.5">
       <div className="flex items-center">
@@ -277,35 +337,151 @@ function PromptCard({ text }: { text: string }) {
   )
 }
 
+// ─── State-card primitives ────────────────────────────────────────
+
+function StatusCard({
+  children,
+  redBorder = false,
+}: {
+  children: ReactNode
+  redBorder?: boolean
+}) {
+  return (
+    <div
+      className="rounded-2xl p-8 text-center"
+      style={{
+        backgroundColor: "#fff",
+        border: "1px solid #f3efe5",
+        ...(redBorder ? { borderLeft: "3px solid rgba(220,38,38,0.3)" } : {}),
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SupportLink() {
+  return (
+    <p className="mt-5 text-[12px]" style={{ color: "#8a847b" }}>
+      <a
+        href="mailto:support@concerto.run"
+        className="underline transition-opacity hover:opacity-70"
+        style={{ color: "#8a847b" }}
+      >
+        support@concerto.run
+      </a>
+    </p>
+  )
+}
+
+function SpinnerDots() {
+  return (
+    <div className="mb-4 flex justify-center gap-1.5">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="_cdot"
+          style={{ animationDelay: `${[-0.32, -0.16, 0][i]}s` }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function UpgradeCTAs({ token }: { token: string }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <form method="POST" action={`/api/checkout?plan=solo&trial_token=${token}`}>
+        <button
+          type="submit"
+          className="w-full rounded-xl px-4 py-2.5 text-[14px] font-medium transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "#cc785c", color: "#fff" }}
+        >
+          Subscribe to Solo — $49/mo
+        </button>
+      </form>
+      <form method="POST" action={`/api/checkout?plan=pro&trial_token=${token}`}>
+        <button
+          type="submit"
+          className="w-full rounded-xl px-4 py-2.5 text-[14px] font-medium transition-opacity hover:opacity-75"
+          style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}
+        >
+          or Pro — $99/mo
+        </button>
+      </form>
+    </div>
+  )
+}
+
+// ─── Main page component ──────────────────────────────────────────
+
 export default function DashboardPage({
   params,
 }: {
   params: { token: string }
 }) {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [uiState, setUIState] = useState<UIState>("loading")
+  const uiStateRef = useRef<UIState>("loading")
+  const [rawStatus, setRawStatus] = useState<string | null>(null)
   const [dashData, setDashData] = useState<{
     mcp_url?: string
     bearer_token?: string
+    expires_at?: number
+    next_renewal_at?: number
   } | null>(null)
   const [terminalVisible, setTerminalVisible] = useState(false)
   const [oauthSuccess, setOauthSuccess] = useState(false)
+  // Increments on manual retry to restart the polling effect
+  const [fetchTrigger, setFetchTrigger] = useState(0)
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
-  const terminalUrl = `${backendUrl}/terminal/${params.token}`
+  // /frame endpoint returns proxied ttyd HTML, or a branded error page
+  const terminalFrameUrl = `${backendUrl}/terminal/${params.token}/frame`
 
+  // Keep ref in sync for use inside interval callbacks
   useEffect(() => {
-    fetch(`${backendUrl}/api/buyer/${params.token}/status`)
-      .then((r) => r.json())
-      .then((d) =>
-        setDashData({ mcp_url: d.mcp_url, bearer_token: d.bearer_token })
-      )
-      .catch(() => {})
-  }, [backendUrl, params.token])
+    uiStateRef.current = uiState
+  }, [uiState])
 
-  // Poll oauth-status every 5s when terminal is shown (Step 1)
+  // Main status poll — active while in loading/preparing/setting_up
   useEffect(() => {
-    if (step !== 1 || !terminalVisible) return
+    let failCount = 0
+
+    async function poll() {
+      if (!POLLING_STATES.includes(uiStateRef.current)) return
+      try {
+        const r = await fetch(`${backendUrl}/api/buyer/${params.token}/status`)
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        const d = await r.json()
+        failCount = 0
+        setRawStatus(d.status ?? null)
+        setDashData({
+          mcp_url: d.mcp_url,
+          bearer_token: d.bearer_token,
+          expires_at: d.expires_at,
+          next_renewal_at: d.next_renewal_at,
+        })
+        const next = deriveUIState(d.status ?? null)
+        setUIState(next)
+        uiStateRef.current = next
+      } catch {
+        failCount++
+        if (failCount >= 3) {
+          setUIState("network_error")
+          uiStateRef.current = "network_error"
+        }
+      }
+    }
+
+    poll()
+    const id = setInterval(poll, 5000)
+    return () => clearInterval(id)
+  }, [backendUrl, params.token, fetchTrigger])
+
+  // OAuth poll — active in step1 once terminal is shown
+  useEffect(() => {
+    if (uiState !== "step1" || !terminalVisible) return
     const id = setInterval(async () => {
       try {
         const r = await fetch(
@@ -315,18 +491,21 @@ export default function DashboardPage({
         if (d.oauth_complete) {
           setOauthSuccess(true)
           clearInterval(id)
-          setTimeout(() => setStep(2), 1800)
+          setTimeout(() => {
+            setUIState("step2")
+            uiStateRef.current = "step2"
+          }, 1800)
         }
       } catch {
         // network blip — ignore, retry next tick
       }
     }, 5000)
     return () => clearInterval(id)
-  }, [step, terminalVisible, backendUrl, params.token])
+  }, [uiState, terminalVisible, backendUrl, params.token])
 
-  // Poll first-call-detected every 5s when on Step 2
+  // First-call poll — active in step2
   useEffect(() => {
-    if (step !== 2) return
+    if (uiState !== "step2") return
     const id = setInterval(async () => {
       try {
         const r = await fetch(
@@ -335,23 +514,59 @@ export default function DashboardPage({
         const d = await r.json()
         if (d.detected) {
           clearInterval(id)
-          setTimeout(() => setStep(3), 800)
+          setTimeout(() => {
+            setUIState("step3")
+            uiStateRef.current = "step3"
+          }, 800)
         }
       } catch {
         // ignore
       }
     }, 5000)
     return () => clearInterval(id)
-  }, [step, backendUrl, params.token])
+  }, [uiState, backendUrl, params.token])
 
   const mcpUrl = dashData?.mcp_url ?? "Loading..."
   const bearerToken = dashData?.bearer_token ?? "Loading..."
+
+  const hideAccountSettings = ["trial_expired", "cancelled", "refunded"].includes(
+    uiState
+  )
+  const isWizardState =
+    uiState === "step1" || uiState === "step2" || uiState === "step3"
+  const wizardStep: 1 | 2 | 3 =
+    uiState === "step2" ? 2 : uiState === "step3" ? 3 : 1
+
+  async function openCustomerPortal() {
+    try {
+      const r = await fetch(`${backendUrl}/api/customer-portal-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: params.token }),
+      })
+      if (!r.ok) throw new Error("Portal unavailable")
+      const d = await r.json()
+      if (d.url) window.location.href = d.url
+    } catch {
+      alert(
+        "Couldn't open the billing portal. Email support@concerto.run for help."
+      )
+    }
+  }
 
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "#faf9f5", color: "#191919" }}
     >
+      {/* Keyframes for dot-spinner and SVG arc */}
+      <style>{`
+        @keyframes _cdp{0%,80%,100%{transform:scale(0);opacity:0}40%{transform:scale(1);opacity:1}}
+        ._cdot{display:inline-block;width:8px;height:8px;background:#cc785c;border-radius:50%;animation:_cdp 1.4s infinite ease-in-out both}
+        @keyframes _cspin{to{transform:rotate(360deg)}}
+        ._cspin{animation:_cspin 1.2s linear infinite;transform-origin:22px 22px}
+      `}</style>
+
       {/* ── Header ── */}
       <header
         className="sticky top-0 z-10"
@@ -371,25 +586,241 @@ export default function DashboardPage({
               Concerto
             </span>
           </div>
-          <Link
-            href={`/dashboard/${params.token}/settings`}
-            className="text-[13px] transition-opacity hover:opacity-70"
-            style={{ color: "#8a847b" }}
-          >
-            Account settings
-          </Link>
+          {!hideAccountSettings && (
+            <Link
+              href={`/dashboard/${params.token}/settings`}
+              className="text-[13px] transition-opacity hover:opacity-70"
+              style={{ color: "#8a847b" }}
+            >
+              Account settings
+            </Link>
+          )}
         </div>
       </header>
 
-      {/* ── Wizard ── */}
+      {/* ── Main ── */}
       <main className="mx-auto max-w-md px-5 py-10">
-        {/* Progress */}
-        <div className="mb-8">
-          <ProgressBar step={step} />
-        </div>
+        {/* Progress bar — wizard states only */}
+        {isWizardState && (
+          <div className="mb-8">
+            <ProgressBar step={wizardStep} />
+          </div>
+        )}
+
+        {/* ── Loading ── */}
+        {uiState === "loading" && (
+          <StatusCard>
+            <SpinnerDots />
+            <p className="text-[15px] font-medium" style={{ color: "#191919" }}>
+              Loading your account…
+            </p>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Preparing (paid_unprovisioned) ── */}
+        {uiState === "preparing" && (
+          <StatusCard>
+            <SpinnerDots />
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Preparing your environment
+            </p>
+            <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              This takes about 3 minutes. The page will refresh automatically
+              when ready.
+            </p>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Setting up (provisioning / installing) ── */}
+        {uiState === "setting_up" && (
+          <StatusCard>
+            <div className="mb-5 flex justify-center">
+              <svg width="44" height="44" viewBox="0 0 44 44">
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  fill="none"
+                  stroke="#f3efe5"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  fill="none"
+                  stroke="#cc785c"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray="32 82"
+                  className="_cspin"
+                />
+              </svg>
+            </div>
+            <p className="mb-4 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Setting up your environment…
+            </p>
+            {/* Micro-timeline */}
+            <div className="flex items-center justify-center text-[12px]">
+              {(
+                [
+                  ["Provisioning", "provisioning"],
+                  ["Installing tools", "installing"],
+                  ["Starting services", null],
+                ] as [string, string | null][]
+              ).map(([label, matchStatus], i) => {
+                const active =
+                  matchStatus !== null && rawStatus === matchStatus
+                const done =
+                  rawStatus === "installing" && matchStatus === "provisioning"
+                return (
+                  <span key={label} className="flex items-center">
+                    <span
+                      style={{
+                        color: active
+                          ? "#cc785c"
+                          : done
+                          ? "rgba(204,120,92,0.5)"
+                          : "#c5bfb7",
+                        fontWeight: active ? 500 : 400,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    {i < 2 && (
+                      <span className="mx-2" style={{ color: "#e5e0d8" }}>
+                        ·
+                      </span>
+                    )}
+                  </span>
+                )
+              })}
+            </div>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Provisioning failed ── */}
+        {uiState === "failed" && (
+          <StatusCard redBorder>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Setup didn&apos;t complete
+            </p>
+            <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              Email{" "}
+              <a
+                href="mailto:support@concerto.run"
+                className="underline transition-opacity hover:opacity-70"
+                style={{ color: "#cc785c" }}
+              >
+                support@concerto.run
+              </a>{" "}
+              and we&apos;ll fix it manually within a few hours.
+            </p>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Network error ── */}
+        {uiState === "network_error" && (
+          <StatusCard>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Connection issue
+            </p>
+            <p className="mb-4 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              Couldn&apos;t reach your account. Check your connection and retry.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setUIState("loading")
+                uiStateRef.current = "loading"
+                setFetchTrigger((c) => c + 1)
+              }}
+              className="mx-auto flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-medium transition-opacity hover:opacity-75"
+              style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            </button>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Trial expired ── */}
+        {uiState === "trial_expired" && (
+          <StatusCard>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Your free trial ended
+            </p>
+            <p className="mb-5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              To keep building, subscribe to a plan.
+            </p>
+            <UpgradeCTAs token={params.token} />
+            <p className="mt-4 text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+              Trials are limited to 4 hours by design — your environment was
+              destroyed when it ended. A paid plan provisions a fresh persistent
+              environment in about 5 minutes.
+            </p>
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Cancelled ── */}
+        {uiState === "cancelled" && (
+          <StatusCard>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Your subscription ended
+              {dashData?.next_renewal_at
+                ? ` on ${formatDate(dashData.next_renewal_at)}`
+                : ""}
+            </p>
+            <p className="mb-5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              Resubscribe to restart with a fresh environment.
+            </p>
+            <UpgradeCTAs token={params.token} />
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Refunded ── */}
+        {uiState === "refunded" && (
+          <StatusCard>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Your refund was processed
+            </p>
+            <p className="mb-5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              To start again, subscribe below.
+            </p>
+            <UpgradeCTAs token={params.token} />
+            <SupportLink />
+          </StatusCard>
+        )}
+
+        {/* ── Suspended (payment past-due) ── */}
+        {uiState === "suspended" && (
+          <StatusCard>
+            <p className="mb-2 text-[15px] font-medium" style={{ color: "#191919" }}>
+              Payment couldn&apos;t be processed
+            </p>
+            <p className="mb-5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              Update your payment method to keep your environment.
+            </p>
+            <button
+              type="button"
+              onClick={openCustomerPortal}
+              className="w-full rounded-xl px-4 py-2.5 text-[14px] font-medium transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#cc785c", color: "#fff" }}
+            >
+              Update payment
+            </button>
+            <SupportLink />
+          </StatusCard>
+        )}
 
         {/* ── Step 1: Sign in to Claude ── */}
-        {step === 1 && (
+        {uiState === "step1" && (
           <div
             className="rounded-2xl"
             style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
@@ -451,7 +882,7 @@ export default function DashboardPage({
                     }}
                   >
                     <iframe
-                      src={terminalUrl}
+                      src={terminalFrameUrl}
                       className="w-full border-0"
                       style={{
                         display: "block",
@@ -467,18 +898,8 @@ export default function DashboardPage({
                     className="text-[13px] leading-relaxed"
                     style={{ color: "#8a847b" }}
                   >
-                    Type{" "}
-                    <code
-                      className="rounded px-1 py-0.5 text-[12px]"
-                      style={{
-                        backgroundColor: "#f3efe5",
-                        color: "#191919",
-                      }}
-                    >
-                      claude login
-                    </code>{" "}
-                    if not already started, then follow the OAuth prompts in
-                    the browser tab that opens.
+                    Follow the URL that appears in the terminal, then paste the
+                    code back here.
                   </p>
                 </div>
               )}
@@ -487,7 +908,7 @@ export default function DashboardPage({
         )}
 
         {/* ── Step 2: Connect to claude.ai ── */}
-        {step === 2 && (
+        {uiState === "step2" && (
           <div
             className="rounded-2xl"
             style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
@@ -596,7 +1017,10 @@ export default function DashboardPage({
               </div>
 
               <Button
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  setUIState("step3")
+                  uiStateRef.current = "step3"
+                }}
                 className="w-full rounded-xl text-[15px] font-medium"
                 style={{
                   backgroundColor: "#cc785c",
@@ -611,7 +1035,7 @@ export default function DashboardPage({
         )}
 
         {/* ── Step 3: You're ready ── */}
-        {step === 3 && (
+        {uiState === "step3" && (
           <div
             className="rounded-2xl"
             style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
