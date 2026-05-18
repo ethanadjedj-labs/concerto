@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Spawn 3 sessions in parallel</title></head>
+<body style="margin:0;padding:0;background:#faf9f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#191919;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;">
+<tr><td align="center" style="padding:40px 20px;">
+<table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+<tr><td style="padding-bottom:24px;font-size:16px;font-weight:700;letter-spacing:.04em;color:#191919;">Concerto</td></tr>
+<tr><td style="background:#ffffff;border:1px solid #f3efe5;border-radius:8px;padding:32px;">
+  <h1 style="font-size:22px;font-weight:700;color:#191919;margin:0 0 16px;line-height:1.3;">Try this: 3 sessions in parallel.</h1>
+  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">Most people run Claude Code one task at a time. With Concerto, your environment handles multiple concurrent sessions &mdash; each in its own tmux window, sharing the same filesystem and tools.</p>
+  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">Here's a prompt pattern that spawns three independent workstreams and waits for all three before reporting results:</p>
+  <table cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;border:1px solid #f3efe5;border-radius:6px;padding:18px 20px;margin:0 0 20px;width:100%;box-sizing:border-box;">
+  <tr><td style="font-family:'Courier New',Courier,monospace;font-size:13px;color:#4a4540;line-height:1.7;white-space:pre-wrap;">Start 3 background Claude Code sessions:
+1. Session A: scan /tmp for files larger than 1MB, write results to /tmp/scan_a.txt
+2. Session B: run `uptime &amp;&amp; date` and write to /tmp/scan_b.txt
+3. Session C: count lines in every .log file under /var/log (non-recursive), write to /tmp/scan_c.txt
+
+Run all three in parallel via tmux or background subshells.
+When all three finish, read and summarize all three output files.</td></tr>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;border:1px solid #f3efe5;border-radius:6px;padding:14px 16px;margin:0 0 20px;width:100%;box-sizing:border-box;">
+  <tr><td style="font-size:14px;color:#4a4540;line-height:1.6;">
+    <strong style="color:#191919;">Power tip:</strong> use <code style="background:#f3efe5;padding:1px 5px;border-radius:3px;">tmux new-session -d -s &lt;name&gt;</code> to keep each session independent. Concerto manages the orchestration; Claude Code handles the execution.
+  </td></tr>
+  </table>
+  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 24px;">This pattern scales to real workloads: parallel test runs, multi-repo refactors, concurrent API migrations. Sessions share the filesystem so intermediate outputs flow naturally between them.</p>
+  <a href="{{dashboard_url}}" style="display:inline-block;background:#cc785c;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 28px;border-radius:6px;letter-spacing:.01em;">Open dashboard &rarr;</a>
+</td></tr>
+<tr><td style="padding-top:24px;font-size:12px;color:#8a847b;text-align:center;">
+  Concerto &middot; <a href="https://concerto.run" style="color:#8a847b;text-decoration:none;">concerto.run</a> &middot; <a href="mailto:support@concerto.run" style="color:#8a847b;text-decoration:none;">support@concerto.run</a><br>
+  <a href="{{unsubscribe_url}}" style="color:#8a847b;text-decoration:none;">Unsubscribe</a> from onboarding emails
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
