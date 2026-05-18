@@ -447,21 +447,43 @@ export default function DashboardPage({
   async function startSignIn() {
     setSignInError("")
     setSignInPhase("starting")
-    try {
-      const r = await fetch(
-        `${backendUrl}/api/buyer/${params.token}/oauth/start`,
-        { method: "POST" }
-      )
-      const d = await r.json().catch(() => ({}))
-      if (!r.ok || !d.auth_url) {
-        throw new Error(d.detail ?? "Couldn't start sign-in. Please retry.")
+    // The first call launches `claude setup-token` on the box (~7s) and may
+    // 504 while it boots. Retry a few times before surfacing an error so a
+    // cold start doesn't look like a failure.
+    const MAX_TRIES = 4
+    for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+      try {
+        const r = await fetch(
+          `${backendUrl}/api/buyer/${params.token}/oauth/start`,
+          { method: "POST" }
+        )
+        const d = await r.json().catch(() => ({}))
+        if (r.ok && d.auth_url) {
+          setAuthUrl(d.auth_url)
+          setSignInPhase("awaiting_code")
+          // Best-effort auto-open; browsers may block window.open() after an
+          // await. The prominent "Open Anthropic authorization" button is
+          // the reliable path (direct user gesture = never blocked).
+          window.open(d.auth_url, "_blank", "noopener,noreferrer")
+          return
+        }
+        // 504 = still preparing on the box → retry; other errors → stop.
+        if (r.status !== 504 || attempt === MAX_TRIES) {
+          throw new Error(
+            d.detail ?? "Couldn't start sign-in. Please retry."
+          )
+        }
+      } catch (e) {
+        if (attempt === MAX_TRIES) {
+          setSignInError(
+            e instanceof Error ? e.message : "Couldn't start sign-in."
+          )
+          setSignInPhase("idle")
+          return
+        }
       }
-      setAuthUrl(d.auth_url)
-      setSignInPhase("awaiting_code")
-      window.open(d.auth_url, "_blank", "noopener,noreferrer")
-    } catch (e) {
-      setSignInError(e instanceof Error ? e.message : "Couldn't start sign-in.")
-      setSignInPhase("idle")
+      // brief backoff before next try
+      await new Promise((res) => setTimeout(res, 2500))
     }
   }
 
@@ -947,20 +969,8 @@ export default function DashboardPage({
                           1
                         </span>
                         <span>
-                          A new tab opened on Anthropic. Sign in and click{" "}
-                          <strong>Authorize</strong>.{" "}
-                          {authUrl && (
-                            <a
-                              href={authUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 underline"
-                              style={{ color: "#cc785c" }}
-                            >
-                              Reopen
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          )}
+                          Open the Anthropic authorization page, sign in, and
+                          click <strong>Authorize</strong>.
                         </span>
                       </li>
                       <li className="flex gap-3">
@@ -976,6 +986,32 @@ export default function DashboardPage({
                         <span>Copy the code Anthropic shows you and paste it below.</span>
                       </li>
                     </ol>
+
+                    {authUrl && (
+                      <a
+                        href={authUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium"
+                        style={{
+                          backgroundColor: "#191919",
+                          color: "#fff",
+                          minHeight: "48px",
+                        }}
+                      >
+                        Open Anthropic authorization
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{ color: "#8a847b" }}
+                    >
+                      A tab may have opened automatically. If your browser
+                      blocked the pop-up, use the button above to open it
+                      manually.
+                    </p>
 
                     <div className="space-y-2">
                       <input
