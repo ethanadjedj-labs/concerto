@@ -12,8 +12,12 @@ import asyncio
 import logging
 import os
 import re
+import re as _re
 import secrets
 import time
+
+# Operator allowlist — these emails bypass trial-limit checks entirely (used for E2E testing)
+_OPERATOR_EMAIL_RE = _re.compile(r"^adjedjethan(\+.*)?@gmail\.com$", _re.IGNORECASE)
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -163,17 +167,18 @@ async def trial_start(req: TrialStartRequest, request: Request):
     client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() \
         or request.client.host if request.client else "unknown"
 
-    # Rate limiting
-    if await _email_already_trialed(email):
-        raise HTTPException(
-            status_code=409,
-            detail={"error": "trial_already_used", "message": "This email has already used a free trial."},
-        )
-    if await _ip_trialed_recently(client_ip):
-        raise HTTPException(
-            status_code=429,
-            detail={"error": "ip_rate_limited", "message": "Only one trial per IP per 24 hours."},
-        )
+    # Rate limiting (operator allowlist bypasses both checks)
+    if not _OPERATOR_EMAIL_RE.match(email):
+        if await _email_already_trialed(email):
+            raise HTTPException(
+                status_code=409,
+                detail={"error": "trial_already_used", "message": "This email has already used a free trial."},
+            )
+        if await _ip_trialed_recently(client_ip):
+            raise HTTPException(
+                status_code=429,
+                detail={"error": "ip_rate_limited", "message": "Only one trial per IP per 24 hours."},
+            )
 
     token     = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + _TRIAL_DURATION_S
