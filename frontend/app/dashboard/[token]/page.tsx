@@ -429,15 +429,74 @@ export default function DashboardPage({
     expires_at?: number
     next_renewal_at?: number
   } | null>(null)
-  const [terminalVisible, setTerminalVisible] = useState(false)
+  // GitHub-style sign-in flow:
+  //   idle -> starting -> awaiting_code (authUrl ready) -> submitting -> success
+  const [signInPhase, setSignInPhase] = useState<
+    "idle" | "starting" | "awaiting_code" | "submitting" | "success"
+  >("idle")
+  const [authUrl, setAuthUrl] = useState<string | null>(null)
+  const [oauthCode, setOauthCode] = useState("")
+  const [signInError, setSignInError] = useState("")
   const [oauthSuccess, setOauthSuccess] = useState(false)
   // Increments on manual retry to restart the polling effect
   const [fetchTrigger, setFetchTrigger] = useState(0)
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
-  // /frame endpoint returns proxied ttyd HTML, or a branded error page
-  const terminalFrameUrl = `${backendUrl}/terminal/${params.token}/frame`
+
+  async function startSignIn() {
+    setSignInError("")
+    setSignInPhase("starting")
+    try {
+      const r = await fetch(
+        `${backendUrl}/api/buyer/${params.token}/oauth/start`,
+        { method: "POST" }
+      )
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.auth_url) {
+        throw new Error(d.detail ?? "Couldn't start sign-in. Please retry.")
+      }
+      setAuthUrl(d.auth_url)
+      setSignInPhase("awaiting_code")
+      window.open(d.auth_url, "_blank", "noopener,noreferrer")
+    } catch (e) {
+      setSignInError(e instanceof Error ? e.message : "Couldn't start sign-in.")
+      setSignInPhase("idle")
+    }
+  }
+
+  async function submitCode() {
+    const code = oauthCode.trim()
+    if (!code) {
+      setSignInError("Paste the code from the Anthropic page first.")
+      return
+    }
+    setSignInError("")
+    setSignInPhase("submitting")
+    try {
+      const r = await fetch(
+        `${backendUrl}/api/buyer/${params.token}/oauth/submit-code`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        }
+      )
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.oauth_complete) {
+        throw new Error(d.detail ?? "Sign-in failed. Please try again.")
+      }
+      setSignInPhase("success")
+      setOauthSuccess(true)
+      setTimeout(() => {
+        setUIState("step2")
+        uiStateRef.current = "step2"
+      }, 1600)
+    } catch (e) {
+      setSignInError(e instanceof Error ? e.message : "Sign-in failed.")
+      setSignInPhase("awaiting_code")
+    }
+  }
 
   // Keep ref in sync for use inside interval callbacks
   useEffect(() => {
@@ -479,9 +538,10 @@ export default function DashboardPage({
     return () => clearInterval(id)
   }, [backendUrl, params.token, fetchTrigger])
 
-  // OAuth poll — active in step1 once terminal is shown
+  // OAuth safety-net poll — if the box gets credentialed by any path
+  // (e.g. submit-code finalized server-side), auto-advance.
   useEffect(() => {
-    if (uiState !== "step1" || !terminalVisible) return
+    if (uiState !== "step1" || oauthSuccess) return
     const id = setInterval(async () => {
       try {
         const r = await fetch(
@@ -494,14 +554,14 @@ export default function DashboardPage({
           setTimeout(() => {
             setUIState("step2")
             uiStateRef.current = "step2"
-          }, 1800)
+          }, 1600)
         }
       } catch {
         // network blip — ignore, retry next tick
       }
-    }, 5000)
+    }, 6000)
     return () => clearInterval(id)
-  }, [uiState, terminalVisible, backendUrl, params.token])
+  }, [uiState, oauthSuccess, backendUrl, params.token])
 
   // First-call poll — active in step2
   useEffect(() => {
@@ -819,7 +879,7 @@ export default function DashboardPage({
           </StatusCard>
         )}
 
-        {/* ── Step 1: Sign in to Claude ── */}
+        {/* ── Step 1: Sign in to Claude (GitHub-style) ── */}
         {uiState === "step1" && (
           <div
             className="rounded-2xl"
@@ -837,25 +897,145 @@ export default function DashboardPage({
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  Concerto needs to authenticate with your Claude account to
-                  launch Claude Code sessions on your behalf.
+                  Authorize Concerto with your Claude account so it can run
+                  Claude Code on your behalf. Same one-click flow you use to
+                  link GitHub.
                 </p>
               </div>
 
-              {!terminalVisible && !oauthSuccess && (
-                <Button
-                  onClick={() => setTerminalVisible(true)}
-                  className="w-full rounded-xl text-[15px] font-medium"
+              {/* idle / starting → primary button */}
+              {(signInPhase === "idle" || signInPhase === "starting") &&
+                !oauthSuccess && (
+                  <Button
+                    onClick={startSignIn}
+                    disabled={signInPhase === "starting"}
+                    className="w-full rounded-xl text-[15px] font-medium"
+                    style={{
+                      backgroundColor: "#cc785c",
+                      color: "#fff",
+                      minHeight: "48px",
+                    }}
+                  >
+                    {signInPhase === "starting" ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Preparing sign-in…
+                      </>
+                    ) : (
+                      "Sign in with Claude"
+                    )}
+                  </Button>
+                )}
+
+              {/* awaiting_code / submitting → authorize link + code input */}
+              {(signInPhase === "awaiting_code" ||
+                signInPhase === "submitting") &&
+                !oauthSuccess && (
+                  <div className="space-y-4">
+                    <ol
+                      className="space-y-3 text-[14px] leading-relaxed"
+                      style={{ color: "#191919" }}
+                    >
+                      <li className="flex gap-3">
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+                          style={{
+                            backgroundColor: "rgba(204,120,92,0.12)",
+                            color: "#cc785c",
+                          }}
+                        >
+                          1
+                        </span>
+                        <span>
+                          A new tab opened on Anthropic. Sign in and click{" "}
+                          <strong>Authorize</strong>.{" "}
+                          {authUrl && (
+                            <a
+                              href={authUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 underline"
+                              style={{ color: "#cc785c" }}
+                            >
+                              Reopen
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </span>
+                      </li>
+                      <li className="flex gap-3">
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+                          style={{
+                            backgroundColor: "rgba(204,120,92,0.12)",
+                            color: "#cc785c",
+                          }}
+                        >
+                          2
+                        </span>
+                        <span>Copy the code Anthropic shows you and paste it below.</span>
+                      </li>
+                    </ol>
+
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={oauthCode}
+                        onChange={(e) => setOauthCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") submitCode()
+                        }}
+                        placeholder="Paste authorization code"
+                        autoComplete="off"
+                        spellCheck={false}
+                        disabled={signInPhase === "submitting"}
+                        className="w-full rounded-xl px-4 py-3 text-[14px] outline-none"
+                        style={{
+                          backgroundColor: "#faf9f5",
+                          border: "1px solid #f3efe5",
+                          color: "#191919",
+                        }}
+                      />
+                      <Button
+                        onClick={submitCode}
+                        disabled={
+                          signInPhase === "submitting" || !oauthCode.trim()
+                        }
+                        className="w-full rounded-xl text-[15px] font-medium"
+                        style={{
+                          backgroundColor: "#cc785c",
+                          color: "#fff",
+                          minHeight: "48px",
+                        }}
+                      >
+                        {signInPhase === "submitting" ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Finishing sign-in…
+                          </>
+                        ) : (
+                          "Complete sign-in"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+              {/* error */}
+              {signInError && !oauthSuccess && (
+                <div
+                  className="rounded-xl px-4 py-3 text-[13px] leading-relaxed"
                   style={{
-                    backgroundColor: "#cc785c",
-                    color: "#fff",
-                    minHeight: "48px",
+                    backgroundColor: "rgba(220,38,38,0.06)",
+                    color: "#b91c1c",
+                    border: "1px solid rgba(220,38,38,0.2)",
                   }}
                 >
-                  Start sign-in
-                </Button>
+                  {signInError}
+                </div>
               )}
 
+              {/* success */}
               {oauthSuccess && (
                 <div
                   className="flex items-center gap-2 rounded-xl px-4 py-3 text-[15px] font-medium"
@@ -867,40 +1047,6 @@ export default function DashboardPage({
                 >
                   <Check className="h-4 w-4 shrink-0" />
                   Signed in. Moving to next step…
-                </div>
-              )}
-
-              {terminalVisible && !oauthSuccess && (
-                <div className="space-y-3">
-                  {/* overflow:hidden on wrapper suppresses iOS Safari reader-mode overlay */}
-                  <div
-                    style={{
-                      overflow: "hidden",
-                      borderRadius: "12px",
-                      border: "1px solid #f3efe5",
-                      WebkitTextSizeAdjust: "100%",
-                    }}
-                  >
-                    <iframe
-                      src={terminalFrameUrl}
-                      className="w-full border-0"
-                      style={{
-                        display: "block",
-                        height: "320px",
-                        maxHeight: "520px",
-                      }}
-                      title="Concerto Terminal"
-                      allow="clipboard-read; clipboard-write"
-                      sandbox="allow-scripts allow-same-origin allow-forms"
-                    />
-                  </div>
-                  <p
-                    className="text-[13px] leading-relaxed"
-                    style={{ color: "#8a847b" }}
-                  >
-                    Follow the URL that appears in the terminal, then paste the
-                    code back here.
-                  </p>
                 </div>
               )}
             </div>

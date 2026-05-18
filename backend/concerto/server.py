@@ -10,6 +10,7 @@ from concerto.provision_router import router as provision_router
 from concerto.status_router import router as status_router
 from concerto.terminal_router import router as terminal_router
 from concerto.oauth_status_router import router as oauth_status_router
+from concerto.oauth_login_router import router as oauth_login_router
 from concerto.first_call_detector import router as first_call_router
 from concerto.customer_portal import router as customer_portal_router
 from concerto.preflight_router import router as preflight_router
@@ -67,6 +68,7 @@ app.include_router(provision_router)
 app.include_router(status_router)
 app.include_router(terminal_router)
 app.include_router(oauth_status_router)
+app.include_router(oauth_login_router)
 app.include_router(first_call_router)
 app.include_router(customer_portal_router)
 app.include_router(preflight_router)
