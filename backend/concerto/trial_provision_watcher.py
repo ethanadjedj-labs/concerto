@@ -30,7 +30,7 @@ DB_PATH      = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 _PROBE_AFTER_S  = 45       # Start SSH-probing after 45 s in installing
-_FAIL_AFTER_S   = 8 * 60   # Mark failed after 8 min
+_FAIL_AFTER_S   = 12 * 60   # Mark failed after 12 min
 
 
 # ─── DB ──────────────────────────────────────────────────────────────────────

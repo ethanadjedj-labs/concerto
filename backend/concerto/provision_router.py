@@ -251,7 +251,7 @@ async def droplet_ready(payload: DropletReadyPayload):
         return {"ok": True, "noop": True}
 
     # Reject if not in a provisioning-in-progress state
-    if current_status not in ("installing", "provisioning"):
+    if current_status not in ("installing", "provisioning", "provisioning_failed"):
         raise HTTPException(
             status_code=400,
             detail=f"Unexpected buyer status for droplet-ready callback: {current_status}",
@@ -263,7 +263,7 @@ async def droplet_ready(payload: DropletReadyPayload):
         await send_operator_alert(
             f"Cloudflared tunnel failed — token {payload.token[:8]}",
             f"Droplet provisioned but tunnel URL capture failed after 3 retries.\n"
-            f"Token: {payload.token}\nDroplet IP: {buyer.get(\'vps_ip\', \'unknown\')}",
+            "Token: " + str(payload.token) + "\nDroplet IP: " + str(buyer.get("vps_ip", "unknown")),
         )
         await db.update_buyer(
             payload.token,
