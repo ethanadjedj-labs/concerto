@@ -439,6 +439,7 @@ export default function DashboardPage({
     | "finishing"
     | "success"
   >("idle")
+  const [finishingMsg, setFinishingMsg] = useState("Finishing sign-in\u2026")
   const [authUrl, setAuthUrl] = useState<string | null>(null)
   const [oauthCode, setOauthCode] = useState("")
   const [signInError, setSignInError] = useState("")
@@ -549,7 +550,7 @@ export default function DashboardPage({
         } catch {
           /* transient — keep polling */
         }
-        setTimeout(tick, 3500)
+        setTimeout(tick, 2000)
       }
       tick()
     } catch (e) {
@@ -562,6 +563,28 @@ export default function DashboardPage({
   useEffect(() => {
     uiStateRef.current = uiState
   }, [uiState])
+
+  // Rotating reassurance while the sign-in finalizes (can take ~30-60s).
+  useEffect(() => {
+    if (signInPhase !== "finishing") {
+      setFinishingMsg("Finishing sign-in\u2026")
+      return
+    }
+    const msgs = [
+      "Finishing sign-in\u2026",
+      "Securing your access\u2026",
+      "Locking it in\u2026",
+      "Almost done\u2026",
+      "Just a few more seconds\u2026",
+    ]
+    let i = 0
+    setFinishingMsg(msgs[0])
+    const id = setInterval(() => {
+      i = (i + 1) % msgs.length
+      setFinishingMsg(msgs[i])
+    }, 4000)
+    return () => clearInterval(id)
+  }, [signInPhase])
 
   // Main status poll — active while in loading/preparing/setting_up
   useEffect(() => {
@@ -651,7 +674,6 @@ export default function DashboardPage({
   }, [uiState, backendUrl, params.token])
 
   const mcpUrl = dashData?.mcp_url ?? "Loading..."
-  const bearerToken = dashData?.bearer_token ?? "Loading..."
 
   const hideAccountSettings = ["trial_expired", "cancelled", "refunded"].includes(
     uiState
@@ -1097,7 +1119,7 @@ export default function DashboardPage({
                           <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             {signInPhase === "finishing"
-                              ? "Finalizing on your server…"
+                              ? finishingMsg
                               : "Sending code…"}
                           </>
                         ) : (
@@ -1140,7 +1162,7 @@ export default function DashboardPage({
           </div>
         )}
 
-        {/* ── Step 2: Connect to claude.ai ── */}
+        {/* ── Step 2: Connect to Claude ── */}
         {uiState === "step2" && (
           <div
             className="rounded-2xl"
@@ -1152,25 +1174,21 @@ export default function DashboardPage({
                   className="mb-2 text-[22px] font-semibold"
                   style={{ color: "#191919" }}
                 >
-                  Connect Concerto to claude.ai
+                  Connect Concerto to Claude
                 </h1>
                 <p
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  In Claude&apos;s Settings → Connectors, add a custom connector
-                  with the values below.
+                  One link to copy. Claude handles the rest — no token, no
+                  password.
                 </p>
               </div>
 
-              {/* Value sub-cards */}
-              <div className="space-y-3">
-                <ValueCard label="MCP URL" value={mcpUrl} />
-                <ValueCard label="Bearer token" value={bearerToken} secret />
-                <ValueCard label="Connector name" value="Concerto" />
-              </div>
+              {/* The single value: the connector URL */}
+              <ValueCard label="Connector URL" value={mcpUrl} />
 
-              {/* Instructions */}
+              {/* Instructions — up to date with Claude's current UI */}
               <div
                 className="space-y-4 pt-5"
                 style={{ borderTop: "1px solid #f3efe5" }}
@@ -1179,43 +1197,59 @@ export default function DashboardPage({
                   className="text-[11px] font-medium uppercase tracking-widest"
                   style={{ color: "#8a847b" }}
                 >
-                  Step-by-step
+                  How to add it
                 </p>
                 <ol className="space-y-3">
                   {(
                     [
                       <>
-                        Open claude.ai → click your avatar →{" "}
+                        Open Claude, click your name (bottom-left) →{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
                           Settings
-                        </strong>
-                      </>,
-                      <>
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Connectors
                         </strong>{" "}
                         →{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
-                          Add custom connector
+                          Customize
                         </strong>
                       </>,
                       <>
-                        Paste the values above →{" "}
+                        Click{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
-                          Save
+                          Add custom connector
                         </strong>
+                        , paste the link above, click{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Add
+                        </strong>
+                      </>,
+                      <>
+                        Click{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Connect
+                        </strong>{" "}
+                        on the new connector, then{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Authorize
+                        </strong>{" "}
+                        — it returns to Claude on its own
                       </>,
                     ] as ReactNode[]
                   ).map((item, i) => (
@@ -1238,6 +1272,15 @@ export default function DashboardPage({
                   ))}
                 </ol>
 
+                <p
+                  className="text-[12px] leading-relaxed"
+                  style={{ color: "#8a847b" }}
+                >
+                  Don&apos;t see &ldquo;Customize&rdquo;? It may still say
+                  &ldquo;Connectors&rdquo; — same place, look under your
+                  Settings.
+                </p>
+
                 <a
                   href="https://claude.ai"
                   target="_blank"
@@ -1245,7 +1288,7 @@ export default function DashboardPage({
                   className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-[14px] font-medium transition-opacity hover:opacity-75"
                   style={{ borderColor: "#f3efe5", color: "#191919" }}
                 >
-                  Open claude.ai <ExternalLink className="h-3.5 w-3.5" />
+                  Open Claude <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </div>
 
