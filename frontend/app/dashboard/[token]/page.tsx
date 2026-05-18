@@ -1212,13 +1212,17 @@ export default function DashboardPage({
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  One link to copy. Claude handles the rest — no token, no
-                  password.
+                  Two fields to fill in Claude — a name and the link below.
+                  No token, no password.
                 </p>
               </div>
 
-              {/* The single value: the connector URL */}
-              <ValueCard label="Connector URL" value={mcpUrl} />
+              {/* Claude's "Add custom connector" needs BOTH a name and a URL.
+                  Showing only the URL was causing failed connections. */}
+              <div className="space-y-3">
+                <ValueCard label="Name" value="Concerto" />
+                <ValueCard label="Connector URL" value={mcpUrl} />
+              </div>
 
               {/* Instructions — up to date with Claude's current UI */}
               <div
@@ -1275,7 +1279,21 @@ export default function DashboardPage({
                         >
                           Add custom connector
                         </strong>
-                        , paste the link above, click{" "}
+                        , enter the{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Name
+                        </strong>{" "}
+                        and{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Connector URL
+                        </strong>{" "}
+                        above, then click{" "}
                         <strong
                           className="font-medium"
                           style={{ color: "#191919" }}
