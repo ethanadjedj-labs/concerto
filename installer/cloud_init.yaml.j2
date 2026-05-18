@@ -642,16 +642,16 @@ write_files:
 # --- runcmd (runs on first boot as root, sequentially) -----------------------
 
 runcmd:
-  # -- 0. Lock root password + manually write SSH key FIRST
-  # passwd -l root: prevents PAM forced-change from blocking BatchMode SSH sessions.
-  # Manual authorized_keys write: belt-and-suspenders in case ssh_authorized_keys
-  # cloud-init module runs late (after write_files). Key is then available immediately.
-  - ["bash", "-c", "passwd -l root || true"]
+  # -- 0. Write SSH key FIRST (belt-and-suspenders; ssh_authorized_keys module already ran)
+  # NOTE: passwd -l root is intentionally ABSENT — locking root on Ubuntu 22.04 with
+  # UsePAM yes causes PAM to deny even SSH key auth (shadow '!' prefix). DO NOT re-add.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && echo \"{{ ssh_authorized_key }}\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys"]
 
-  # -- 1. System packages ----------------------------------------------------
-  - ["apt-get", "update", "-qq"]
-  - ["apt-get", "install", "-y", "curl", "python3-venv", "tmux", "git", "ttyd", "nginx"]
+  # -- 1. System packages (DEBIAN_FRONTEND=noninteractive; release unattended-upgrades lock first)
+  - ["bash", "-c", "systemctl stop unattended-upgrades.service apt-daily.service apt-daily-upgrade.service 2>/dev/null; systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; true"]
+  - ["bash", "-c", "while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do echo waiting for apt lock; sleep 3; done; true"]
+  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -qq"]
+  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=300 curl python3-venv tmux git ttyd nginx"]
 
   # -- 2. Node.js 20 via NodeSource ------------------------------------------
   - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
