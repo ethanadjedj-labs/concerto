@@ -2,11 +2,6 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { HeroClaudeDemo } from "@/components/HeroClaudeDemo"
 import { MobileStickyCTA } from "@/components/MobileStickyCTA"
-import { SessionCardsDiagram } from "@/components/SessionCardsDiagram"
-import { WhatActuallyHappens } from "@/components/WhatActuallyHappens"
-import { ConcreteExamples } from "@/components/ConcreteExamples"
-import { BeforeAfter } from "@/components/BeforeAfter"
-import { Tagline } from "@/components/Tagline"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -17,11 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { ScrollReveal } from "@/components/scroll-reveal"
-import {
-  Check,
-  ArrowRight,
-  Star,
-} from "lucide-react"
+import { Check, ArrowRight, Star } from "lucide-react"
 
 /* ─── Logo mark — bubble+baton, works on cream background ───── */
 
@@ -65,13 +56,14 @@ export default function LandingPage() {
 
       {/* ── Nav ─────────────────────────────────────────────────── */}
       <nav className="fixed left-0 right-0 top-0 z-50 border-b border-[rgba(25,25,25,0.07)] bg-[#faf9f5]/88 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3">
-            <LogoMark size={36} />
-            <span className="text-[26px] font-medium leading-none tracking-tight text-[#191919]">Concerto</span>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:py-5">
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="md:hidden"><LogoMark size={32} /></span>
+            <span className="hidden md:inline-block"><LogoMark size={56} /></span>
+            <span className="text-[20px] font-medium leading-none tracking-tight text-[#191919] md:text-[26px]">Concerto</span>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4 md:gap-5">
             <Link href="#how" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               How it works
             </Link>
@@ -81,10 +73,10 @@ export default function LandingPage() {
             <Link href="#faq" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               FAQ
             </Link>
-            <form action="/api/checkout?plan=solo" method="POST">
+            <form action="/api/checkout?plan=pro" method="POST">
               <Button
                 size="sm"
-                className="h-8 rounded-[6px] bg-[#cc785c] px-4 text-xs font-medium text-[#faf9f5] hover:bg-[#b86747]"
+                className="h-7 rounded-[6px] bg-[#cc785c] px-3 text-xs font-medium text-[#faf9f5] hover:bg-[#b86747] md:h-8 md:px-4"
               >
                 Start in 5 minutes
               </Button>
@@ -93,105 +85,174 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section id="hero" className="pb-16 pt-36 md:pb-20 md:pt-40">
+      {/* ── A. Hero ──────────────────────────────────────────────── */}
+      <section id="hero" className="pb-12 pt-28 md:pb-20 md:pt-40">
         <div className="mx-auto max-w-6xl px-6">
+          <div className="animate-fade-up max-w-2xl">
 
-          {/* Desktop: two-column | Mobile: stacked */}
-          <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16">
+            {/* Slogan badge */}
+            <div className="mb-5 flex">
+              <Badge
+                variant="outline"
+                className="border-[rgba(204,120,92,0.30)] bg-[rgba(204,120,92,0.07)] px-4 py-1.5 text-xs font-medium text-[#b86747]"
+              >
+                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#cc785c] animate-dot-blink" />
+                Talk to Claude. Claude runs Claude Code.
+              </Badge>
+            </div>
 
-            {/* Left column */}
-            <div className="animate-fade-up flex-shrink-0 lg:w-[44%] lg:pr-8">
+            <h1 className="font-display mb-5 text-[36px] font-[450] leading-[1.06] tracking-[-0.02em] text-[#191919] md:text-[56px]">
+              Run multiple Claude Code sessions from one Claude chat.
+            </h1>
 
-              {/* Editorial peach line */}
-              <div className="mb-8 h-px w-[60px] bg-[#cc785c]" />
+            <p className="mb-5 text-lg leading-relaxed text-[#555049]">
+              Concerto lets Claude launch, monitor, compare, and report on Claude Code runs — so you stop managing terminals manually.
+            </p>
 
-              <div className="mb-5 flex">
-                <Badge
-                  variant="outline"
-                  className="border-[rgba(204,120,92,0.30)] bg-[rgba(204,120,92,0.07)] px-4 py-1.5 text-xs font-medium text-[#b86747]"
+            {/* Claude Max badge */}
+            <div className="mb-8">
+              <span className="inline-block rounded border border-[rgba(25,25,25,0.12)] bg-[rgba(25,25,25,0.04)] px-3 py-1 text-xs text-[#555049]">
+                Works with Claude Pro. Built for Claude Max.
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <form action="/api/checkout?plan=pro" method="POST">
+                <Button
+                  size="lg"
+                  className="h-11 rounded-[6px] bg-[#cc785c] px-6 text-base font-medium text-[#faf9f5] hover:bg-[#b86747] md:h-12 md:px-8"
                 >
-                  <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-[#cc785c] animate-dot-blink" />
-                  Works with Claude Pro and Max
-                </Badge>
-              </div>
-
-              <h1 className="font-display mb-5 text-[2.75rem] font-[450] leading-[1.06] tracking-[-0.02em] text-[#191919] sm:text-5xl md:text-[3.25rem]">
-                Talk to Claude.{" "}
-                <span className="text-[#cc785c]">Claude runs Claude Code.</span>
-              </h1>
-
-              <p className="mb-6 text-lg leading-relaxed text-[#555049]">
-                Concerto gives Claude the tools to orchestrate Claude Code. Claude decides which sessions to launch, starts them on your machine, monitors progress, reads logs, compares results, and reports back — you stay in Claude chat the whole time.
-              </p>
-
-              {/* Hero bullets */}
-              <ul className="mb-10 space-y-2.5">
-                {[
-                  "Claude decides which sessions to launch",
-                  "Claude picks the right model per session to save your tokens",
-                  "Claude starts and monitors Claude Code runs",
-                  "Claude reads logs and detects stuck sessions",
-                  "Claude compares outputs from parallel attempts",
-                  "You stay in Claude chat, not the terminal",
-                ].map((bullet) => (
-                  <li key={bullet} className="flex items-start gap-3 text-base leading-relaxed text-[#555049]">
-                    <span className="mt-1 shrink-0 text-[#cc785c]" aria-hidden="true">•</span>
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <form action="/api/checkout?plan=solo" method="POST">
-                  <Button
-                    size="lg"
-                    className="h-12 rounded-[6px] bg-[#cc785c] px-8 text-base font-medium text-[#faf9f5] hover:bg-[#b86747]"
-                  >
-                    Start with Solo — $49/month
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </form>
-                <form action="/api/checkout?plan=pro" method="POST">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-12 rounded-[6px] border-[rgba(25,25,25,0.15)] px-6 text-base font-medium text-[#191919] hover:bg-[#f3efe5]"
-                  >
-                    Start with Pro — $99/month
-                  </Button>
-                </form>
-              </div>
-              <p className="mt-2 text-sm text-[#8a847b]">
-                Works with your Claude Pro or Max subscription.
-              </p>
+                  Start in 5 minutes
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </form>
+              <a href="#how">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-11 rounded-[6px] border-[rgba(25,25,25,0.15)] px-5 text-base font-medium text-[#191919] hover:bg-[#f3efe5] md:h-12 md:px-6"
+                >
+                  See how it works
+                </Button>
+              </a>
             </div>
 
-            {/* Right column — hidden on mobile */}
-            <div className="animate-fade-up delay-200 hidden lg:block lg:flex-1 lg:min-w-0">
-              <HeroClaudeDemo />
+            <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+              <p className="text-sm text-[#8a847b]">Pro — $99/mo</p>
+              <p className="text-sm text-[#8a847b]">Solo — $49/mo</p>
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Sentinel for mobile CTA IntersectionObserver */}
+      {/* Sentinel for mobile sticky CTA IntersectionObserver */}
       <div id="hero-section-end" aria-hidden="true" />
 
-      {/* ── Session cards diagram ────────────────────────────────── */}
-      <SessionCardsDiagram />
+      {/* ── B. Demo ───────────────────────────────────────────────── */}
+      <section className="px-6 py-12 md:py-20 bg-[#faf9f5]">
+        <div className="mx-auto max-w-6xl">
+          <div className="reveal mb-8 text-center">
+            <h2 className="font-display mb-3 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
+              One chat. Multiple Claude Code runs.
+            </h2>
+            <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8a847b] md:text-base">
+              Ask once. Claude decides what to launch, Concerto starts the sessions, and Claude reports back with progress and results.
+            </p>
+          </div>
+          <div className="reveal mx-auto max-w-3xl">
+            <HeroClaudeDemo />
+          </div>
+        </div>
+      </section>
 
-      {/* ── What happens after you ask Claude ───────────────────── */}
-      <WhatActuallyHappens />
+      {/* ── C. Pain block ─────────────────────────────────────────── */}
+      <section className="px-6 py-12 md:py-20 bg-[#f3efe5]">
+        <div className="mx-auto max-w-3xl">
+          <div className="reveal">
+            <h2 className="font-display mb-8 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
+              Claude Code is powerful. Managing it is the bottleneck.
+            </h2>
+            <ul className="mb-8 space-y-3">
+              {[
+                "You copy plans from Claude into Claude Code.",
+                "You watch terminals.",
+                "You paste logs back into Claude.",
+                "You restart stuck runs.",
+                "You compare attempts manually.",
+                "You lose the overview.",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-sm text-[#a09a94]">
+                  <span className="mt-0.5 shrink-0">×</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-base leading-relaxed text-[#555049]">
+              With Concerto, Claude can launch sessions, monitor progress, read logs, compare results, and report back inside Claude.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* ── Concrete examples ───────────────────────────────────── */}
-      <ConcreteExamples />
+      {/* ── D. Mechanism ──────────────────────────────────────────── */}
+      <section id="how" className="px-6 py-12 md:py-20 bg-[#faf9f5]">
+        <div className="mx-auto max-w-3xl">
+          <div className="reveal mb-10 text-center">
+            <h2 className="font-display mb-3 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
+              How Concerto works
+            </h2>
+          </div>
 
-      {/* ── Before / After ──────────────────────────────────────── */}
-      <BeforeAfter />
+          <div className="reveal space-y-4">
+            {[
+              { n: "1", text: "You ask Claude what you want built, fixed, reviewed, or deployed." },
+              { n: "2", text: "Claude decides which Claude Code sessions are needed." },
+              { n: "3", text: "Concerto starts and tracks those sessions." },
+              { n: "4", text: "Claude compares progress and reports back in the chat." },
+            ].map(({ n, text }) => (
+              <div key={n} className="flex items-start gap-5 rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-6 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(204,120,92,0.10)] text-sm font-semibold text-[#cc785c]">
+                  {n}
+                </span>
+                <p className="pt-1 text-sm leading-relaxed text-[#555049]">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* ── Pricing ─────────────────────────────────────────────── */}
-      <section id="pricing" className="px-6 py-24 bg-[#faf9f5]">
+      {/* ── E. Use cases ──────────────────────────────────────────── */}
+      <section className="px-6 py-12 md:py-20 bg-[#f3efe5]">
+        <div className="mx-auto max-w-6xl">
+          <div className="reveal mb-10 text-center">
+            <h2 className="font-display mb-3 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
+              What you can do with Concerto
+            </h2>
+          </div>
+
+          <div className="reveal grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              "Build and deploy a landing page.",
+              "Run multiple implementation attempts in parallel.",
+              "Debug a failing feature without babysitting the terminal.",
+              "Compare different fixes before choosing one.",
+              "Audit a project and return a structured report.",
+              "Restart or redirect stuck sessions from Claude.",
+            ].map((useCase) => (
+              <div
+                key={useCase}
+                className="rounded-lg border border-[rgba(25,25,25,0.08)] bg-white p-5 shadow-[0_1px_2px_rgba(25,25,25,0.04)]"
+              >
+                <p className="text-sm leading-relaxed text-[#555049]">{useCase}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── F. Pricing ────────────────────────────────────────────── */}
+      <section id="pricing" className="px-6 py-12 md:py-24 bg-[#faf9f5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-14 text-center">
             <h2 className="font-display mb-3 text-3xl font-[450] tracking-tight text-[#191919] md:text-4xl">
@@ -209,6 +270,9 @@ export default function LandingPage() {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
+              <p className="mt-1 text-sm leading-relaxed text-[#8a847b]">
+                For individual builders who want controlled parallel Claude Code runs.
+              </p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -223,6 +287,7 @@ export default function LandingPage() {
                   <CheckItem key={feature}>{feature}</CheckItem>
                 ))}
               </ul>
+              <p className="mt-4 text-xs text-[#8a847b]">Works with Claude Pro. Recommended with Claude Max for serious parallel work.</p>
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=solo" method="POST">
                 <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
@@ -230,7 +295,6 @@ export default function LandingPage() {
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
-              <p className="mt-2 text-center text-xs text-[rgba(25,25,25,0.30)]">Dedicated workspace, 4 GB memory · email support</p>
             </div>
 
             {/* Pro — FEATURED */}
@@ -241,6 +305,9 @@ export default function LandingPage() {
                   <Star className="h-3 w-3 fill-current" /> Most popular
                 </span>
               </div>
+              <p className="mt-1 text-sm leading-relaxed text-[#8a847b]">
+                For serious Claude Code users who want higher parallelism and less manual session management.
+              </p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
                 <span className="text-sm text-[#8a847b]">/month</span>
@@ -255,6 +322,7 @@ export default function LandingPage() {
                   <CheckItem key={feature}>{feature}</CheckItem>
                 ))}
               </ul>
+              <p className="mt-4 text-xs text-[#8a847b]">Works with Claude Pro. Recommended with Claude Max for serious parallel work.</p>
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=pro" method="POST">
                 <Button type="submit" className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]">
@@ -262,7 +330,6 @@ export default function LandingPage() {
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
-              <p className="mt-2 text-center text-xs text-[rgba(25,25,25,0.30)]">Dedicated workspace, 8 GB memory · email support</p>
             </div>
 
           </div>
@@ -280,7 +347,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FAQ ─────────────────────────────────────────────────── */}
+      {/* ── G. FAQ ───────────────────────────────────────────────── */}
       <section id="faq" className="px-6 py-24 bg-[#f3efe5]">
         <div className="mx-auto max-w-2xl">
           <div className="reveal mb-12 text-center">
@@ -329,11 +396,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Final tagline band ───────────────────────────────────── */}
-      <Tagline />
-
-      {/* ── Footer ──────────────────────────────────────────────── */}
-      <footer className="border-t border-[rgba(250,249,245,0.07)] bg-[#2a2925] px-6 py-10">
+      {/* ── Footer ───────────────────────────────────────────────── */}
+      <footer className="border-t border-[rgba(250,249,245,0.07)] bg-[#2a2925] px-6 pb-28 pt-10 md:pb-10">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2.5">
@@ -364,7 +428,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* ── Mobile sticky CTA (hidden on md+) ───────────────────── */}
+      {/* ── Mobile sticky CTA (hidden on md+) ────────────────────── */}
       <MobileStickyCTA />
     </div>
   )
