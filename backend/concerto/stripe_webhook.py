@@ -382,7 +382,7 @@ async def stripe_webhook(request: Request):
             await db.update_buyer(token, stripe_customer_id=stripe_customer_id)
 
         if customer_email:
-            await _send_confirmation(customer_email, token, plan)
+            asyncio.create_task(_send_confirmation(customer_email, token, plan))
 
     # ── invoice.payment_failed ────────────────────────────────────────────
     elif event_type == "invoice.payment_failed":
