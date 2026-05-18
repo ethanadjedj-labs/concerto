@@ -54,6 +54,26 @@ _URL_RE = re.compile(
 )
 _TOKEN_RE = re.compile(r"sk-ant-oat01-[A-Za-z0-9_\-]+")
 
+
+def _extract_token(text: str) -> str | None:
+    """Pull the OAuth token out of setup-token output.
+
+    The TUI wraps lines and drops separators, so the word "Store" from the
+    following sentence ("Store this token securely") gets glued onto the end
+    of the token. Strip that (and any other trailing prose) defensively.
+    """
+    m = _TOKEN_RE.search(text or "")
+    if not m:
+        return None
+    tok = m.group(0)
+    # Known trailing contaminants from the success message, glued on by the
+    # terminal having stripped the whitespace between token and next word.
+    for suffix in ("Store", "store"):
+        if tok.endswith(suffix) and len(tok) > len(suffix) + 20:
+            tok = tok[: -len(suffix)]
+            break
+    return tok
+
 _ANSI_RE = re.compile(r"\x1b\[[0-9;>?]*[A-Za-z]")
 
 
@@ -197,12 +217,19 @@ async def _finalize_oauth(token: str, vps_ip: str, key_path: str) -> None:
             timeout=15,
         )
         cleaned = _clean_pane(out)
-        m = _TOKEN_RE.search(cleaned)
-        if m:
-            token_val = m.group(0)
+        tok = _extract_token(cleaned)
+        if tok:
+            token_val = tok
             break
         low = cleaned.lower()
-        if "invalid" in low or "error" in low or "expired" in low:
+        # Only treat as a hard failure on explicit rejection wording — the
+        # banner art / URL contain stray words, so be specific.
+        if (
+            "invalid code" in low
+            or "expired" in low
+            or "authentication failed" in low
+            or "rejected" in low
+        ):
             # Leave the buyer in awaiting_oauth so they can retry from the UI.
             return
 
@@ -256,8 +283,14 @@ async def oauth_submit_code(token: str, body: _CodeIn):
         raise HTTPException(status_code=400, detail="That doesn't look like a valid code.")
 
     safe = code.replace("'", "'\\''")
+    # The setup-token prompt is an Ink TUI: tmux "Enter" is NOT honoured and
+    # the code never submits. Send the literal text, settle, then C-m
+    # (real carriage return), which the TUI does accept.
     send = (
-        f"tmux send-keys -t {_TMUX_SESSION} '{safe}' Enter 2>/dev/null && echo sent || echo nosession"
+        f"tmux send-keys -t {_TMUX_SESSION} -l '{safe}' 2>/dev/null "
+        f"&& sleep 0.4 "
+        f"&& tmux send-keys -t {_TMUX_SESSION} C-m 2>/dev/null "
+        f"&& echo sent || echo nosession"
     )
     rc, out, err = await _ssh(vps_ip, key_path, send, timeout=15)
     if "nosession" in out or rc != 0:

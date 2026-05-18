@@ -518,11 +518,11 @@ export default function DashboardPage({
       // Poll oauth-status until the box is credentialed (the request itself
       // returns instantly so we never hit the tunnel timeout).
       setSignInPhase("finishing")
-      const deadline = Date.now() + 90_000
+      const deadline = Date.now() + 150_000
       const tick = async (): Promise<void> => {
         if (Date.now() > deadline) {
           setSignInError(
-            "This is taking longer than usual. Your code may still be processing — wait a moment, or click \"Sign in with Claude\" to retry."
+            "Still finalizing — this can take a minute. If it doesn\u2019t complete shortly, get a fresh code: tap \u201cOpen Anthropic authorization\u201d again, authorize, and paste the new code."
           )
           setSignInPhase("awaiting_code")
           return
