@@ -150,6 +150,88 @@ function ValueCard({
   )
 }
 
+function ConcertoStyleCard() {
+  const [copied, setCopied] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  async function copyStyle() {
+    const text = await fetch("/concerto-custom-style.txt").then(r => r.text())
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2500)
+  }
+
+  return (
+    <div
+      className="rounded-xl p-4"
+      style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
+    >
+      <div className="mb-3 flex items-start gap-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[14px]"
+          style={{ backgroundColor: "rgba(204,120,92,0.1)" }}>
+          ✦
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
+            Use the Concerto style
+          </p>
+          <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+            Add our recommended Claude style for orchestration — Claude will spawn sessions
+            more proactively and report back clearly.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={copyStyle}
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all"
+          style={{ backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy style"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] transition-opacity hover:opacity-70"
+          style={{ color: "#8a847b" }}
+        >
+          How to add it {expanded ? "↑" : "→"}
+        </button>
+      </div>
+      {expanded && (
+        <div className="mt-4 space-y-2 pt-4" style={{ borderTop: "1px solid #f3efe5" }}>
+          {[
+            "Open claude.ai → Settings → Custom Styles",
+            "Click \"Add style\" and paste the copied text",
+            "Name it \"Concerto Orchestrator\" and save",
+          ].map((step, i) => (
+            <p key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "#8a847b" }}>
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
+                style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}>
+                {i + 1}
+              </span>
+              {step}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PromptCard({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -569,6 +651,8 @@ export default function DashboardPage({
                   <PromptCard key={prompt} text={prompt} />
                 ))}
               </div>
+
+              <ConcertoStyleCard />
 
               <a
                 href="https://claude.ai"
