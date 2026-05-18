@@ -125,7 +125,7 @@ async def check_oauth_reminders() -> None:
                     "<p>Hi,</p>"
                     "<p>Your Concerto remote workspace is ready! "
                     "Click below to access your dashboard and connect Claude:</p>"
-                    f'<p><a href="{setup_url}" style="background:#7c3aed;color:white;'
+                    f'<p><a href="{setup_url}" style="background:#cc785c;color:white;'
                     f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
                     f"Open My Concerto</a></p>"
                     "<p>If you have any questions, reply to this email.</p>"
