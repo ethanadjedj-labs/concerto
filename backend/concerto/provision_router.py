@@ -4,7 +4,9 @@ import math
 import os
 import time
 
-from fastapi import APIRouter, HTTPException
+import hmac
+
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from concerto import db, provisioner
@@ -235,10 +237,17 @@ async def _provision_async(
 
 
 @router.post("/api/internal/droplet-ready")
-async def droplet_ready(payload: DropletReadyPayload):
+async def droplet_ready(payload: DropletReadyPayload, request: Request):
     buyer = await db.get_buyer(payload.token)
     if not buyer:
         raise HTTPException(status_code=404, detail="Token not found")
+
+    # Verify caller-supplied secret equals ttyd_password (known only to the droplet).
+    # Gracefully skip if ttyd_password not yet stored (race at very start of install).
+    stored_secret = buyer.get("ttyd_password") or ""
+    incoming_secret = request.headers.get("X-Callback-Secret", "")
+    if stored_secret and not hmac.compare_digest(stored_secret, incoming_secret):
+        raise HTTPException(status_code=403, detail="Invalid callback secret")
 
     current_status = buyer.get("status", "")
 

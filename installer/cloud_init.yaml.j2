@@ -629,6 +629,7 @@ write_files:
       # -- POST results back to empire backend -----------------------------------
       curl -fsSL -X POST "${CONCERTO_CALLBACK_URL}" \
         -H "Content-Type: application/json" \
+        -H "X-Callback-Secret: ${TTYD_PASSWORD}" \
         -d "{
           \"token\":         \"${CONCERTO_TOKEN}\",
           \"mcp_url\":       \"${TUNNEL_URL}\",
