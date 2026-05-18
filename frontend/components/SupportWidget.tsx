@@ -17,7 +17,7 @@ const QUICK_ISSUES = [
   },
   {
     q: "Session disconnects after a few minutes",
-    a: "This usually means the cloudflared tunnel restarted. Check your dashboard — if the status shows 'reconnecting', wait 30 s and refresh. The tunnel recovers automatically.",
+    a: "The connection may have restarted. Check your dashboard — if the status shows 'reconnecting', wait 30 s and refresh. The connection recovers automatically.",
   },
 ]
 
