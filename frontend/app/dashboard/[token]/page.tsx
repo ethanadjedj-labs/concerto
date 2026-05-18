@@ -745,7 +745,7 @@ export default function DashboardPage({
       </header>
 
       {/* ── Main ── */}
-      <main className="mx-auto max-w-md px-5 py-10">
+      <main className="mx-auto flex min-h-[calc(100vh-57px)] max-w-md flex-col px-5 py-10">
         {/* Progress bar — wizard states only */}
         {isWizardState && (
           <div className="mb-8">
@@ -1312,89 +1312,104 @@ export default function DashboardPage({
 
         {/* ── Step 3: You're ready ── */}
         {uiState === "step3" && (
-          <div
-            className="rounded-2xl"
-            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
-          >
-            <div className="space-y-6 px-6 py-6 md:px-8 md:py-8">
-              <div>
-                <h1
-                  className="mb-2 text-[22px] font-semibold"
-                  style={{ color: "#191919" }}
-                >
-                  You&apos;re ready.
-                </h1>
-                <p
-                  className="text-[15px] leading-relaxed"
-                  style={{ color: "#8a847b" }}
-                >
-                  In your Claude chat, ask Claude to do anything that needs
-                  code or shell. Concerto will spawn Claude Code sessions for
-                  you.
-                </p>
-              </div>
-
-              {/* Example prompt cards */}
-              <div className="space-y-2">
-                <p
-                  className="mb-3 text-[11px] font-medium uppercase tracking-widest"
-                  style={{ color: "#8a847b" }}
-                >
-                  Try asking Claude
-                </p>
-                {[
-                  "Build and deploy a landing page for X",
-                  "Try three fixes for this bug in parallel and tell me which one passes the tests cleanly",
-                  "Audit my repo and return a structured report",
-                  "Refactor this feature while another session checks for regressions",
-                ].map((prompt) => (
-                  <PromptCard key={prompt} text={prompt} />
-                ))}
-              </div>
-
-              <ConcertoStyleCard />
-
-              <a
-                href="https://claude.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium transition-opacity hover:opacity-90"
+          <div className="flex flex-1 flex-col">
+            {/* Arrival moment — celebratory header */}
+            <div className="flex flex-col items-center pt-2 text-center">
+              <div
+                className="mb-5 flex h-16 w-16 items-center justify-center rounded-full"
                 style={{
-                  backgroundColor: "#cc785c",
-                  color: "#fff",
-                  minHeight: "48px",
+                  background:
+                    "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
                 }}
               >
-                Open claude.ai <ExternalLink className="h-4 w-4" />
-              </a>
-
-              {/* Subtle footer */}
-              <div
-                className="flex flex-col items-center gap-1.5 pt-2"
-                style={{ borderTop: "1px solid #f3efe5" }}
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "#cc785c" }}
+                >
+                  <Check className="h-6 w-6" style={{ color: "#fff" }} strokeWidth={3} />
+                </div>
+              </div>
+              <h1
+                className="mb-2 text-[24px] font-semibold tracking-tight"
+                style={{ color: "#191919" }}
               >
-                <p className="text-[13px]" style={{ color: "#8a847b" }}>
-                  Need help?{" "}
-                  <a
-                    href="mailto:support@concerto.run"
-                    className="underline transition-opacity hover:opacity-70"
-                    style={{ color: "#cc785c" }}
-                  >
-                    support@concerto.run
-                  </a>
-                </p>
+                You&apos;re all set.
+              </h1>
+              <p
+                className="max-w-[19rem] text-[15px] leading-relaxed"
+                style={{ color: "#8a847b" }}
+              >
+                Concerto is connected. Ask Claude for anything that needs code
+                or a shell — it&apos;ll orchestrate the sessions for you.
+              </p>
+            </div>
+
+            {/* Primary CTA — warm, unmissable, right after the moment */}
+            <a
+              href="https://claude.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: "#cc785c",
+                color: "#fff",
+                minHeight: "50px",
+                boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+              }}
+            >
+              Open Claude <ExternalLink className="h-4 w-4" />
+            </a>
+
+            {/* Try-asking — compact 2x2 grid, no longer a tall stack */}
+            <p
+              className="mb-3 mt-8 text-[11px] font-medium uppercase tracking-widest"
+              style={{ color: "#b5ab9c" }}
+            >
+              Try asking Claude
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {[
+                "Build and deploy a landing page",
+                "Try three fixes in parallel, tell me which passes",
+                "Audit my repo and return a report",
+                "Refactor this while another session checks regressions",
+              ].map((prompt) => (
+                <PromptCard key={prompt} text={prompt} />
+              ))}
+            </div>
+
+            <div className="mt-5">
+              <ConcertoStyleCard />
+            </div>
+
+            {/* Condensed footer */}
+            <div
+              className="mt-auto flex flex-col items-center gap-1.5 pt-8 text-center"
+            >
+              <p className="text-[13px]" style={{ color: "#8a847b" }}>
+                Need help?{" "}
+                <a
+                  href="mailto:support@concerto.run"
+                  className="underline transition-opacity hover:opacity-70"
+                  style={{ color: "#cc785c" }}
+                >
+                  support@concerto.run
+                </a>
+                <span className="mx-2" style={{ color: "#e5dfd2" }}>
+                  &middot;
+                </span>
                 <Link
                   href={`/dashboard/${params.token}/settings`}
-                  className="text-[13px] transition-opacity hover:opacity-70"
+                  className="transition-opacity hover:opacity-70"
                   style={{ color: "#8a847b" }}
                 >
-                  Account settings →
+                  Account settings
                 </Link>
-              </div>
+              </p>
             </div>
           </div>
         )}
-      </main>
+              </main>
     </div>
   )
 }
