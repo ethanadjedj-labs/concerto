@@ -887,6 +887,17 @@ write_files:
     owner: root:root
     permissions: '0644'
     content: |
+      # cloudflared terminates TLS at the edge and connects to nginx over
+      # plain http on 127.0.0.1:8080, so $scheme is always "http" here.
+      # The real client scheme is in the X-Forwarded-Proto header cloudflared
+      # sends. Trust it; default to https because the public cloudflared
+      # tunnel is always https. Using $scheme made the MCP server advertise
+      # http:// OAuth endpoints -> Claude "Authorization with the MCP server failed".
+      map $http_x_forwarded_proto $concerto_fwd_proto {
+          default   $http_x_forwarded_proto;
+          ""        https;
+      }
+
       server {
           listen 8080;
           server_name _;
@@ -898,7 +909,7 @@ write_files:
               proxy_set_header   Host              $host;
               proxy_set_header   X-Real-IP         $remote_addr;
               proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-              proxy_set_header   X-Forwarded-Proto $scheme;
+              proxy_set_header   X-Forwarded-Proto $concerto_fwd_proto;
               proxy_read_timeout 300s;
               proxy_send_timeout 300s;
           }
