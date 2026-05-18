@@ -4,6 +4,7 @@ import os
 import re
 import secrets
 import time
+import yaml
 from typing import Literal
 
 import httpx
@@ -91,6 +92,17 @@ def _load_cloud_init_template() -> str:
             return f.read()
     except FileNotFoundError:
         return _STUB_CLOUD_INIT
+
+
+def _validate_cloud_init_yaml(rendered: str, token: str) -> None:
+    """Raise ValueError if rendered cloud-init YAML is invalid or missing runcmd."""
+    try:
+        parsed = yaml.safe_load(rendered)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"cloud-init template invalid: {exc}") from exc
+    if not parsed or not isinstance(parsed.get("runcmd"), list) or not parsed["runcmd"]:
+        raise ValueError("cloud-init template invalid: runcmd is missing or empty")
+
 
 
 async def _generate_ssh_keypair(token: str) -> tuple[str, str]:
@@ -228,6 +240,7 @@ async def provision_droplet(
         tunnel_token=tunnel_info.get("tunnel_token", ""),
         tunnel_hostname=tunnel_info.get("hostname", ""),
     )
+    _validate_cloud_init_yaml(cloud_init, token)
 
     tag = f"concerto-{mode}-{token[:8].replace("_", "-")}" if is_hosted else f"concerto-byoc-{token[:8].replace("_", "-")}"
 
