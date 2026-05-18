@@ -121,23 +121,24 @@ async def _create_droplet_with_fallback(
     size: str,
     cloud_init: str,
     tag: str,
+    ssh_key_ids: list[int] | None = None,
 ) -> str:
     """Create a droplet, handling 401/402/422 errors and auto-fallback on 422."""
     regions_to_try = [region] + _REGION_FALLBACK.get(region, [])
     last_error: Exception | None = None
 
     for r in regions_to_try:
-        resp = await client.post(
-            "/droplets",
-            json={
-                "name": name,
-                "region": r,
-                "size": size,
-                "image": _DEFAULT_IMAGE,
-                "user_data": cloud_init,
-                "tags": [tag],
-            },
-        )
+        _body: dict = {
+            "name": name,
+            "region": r,
+            "size": size,
+            "image": _DEFAULT_IMAGE,
+            "user_data": cloud_init,
+            "tags": [tag],
+        }
+        if ssh_key_ids:
+            _body["ssh_keys"] = ssh_key_ids
+        resp = await client.post("/droplets", json=_body)
         if resp.status_code == 401:
             raise DOAuthError("DigitalOcean API returned 401 — check your API token")
         if resp.status_code == 402:
@@ -245,9 +246,32 @@ async def provision_droplet(
             _safe = re.sub(r"[^a-z0-9-]", "-", _raw)
             _safe = re.sub(r"-+", "-", _safe).strip("-")
             droplet_name = (_safe[:63] or "concerto-trial")
+            # Register public key with DO account — DO injects it at image-level
+            # BEFORE cloud-init runs (guaranteed SSH access from first boot)
+            _do_key_id: int | None = None
+            try:
+                _kr = await client.post("/account/keys", json={
+                    "name": f"concerto-tmp-{token[:8]}",
+                    "public_key": public_key,
+                })
+                if _kr.status_code in (200, 201):
+                    _do_key_id = _kr.json()["ssh_key"]["id"]
+                    logger.info("Registered tmp DO SSH key id=%s for token %.8s", _do_key_id, token)
+            except Exception as _ke:
+                logger.warning("Could not register SSH key with DO: %s", _ke)
+
             droplet_id = await _create_droplet_with_fallback(
-                client, droplet_name, region, size, cloud_init, tag
+                client, droplet_name, region, size, cloud_init, tag,
+                ssh_key_ids=[_do_key_id] if _do_key_id else None,
             )
+
+            # Remove temp key from DO account immediately after droplet creation
+            if _do_key_id:
+                try:
+                    await client.delete(f"/account/keys/{_do_key_id}")
+                    logger.info("Deleted tmp DO SSH key id=%s", _do_key_id)
+                except Exception as _de:
+                    logger.warning("Could not delete tmp DO SSH key %s: %s", _do_key_id, _de)
 
             # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
             if mode in ("solo", "pro"):
