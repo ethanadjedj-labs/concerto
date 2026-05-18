@@ -151,7 +151,7 @@ export default function LandingPage() {
               One chat. Multiple Claude Code runs.
             </h2>
             <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8a847b] md:text-base">
-              Ask once. Claude decides what to launch, Concerto starts the sessions, and Claude reports back with progress and results.
+              Ask Claude once. Concerto lets Claude start the needed Claude Code sessions, follow their progress, compare results, and report back in chat.
             </p>
           </div>
           <div className="reveal mx-auto max-w-3xl">
@@ -164,17 +164,19 @@ export default function LandingPage() {
       <section className="px-6 py-12 md:py-20 bg-[#f3efe5]">
         <div className="mx-auto max-w-3xl">
           <div className="reveal">
-            <h2 className="font-display mb-8 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
-              Claude Code is powerful. Managing it is the bottleneck.
+            <h2 className="font-display mb-4 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
+              Claude Code is powerful. Managing it manually is the bottleneck.
             </h2>
-            <ul className="mb-8 space-y-3">
+            <p className="mb-6 text-base leading-relaxed text-[#555049]">
+              Claude Code can build, fix, refactor, and deploy. But you still manage the run: opening sessions, watching terminals, pasting logs, restarting stuck attempts, comparing outputs, and keeping track of what changed.
+            </p>
+            <ul className="mb-6 space-y-3">
               {[
-                "You copy plans from Claude into Claude Code.",
-                "You watch terminals.",
-                "You paste logs back into Claude.",
-                "You restart stuck runs.",
-                "You compare attempts manually.",
-                "You lose the overview.",
+                "No more watching terminals.",
+                "No more pasting logs back into Claude.",
+                "No more manually restarting stuck runs.",
+                "No more comparing parallel attempts by hand.",
+                "No more losing the overview.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm text-[#a09a94]">
                   <span className="mt-0.5 shrink-0">×</span>
@@ -183,7 +185,7 @@ export default function LandingPage() {
               ))}
             </ul>
             <p className="text-base leading-relaxed text-[#555049]">
-              With Concerto, Claude can launch sessions, monitor progress, read logs, compare results, and report back inside Claude.
+              Concerto removes that layer.
             </p>
           </div>
         </div>
@@ -200,10 +202,10 @@ export default function LandingPage() {
 
           <div className="reveal space-y-4">
             {[
-              { n: "1", text: "You ask Claude what you want built, fixed, reviewed, or deployed." },
-              { n: "2", text: "Claude decides which Claude Code sessions are needed." },
-              { n: "3", text: "Concerto starts and tracks those sessions." },
-              { n: "4", text: "Claude compares progress and reports back in the chat." },
+              { n: "1", text: "Ask Claude what you want built, fixed, reviewed, or deployed." },
+              { n: "2", text: "Claude decides which Claude Code runs are needed." },
+              { n: "3", text: "Concerto lets Claude start and follow those runs." },
+              { n: "4", text: "Claude compares progress and reports back in chat." },
             ].map(({ n, text }) => (
               <div key={n} className="flex items-start gap-5 rounded-xl border border-[rgba(25,25,25,0.08)] bg-white p-6 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(204,120,92,0.10)] text-sm font-semibold text-[#cc785c]">
@@ -228,11 +230,11 @@ export default function LandingPage() {
           <div className="reveal grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
               "Build and deploy a landing page.",
-              "Run multiple implementation attempts in parallel.",
-              "Debug a failing feature without babysitting the terminal.",
-              "Compare different fixes before choosing one.",
+              "Try three different fixes for a bug and compare which one passes tests cleanly.",
+              "Refactor a feature while another run checks for regressions.",
               "Audit a project and return a structured report.",
-              "Restart or redirect stuck sessions from Claude.",
+              "Run several implementation attempts in parallel.",
+              "Recover from a stuck run without babysitting the terminal.",
             ].map((useCase) => (
               <div
                 key={useCase}
@@ -265,7 +267,7 @@ export default function LandingPage() {
                 <span className="text-lg font-medium text-[#191919]">Solo</span>
               </div>
               <p className="mt-1 text-sm leading-relaxed text-[#8a847b]">
-                For individual builders who want controlled parallel Claude Code runs.
+                For individual builders who want Claude to manage simple Claude Code runs without manual terminal work.
               </p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$49</span>
@@ -274,14 +276,15 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Claude can launch and monitor up to 2 Claude Code sessions in parallel",
-                  "Email support included",
+                  "Run Claude Code from Claude chat",
+                  "Up to 2 parallel runs",
+                  "Fast setup",
+                  "Email support",
                   "Cancel anytime",
                 ].map((feature) => (
                   <CheckItem key={feature}>{feature}</CheckItem>
                 ))}
               </ul>
-              <p className="mt-4 text-xs text-[#8a847b]">Works with Claude Pro. Recommended with Claude Max for serious parallel work.</p>
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=solo" method="POST">
                 <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
@@ -300,7 +303,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="mt-1 text-sm leading-relaxed text-[#8a847b]">
-                For serious Claude Code users who want higher parallelism and less manual session management.
+                For serious Claude Code users who want more parallelism and less manual session management.
               </p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#191919]">$99</span>
@@ -309,14 +312,16 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <ul className="space-y-3.5">
                 {[
-                  "Claude can launch and monitor up to 6 Claude Code sessions in parallel",
-                  "Email support included",
+                  "Everything in Solo",
+                  "More parallel Claude Code runs (up to 6)",
+                  "Better for long-running tasks",
+                  "Better for heavy Claude Code workflows",
+                  "Priority support",
                   "Cancel anytime",
                 ].map((feature) => (
                   <CheckItem key={feature}>{feature}</CheckItem>
                 ))}
               </ul>
-              <p className="mt-4 text-xs text-[#8a847b]">Works with Claude Pro. Recommended with Claude Max for serious parallel work.</p>
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=pro" method="POST">
                 <Button type="submit" className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]">
@@ -328,8 +333,8 @@ export default function LandingPage() {
 
           </div>
 
-          <p className="reveal mt-8 text-center text-sm font-medium text-[#555049]">
-            We recommend <strong>Claude Max</strong> — Claude Pro hits token limits fast when Claude is running multiple sessions.
+          <p className="reveal mt-8 text-center text-sm text-[#8a847b]">
+            Works with Claude Pro. Claude Max is recommended for heavy parallel usage.
           </p>
 
           <div className="reveal mx-auto mt-4 max-w-2xl rounded-lg border border-[rgba(25,25,25,0.08)] bg-white px-6 py-4 text-center">
@@ -358,23 +363,23 @@ export default function LandingPage() {
               },
               {
                 q: "Do I need to know how to code?",
-                a: "No. Concerto is most useful for people who have a project in mind but don't want to set up a development environment. You describe what you want, Claude builds it.",
+                a: "No. You describe what you want, Claude runs the Claude Code sessions and reports back with what was built.",
               },
               {
                 q: "Should I use Claude Pro or Max with Concerto?",
                 a: "We strongly recommend Max. Claude Pro's token limits get exhausted quickly with the kind of work Concerto enables — launching and monitoring multiple sessions, reading logs, comparing outputs. Max ($200/month) gives you 20× the usage. Pro works for light experimentation but you'll hit limits fast.",
               },
               {
-                q: "Is my workspace dedicated to me?",
-                a: "Yes. Every Concerto subscription gives Claude its own isolated workspace, separate from other customers. Your code, files, and history stay yours.",
+                q: "Where does Claude Code run?",
+                a: "Concerto lets Claude run Claude Code for you. You don't manage where or how — Claude does.",
               },
               {
-                q: "What can I run on it?",
-                a: "Anything Claude Code can do: build websites, scripts, prototypes, automations, data processing, document generation, file conversions. Long tasks run for hours. Parallel sessions run several things at once.",
+                q: "What can Claude build with Concerto?",
+                a: "Anything Claude Code can do: build websites, scripts, prototypes, automations, data processing, document generation, file conversions. Long tasks run for hours. Parallel runs work on several things at once.",
               },
               {
                 q: "Can I cancel anytime?",
-                a: "Yes, instantly. Cancel from your dashboard, your machine is decommissioned at the end of the billing period. No questions, no contracts.",
+                a: "Yes, instantly. Cancel from your dashboard — access ends at the close of your billing period. No questions, no contracts.",
               },
             ].map(({ q, a }) => (
               <AccordionItem key={q} value={q} className="border-b border-[rgba(25,25,25,0.08)]">

@@ -24,15 +24,15 @@ const SECTIONS: Section[] = [
       },
       {
         q: "What do I need before I can start?",
-        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no terminal, no cloud account required. Concerto provisions and manages everything for you.",
+        a: "A claude.ai account (Pro or Max plan) and your Concerto purchase token. That's it — no terminal, no cloud account required.",
       },
       {
-        q: "How long does provisioning take?",
-        a: "Typically 3–5 minutes from purchase to ready. The dashboard polls automatically and advances each step when it completes.",
+        q: "How long does setup take?",
+        a: "Typically 3–5 minutes from purchase to ready. The dashboard advances automatically through each step.",
       },
       {
         q: "Which regions are available?",
-        a: "New York, San Francisco, Frankfurt, Amsterdam, Singapore, London, Bangalore, and Sydney. The default is New York. Contact support before provisioning if you need a specific region.",
+        a: "New York, San Francisco, Frankfurt, Amsterdam, Singapore, London, Bangalore, and Sydney. The default is New York. Contact support before starting if you need a specific region.",
       },
     ],
   },
@@ -74,7 +74,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "Can Claude install packages or modify files?",
-        a: "Yes. Claude Code has full access to your workspace. It can install packages, write files, run build scripts, and start services.",
+        a: "Yes. Claude Code has full access to your project files. It can install packages, write files, run build scripts, and start services.",
       },
       {
         q: "How do I check what's happening in a session?",
@@ -95,7 +95,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "What happens to my data if I cancel?",
-        a: "Your workspace and data are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
+        a: "Your session history and files are preserved until the end of the billing period, then cleaned up. Contact support@concerto.run before cancelling if you need to export anything.",
       },
       {
         q: "I was charged but the setup never completed.",
@@ -116,7 +116,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: "I'm getting rate limit errors from Claude.",
-        a: "Rate limits come from your Claude plan. If you're hitting limits frequently, consider upgrading to Claude Max — Pro's token limits run out fast with agentic work. Space out parallel sessions or wait for the rate limit window to reset (typically 1 minute).",
+        a: "Rate limits come from your Claude plan. If you're hitting limits frequently, consider upgrading to Claude Max — Pro's token limits run out fast with parallel Claude Code work. Space out parallel runs or wait for the rate limit window to reset (typically 1 minute).",
       },
       {
         q: "I can't find the connector config snippet.",
@@ -128,16 +128,16 @@ const SECTIONS: Section[] = [
     title: "Privacy + security",
     items: [
       {
-        q: "Is my workspace isolated from other customers?",
-        a: "Yes. Every Concerto subscription is a dedicated, isolated workspace. There is no shared compute or shared filesystem between customers.",
+        q: "Are my Claude Code runs isolated from other customers?",
+        a: "Yes. Every Concerto subscription runs isolated Claude Code sessions, separate from other customers. There is no shared filesystem between customers.",
       },
       {
-        q: "Can Anthropic see what runs in my workspace?",
-        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. Your workspace content is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
+        q: "Can Anthropic see what runs in my sessions?",
+        a: "Claude Code sends your prompts and tool outputs to Anthropic's API per their standard privacy policy. Your session content is not sent to Anthropic unless Claude Code explicitly reads a file as part of a task you requested.",
       },
       {
         q: "What data does Concerto collect?",
-        a: "Your email address (from Stripe), your region preference, provisioning status, and (optionally) your first session timestamp. We do not log tool calls, shell commands, or file contents.",
+        a: "Your email address (from Stripe), your region preference, setup status, and (optionally) your first session timestamp. We do not log tool calls, shell commands, or file contents.",
       },
     ],
   },

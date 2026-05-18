@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Shield, Lock, Server } from "lucide-react"
+import { Shield, Lock } from "lucide-react"
 
 type StatusLevel = "operational" | "degraded" | "outage" | "unknown"
 
@@ -52,7 +52,7 @@ function StatusIndicator() {
       style={{ borderColor: "rgba(25,25,25,0.10)", background: "rgba(25,25,25,0.02)" }}
     >
       <StatusDot level={status.level} />
-      <span className="text-[#8a847b]">Concerto infrastructure</span>
+      <span className="text-[#8a847b]">Concerto status</span>
       <span className="text-[#8a847b] opacity-40">·</span>
       <span>{status.label}</span>
     </a>
@@ -93,7 +93,7 @@ export function TrustSection() {
         {/* Built-by strip */}
         <div className="flex flex-col items-center gap-2 text-center">
           <p className="text-[13px] text-[#8a847b]">
-            Built by a solo operator who runs the same infrastructure himself.
+            Built by an operator using Concerto himself.
           </p>
           <p className="text-[13px] text-[#8a847b]">
             Real human support, real maintenance.
@@ -118,8 +118,8 @@ export function TrustSection() {
             href="https://stripe.com/docs/security"
           />
           <SecurityBadge
-            icon={<Server className="h-3.5 w-3.5" />}
-            label="Your machine is isolated from other customers"
+            icon={<Shield className="h-3.5 w-3.5" />}
+            label="Your Claude Code runs are isolated from other customers"
             href="/legal/privacy"
           />
         </div>

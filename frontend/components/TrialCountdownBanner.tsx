@@ -65,8 +65,8 @@ export function TrialCountdownBanner({ token, expiresAt }: Props) {
           )}
           <p className="mt-0.5 text-[12px] text-white/40 truncate">
             {expired
-              ? "Your workspace has been decommissioned."
-              : "Upgrade to keep your workspace active after the trial ends."}
+              ? "Your trial has ended."
+              : "Upgrade to keep your access after the trial ends."}
           </p>
         </div>
       </div>

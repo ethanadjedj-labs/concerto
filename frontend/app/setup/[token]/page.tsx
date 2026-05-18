@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import {
   ExternalLink, Loader2, CheckCircle, AlertCircle,
-  Server, RefreshCw, CreditCard,
+  RefreshCw, CreditCard,
 } from "lucide-react"
 
 const REGIONS = [
@@ -28,7 +28,7 @@ const REGIONS = [
 
 const STATUS_STEPS = [
   { key: "paid",            label: "Payment confirmed" },
-  { key: "provisioning",   label: "Setting up your remote machine" },
+  { key: "provisioning",   label: "Setting up your Claude Code connection" },
   { key: "installing",     label: "Installing Claude Code" },
   { key: "awaiting_oauth", label: "Awaiting Claude OAuth" },
   { key: "ready",          label: "Ready!" },
@@ -55,21 +55,21 @@ interface ErrorCardDef {
 
 const ERROR_CARD_DEFS: Partial<Record<ProvisionStatus, ErrorCardDef>> = {
   provisioning_failed: {
-    title: "Provisioning failed",
+    title: "Setup failed",
     titleFr: "Échec du provisionnement",
     description:
-      "The remote machine encountered an error during setup. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
+      "Setup encountered an error. A full refund has been issued automatically (5–10 business days). You can retry with a different region.",
     descriptionFr:
-      "Le serveur a rencontré une erreur. Un remboursement intégral a été initié automatiquement.",
+      "Une erreur est survenue lors de la configuration. Un remboursement intégral a été initié automatiquement.",
     retryable: false,
   },
   provisioning_timeout: {
-    title: "Provisioning timed out",
+    title: "Setup timed out",
     titleFr: "Délai de provisionnement dépassé",
     description:
-      "The remote machine took too long to become active. A full refund has been issued. Please retry or contact support@concerto.run.",
+      "Setup took too long to complete. A full refund has been issued. Please retry or contact support@concerto.run.",
     descriptionFr:
-      "Le serveur a mis trop longtemps à démarrer. Un remboursement a été initié. Veuillez réessayer.",
+      "La configuration a mis trop longtemps. Un remboursement a été initié. Veuillez réessayer.",
     retryable: false,
   },
   failed_install: {
@@ -207,10 +207,10 @@ export default function SetupPage({ params }: { params: { token: string } }) {
   const showForm         = !isProvisioning || retrying
 
   const planSpec = plan === "pro"
-    ? "8GB memory, up to 6–8 parallel sessions"
-    : "4GB memory, up to 2 parallel sessions"
+    ? "up to 6 parallel Claude Code runs"
+    : "up to 2 parallel Claude Code runs"
 
-  const setupSubtitle = `Pick a region — we'll provision your dedicated remote machine automatically. (${planSpec})`
+  const setupSubtitle = `Pick a region — Concerto will set up your Claude Code connection automatically. (${planSpec})`
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0b] px-6 py-16 text-white">
@@ -244,9 +244,9 @@ export default function SetupPage({ params }: { params: { token: string } }) {
 
                 {/* Info banner */}
                 <div className="flex items-start gap-3 rounded-xl border border-violet-500/20 bg-violet-500/8 px-4 py-3">
-                  <Server className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
                   <p className="text-[13px] text-violet-300">
-                    Dedicated remote machine — {planSpec}. No account setup needed.
+                    Claude Code orchestration via Claude chat — {planSpec}. No extra account setup needed.
                   </p>
                 </div>
 
@@ -286,11 +286,11 @@ export default function SetupPage({ params }: { params: { token: string } }) {
                   className="h-11 w-full rounded-xl bg-white text-[14px] font-semibold text-black hover:bg-white/92 disabled:opacity-60"
                 >
                   {status === "submitting" ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Provisioning…</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Setting up…</>
                   ) : retrying ? (
-                    "Retry Provisioning"
+                    "Retry Setup"
                   ) : (
-                    "Provision My Remote Machine"
+                    "Activate My Concerto"
                   )}
                 </Button>
               </form>
@@ -299,7 +299,7 @@ export default function SetupPage({ params }: { params: { token: string } }) {
             /* ── Provisioning stepper ──────────────────────────── */
             <div className="p-7">
               <div className="mb-5">
-                <h2 className="text-[15px] font-semibold text-white">Setting up your remote machine</h2>
+                <h2 className="text-[15px] font-semibold text-white">Setting up your Claude Code connection</h2>
                 <p className="mt-1 text-[13px] text-white/40">This takes about 3–5 minutes. Don&apos;t close this tab.</p>
               </div>
 

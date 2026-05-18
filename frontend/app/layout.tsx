@@ -52,7 +52,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Concerto — Remote Workshop for Claude Code Agents",
+        alt: "Concerto — Claude Code orchestration from one Claude chat",
       },
     ],
     locale: "en_US",
@@ -108,7 +108,7 @@ const jsonLd = {
       "@id": "https://concerto.run/#product-solo",
       name: "Concerto Solo",
       description:
-        "Dedicated remote machine for Claude Code — 4GB memory, up to 2 parallel sessions, email support included.",
+        "Claude Code orchestration from Claude chat — up to 2 parallel runs, email support included.",
       url: "https://concerto.run",
       brand: { "@id": "https://concerto.run/#organization" },
       offers: {
@@ -130,7 +130,7 @@ const jsonLd = {
       "@id": "https://concerto.run/#product-pro",
       name: "Concerto Pro",
       description:
-        "Dedicated remote machine for Claude Code — 8GB memory, up to 6–8 parallel sessions, email support included.",
+        "Claude Code orchestration from Claude chat — up to 6 parallel runs, priority support included.",
       url: "https://concerto.run",
       brand: { "@id": "https://concerto.run/#organization" },
       offers: {

@@ -96,9 +96,9 @@ function SuspendedBanner() {
     <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-500/25 bg-orange-500/[0.07] px-5 py-4">
       <Ban className="mt-0.5 h-4.5 w-4.5 shrink-0 text-orange-400" />
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-orange-300">Remote machine suspended</p>
+        <p className="text-[14px] font-semibold text-orange-300">Access suspended</p>
         <p className="mt-1 text-[13px] text-orange-200/60 leading-relaxed">
-          Your remote machine is paused due to a failed payment. Your data is safe.
+          Your Concerto access is paused due to a failed payment. Your data is safe.
           Update your payment method to resume instantly.
         </p>
       </div>

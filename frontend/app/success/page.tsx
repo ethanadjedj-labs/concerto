@@ -30,7 +30,7 @@ export default function SuccessPage() {
                 <div>
                   <p className="text-[14px] font-medium text-white">Check your email</p>
                   <p className="mt-1 text-[13px] leading-relaxed text-white/40">
-                    Your setup link has been sent. It contains your unique token to provision your Concerto remote machine.
+                    Your setup link has been sent. It contains your unique token to activate your Concerto.
                   </p>
                 </div>
               </div>
@@ -45,7 +45,7 @@ export default function SuccessPage() {
                 {[
                   "Open the setup link in your email",
                   "Pick your region",
-                  "Concerto sets up your remote machine (~3 min)",
+                  "Concerto activates your Claude Code connection (~3 min)",
                   "Connect to claude.ai in 3 steps",
                 ].map((step, i) => (
                   <li key={i} className="flex items-center gap-3 text-[13px]">

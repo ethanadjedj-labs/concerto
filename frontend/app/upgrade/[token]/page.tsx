@@ -67,12 +67,12 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
             <Zap className="h-6 w-6 text-[#d97757]" />
           </div>
           <h1 className="font-display mb-3 text-4xl font-[400] tracking-tight">
-            {expired ? "Your trial ended." : "Keep your remote machine alive."}
+            {expired ? "Your trial ended." : "Keep your Claude Code access alive."}
           </h1>
           <p className="text-lg text-[#877c70] leading-relaxed max-w-lg mx-auto">
             {expired
-              ? "Your 30-minute trial remote machine was destroyed. Upgrade to get a permanent remote machine in 5 minutes."
-              : "Your trial is running. Upgrade now to keep the remote machine alive after the timer runs out."}
+              ? "Your 30-minute trial has ended. Upgrade to get full access in 5 minutes."
+              : "Your trial is running. Upgrade now to keep your Claude Code access after the timer runs out."}
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
                   Recommended
                 </Badge>
               </div>
-              <p className="mb-1 text-sm text-[#877c70]">Dedicated remote machine, 4GB memory</p>
+              <p className="mb-1 text-sm text-[#877c70]">Run Claude Code from Claude chat, up to 2 parallel runs</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#f5f0e9]">$49</span>
                 <span className="text-sm text-[#877c70]">/month</span>
@@ -96,8 +96,8 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
               <ul className="space-y-3">
                 {[
-                  "Dedicated remote machine, 4GB memory",
-                  "Up to 2 parallel sessions",
+                  "Run Claude Code from Claude chat",
+                  "Up to 2 parallel runs",
                   "Email support included",
                   "Cancel anytime",
                 ].map((f) => <CheckItem key={f}>{f}</CheckItem>)}
@@ -118,7 +118,7 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-lg font-medium text-[#f5f0e9]">Pro</span>
               </div>
-              <p className="mb-1 text-sm text-[#877c70]">Dedicated remote machine, 8GB memory</p>
+              <p className="mb-1 text-sm text-[#877c70]">More parallel Claude Code runs, up to 6</p>
               <div className="mt-5 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-[400] tracking-tight text-[#f5f0e9]">$99</span>
                 <span className="text-sm text-[#877c70]">/month</span>
@@ -126,9 +126,9 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
               <Separator className="my-6 bg-[rgba(245,240,233,0.07)]" />
               <ul className="space-y-3">
                 {[
-                  "Dedicated remote machine, 8GB memory",
-                  "Up to 6–8 parallel sessions",
-                  "Email support included",
+                  "Everything in Solo",
+                  "More parallel Claude Code runs (up to 6)",
+                  "Priority support",
                   "Cancel anytime",
                 ].map((f) => <CheckItem key={f}>{f}</CheckItem>)}
               </ul>
@@ -145,7 +145,7 @@ export default function UpgradePage({ params }: { params: { token: string } }) {
 
         <div className="mt-8 rounded-xl border border-[rgba(245,240,233,0.07)] bg-[#1a161c] px-6 py-4 text-center">
           <p className="text-sm text-[#877c70]">
-            We recommend <strong className="text-[#c4b8aa]">Claude Max</strong> — Pro&apos;s token limits run out fast with agentic work.
+            We recommend <strong className="text-[#c4b8aa]">Claude Max</strong> — Pro&apos;s token limits run out fast with parallel Claude Code work.
           </p>
         </div>
       </div>
