@@ -596,6 +596,7 @@ write_files:
       set -euo pipefail
 
       source /etc/concerto/env
+source /etc/concerto/ttyd.env
 
       # -- F4: verify SSH authorized_keys is in place before reporting back -----
       echo "[concerto] Verifying SSH authorized_keys..."
