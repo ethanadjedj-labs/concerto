@@ -114,7 +114,10 @@ async def _ssh_probe(vps_ip: str, key_path: str) -> dict | None:
             "bash -c '"
             "systemctl is-active concerto-ttyd 2>/dev/null; "
             "cat /etc/concerto/token 2>/dev/null || echo MISSING; "
-            "grep TUNNEL_HOSTNAME /etc/concerto/env 2>/dev/null | cut -d= -f2 || echo';"
+            "grep TUNNEL_HOSTNAME /etc/concerto/env 2>/dev/null | cut -d= -f2; "
+            "grep -hoE \"https://[a-z0-9-]+\\.trycloudflare\\.com\" "
+            "/var/log/cloudflared-quicktunnel.log /var/log/cloudflared*.log 2>/dev/null "
+            "| head -1 || echo';"
         ),
     ]
     try:
@@ -130,9 +133,16 @@ async def _ssh_probe(vps_ip: str, key_path: str) -> dict | None:
         ttyd_active = lines[0].strip() == "active"
         bearer = lines[1].strip()
         tunnel_hostname = lines[2].strip() if len(lines) > 2 else ""
+        # 4th line: the REAL ephemeral tunnel URL (trycloudflare) scraped from
+        # the cloudflared log — authoritative for trial droplets.
+        real_tunnel_url = lines[3].strip() if len(lines) > 3 else ""
         if not ttyd_active or bearer == "MISSING" or not bearer:
             return None
-        return {"bearer": bearer, "tunnel_hostname": tunnel_hostname}
+        return {
+            "bearer": bearer,
+            "tunnel_hostname": tunnel_hostname,
+            "real_tunnel_url": real_tunnel_url,
+        }
     except (asyncio.TimeoutError, Exception) as exc:
         logger.debug("SSH probe failed for %s: %s", vps_ip, exc)
         return None
@@ -144,10 +154,25 @@ async def _ssh_probe(vps_ip: str, key_path: str) -> dict | None:
 async def _promote(buyer: dict, probe: dict) -> None:
     token = buyer["token"]
     tunnel_hostname = probe.get("tunnel_hostname", "")
-    # Named tunnel hostname is also derivable from token prefix as fallback
-    if not tunnel_hostname:
-        tunnel_hostname = f"{token[:8].lower()}.workspaces.concerto.run"
-    mcp_url  = f"https://{tunnel_hostname}"
+    real_tunnel_url = probe.get("real_tunnel_url", "")
+    # Resolve the MCP URL in priority order:
+    #   1. A configured named-tunnel hostname (hosted plans only).
+    #   2. The REAL ephemeral trycloudflare URL scraped from the droplet.
+    # NEVER fabricate a {token}.workspaces.concerto.run URL — that hostname
+    # only exists for hosted named tunnels and is unreachable for trials,
+    # which caused "Couldn't reach the MCP server" in Claude.
+    if tunnel_hostname:
+        mcp_url = f"https://{tunnel_hostname}"
+    elif real_tunnel_url:
+        mcp_url = real_tunnel_url
+    else:
+        # No reliable URL yet — do NOT promote with a guessed URL.
+        # Leave it to the droplet-ready callback, which carries the real URL.
+        logger.info(
+            "Skipping SSH-probe promote for %.8s: no tunnel URL yet "
+            "(awaiting droplet-ready callback)", token,
+        )
+        return
     ttyd_url = f"{mcp_url}/terminal"
     bearer   = probe["bearer"]
 
