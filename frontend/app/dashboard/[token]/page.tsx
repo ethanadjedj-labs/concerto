@@ -1276,11 +1276,19 @@ export default function DashboardPage({
                         )
                       </>,
                       <>
-                        Click{" "}
-                        <UIChip>Connectors</UIChip>
+                        On the{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Connectors
+                        </strong>{" "}
+                        page, click the{" "}
+                        <UIChip>+</UIChip>{" "}
+                        button (top right, next to the search icon)
                       </>,
                       <>
-                        Click{" "}
+                        In the menu that opens, click{" "}
                         <UIChip>Add custom connector</UIChip>
                         , enter the{" "}
                         <strong
