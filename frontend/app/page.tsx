@@ -68,14 +68,14 @@ export default function LandingPage() {
             <Link href="#faq" className="hidden text-sm text-[#8a847b] transition-colors hover:text-[#191919] md:block">
               FAQ
             </Link>
-            <form action="/api/checkout?plan=pro" method="POST">
+            <Link href="#pricing">
               <Button
                 size="sm"
                 className="h-7 rounded-[6px] bg-[#cc785c] px-3 text-xs font-medium text-[#faf9f5] hover:bg-[#b86747] md:h-8 md:px-4"
               >
                 Start in 5 minutes
               </Button>
-            </form>
+            </Link>
           </div>
         </div>
       </nav>
@@ -112,7 +112,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <form action="/api/checkout?plan=pro" method="POST">
+              <Link href="#pricing">
                 <Button
                   size="lg"
                   className="h-11 rounded-[6px] bg-[#cc785c] px-6 text-base font-medium text-[#faf9f5] hover:bg-[#b86747] md:h-12 md:px-8"
@@ -120,8 +120,8 @@ export default function LandingPage() {
                   Start in 5 minutes
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </form>
-              <a href="#how">
+              </Link>
+              <a href="#demo">
                 <Button
                   size="lg"
                   variant="outline"
@@ -145,7 +145,7 @@ export default function LandingPage() {
       <div id="hero-section-end" aria-hidden="true" />
 
       {/* ── B. Demo ───────────────────────────────────────────────── */}
-      <section className="px-6 py-12 md:py-20 bg-[#faf9f5]">
+      <section id="demo" className="px-6 py-12 md:py-20 bg-[#faf9f5]">
         <div className="mx-auto max-w-6xl">
           <div className="reveal mb-8 text-center">
             <h2 className="font-display mb-3 text-2xl font-[450] tracking-tight text-[#191919] md:text-3xl">
@@ -256,7 +256,7 @@ export default function LandingPage() {
               Pick your plan.
             </h2>
             <p className="text-[#8a847b]">
-              Start with Solo, upgrade to Pro when your work scales up.
+              Start Solo — $49/mo, upgrade to Pro when your work scales up.
             </p>
           </div>
 
@@ -289,7 +289,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=solo" method="POST">
                 <Button type="submit" variant="outline" className="h-12 w-full rounded-[6px] border-[rgba(25,25,25,0.15)] text-base font-medium text-[#191919] hover:bg-[#f3efe5]">
-                  Start with Solo
+                  Start Solo — $49/mo
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
@@ -326,7 +326,7 @@ export default function LandingPage() {
               <Separator className="my-6 bg-[rgba(25,25,25,0.08)]" />
               <form action="/api/checkout?plan=pro" method="POST">
                 <Button type="submit" className="h-12 w-full rounded-[6px] bg-[#cc785c] text-base font-medium text-[#faf9f5] hover:bg-[#b86747]">
-                  Start with Pro
+                  Start Pro — $99/mo
                 </Button>
               </form>
               <p className="mt-3 text-center text-xs text-[#8a847b]">Secure payment via Stripe · Cancel anytime</p>
