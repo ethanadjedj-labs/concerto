@@ -77,8 +77,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/icon",
-    apple: "/apple-icon",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
 }
 
@@ -92,7 +92,7 @@ const jsonLd = {
       url: "https://concerto.run",
       logo: {
         "@type": "ImageObject",
-        url: "https://concerto.run/icon",
+        url: "https://concerto.run/icon.png",
       },
       sameAs: ["https://concerto.run"],
     },
