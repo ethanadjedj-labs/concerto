@@ -14,6 +14,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 import os
 import time
 import uuid
@@ -23,6 +24,8 @@ from typing import Any
 import anyio
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+
+logger = logging.getLogger("concerto.mcp")
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -72,17 +75,62 @@ def _pkce_verify(verifier: str, challenge: str) -> bool:
 
 
 def _load_json(path: Path) -> dict:
-    if path.exists():
+    """Read a JSON store, tolerating a concurrent atomic replace.
+
+    Writes use os.replace (atomic), so a reader either sees the old file or
+    the new one — never a partial one. We still retry briefly in case the
+    file is momentarily absent during the rename window, and we NEVER
+    silently return {} on a parse error of a non-empty file (that used to
+    mask token loss as an intermittent 401)."""
+    import time as _t
+    for attempt in range(5):
         try:
-            return json.loads(path.read_text())
-        except Exception:
+            if not path.exists():
+                return {}
+            raw = path.read_text()
+            if not raw.strip():
+                return {}
+            return json.loads(raw)
+        except FileNotFoundError:
             return {}
+        except json.JSONDecodeError:
+            # Should not happen with atomic writes; brief retry then give up
+            # loudly rather than silently dropping every token.
+            if attempt == 4:
+                logger.error("Corrupt JSON store at %s after retries", path)
+                return {}
+            _t.sleep(0.02)
+        except OSError:
+            if attempt == 4:
+                return {}
+            _t.sleep(0.02)
     return {}
 
 
 def _save_json(path: Path, data: dict) -> None:
+    """Atomically replace the JSON store.
+
+    Write to a temp file in the same directory then os.replace() it: the
+    rename is atomic on POSIX, so concurrent readers never observe a
+    half-written file. This fixes the intermittent 401: /token wrote
+    oauth_tokens.json non-atomically while a parallel /mcp read it mid-write,
+    saw invalid JSON, and rejected a perfectly valid token."""
+    import os as _os
+    import tempfile as _tf
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2))
+    fd, tmp = _tf.mkstemp(prefix=path.name + ".", dir=str(path.parent))
+    try:
+        with _os.fdopen(fd, "w") as fh:
+            fh.write(json.dumps(data, indent=2))
+            fh.flush()
+            _os.fsync(fh.fileno())
+        _os.replace(tmp, str(path))
+    except Exception:
+        try:
+            _os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _purge_expired_codes() -> None:
