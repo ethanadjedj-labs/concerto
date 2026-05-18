@@ -305,6 +305,7 @@ write_files:
 
       import anyio
       from mcp.server.fastmcp import FastMCP
+      from mcp.server.transport_security import TransportSecuritySettings
 
       # ---------------------------------------------------------------------------
       # Paths
@@ -378,7 +379,18 @@ write_files:
       # MCP server
       # ---------------------------------------------------------------------------
 
-      mcp = FastMCP("concerto", stateless_http=True)
+      mcp = FastMCP(
+          "concerto",
+          stateless_http=True,
+          # FastMCP auto-enables DNS-rebinding protection when host is 127.0.0.1,
+          # which 421-rejects the public tunnel Host (ce<hash>.concerto.run) on the
+          # post-OAuth /mcp call -> Claude reports "Authorization failed". The server
+          # is already protected by OAuth + nginx + the cloudflared tunnel, so this
+          # protection is redundant here and must be disabled explicitly.
+          transport_security=TransportSecuritySettings(
+              enable_dns_rebinding_protection=False
+          ),
+      )
 
 
       @mcp.tool()
