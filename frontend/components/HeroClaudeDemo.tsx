@@ -143,7 +143,7 @@ function ToolChip({ label, state }: { label: string; state: ChipState }) {
           height: 36,
           padding: "0 12px",
           background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "none",
           borderRadius: 8,
           display: "flex",
           alignItems: "center",
@@ -292,35 +292,7 @@ function Sidebar() {
       {/* Hamburger */}
       <Menu size={18} color="#524d44" strokeWidth={1.5} />
 
-      <div style={{ height: 18 }} />
-
-      {/* Project header strip */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 3,
-          padding: "5px 8px",
-          borderRadius: 6,
-          background: "rgba(255,255,255,0.03)",
-          cursor: "default",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 9.5,
-            color: "#8a8275",
-            fontWeight: 500,
-            letterSpacing: "0.01em",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Concerto
-        </span>
-        <ChevronDown size={8} color="#524d44" strokeWidth={1.5} />
-      </div>
-
-      <div style={{ height: 18 }} />
+      <div style={{ height: 22 }} />
 
       {/* Icon strip */}
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -799,8 +771,8 @@ function AnimatedDemo() {
           >
             <UserMessage visible={userVisible} />
             <AssistantProse chars={prose1Chars} text={DEMO_TEXTS.assistantProse1} />
-            <ToolChip label="Start claude session" state={chip1} />
-            <ToolChip label="Start claude session" state={chip2} />
+            <ToolChip label="Start Claude Code session" state={chip1} />
+            <ToolChip label="Start Claude Code session" state={chip2} />
             <AssistantProse chars={prose2Chars} text={DEMO_TEXTS.assistantProse2} />
             <ToolChip label="Get claude session" state={chip3} />
             <AssistantProse chars={prose3Chars} text={DEMO_TEXTS.assistantProse3} />
@@ -846,8 +818,8 @@ function StaticFallback() {
               chars={texts.assistantProse1.length}
               text={texts.assistantProse1}
             />
-            <ToolChip label="Start claude session" state="complete" />
-            <ToolChip label="Start claude session" state="complete" />
+            <ToolChip label="Start Claude Code session" state="complete" />
+            <ToolChip label="Start Claude Code session" state="complete" />
             <AssistantProse
               chars={texts.assistantProse2.length}
               text={texts.assistantProse2}

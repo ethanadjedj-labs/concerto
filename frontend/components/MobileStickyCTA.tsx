@@ -5,17 +5,36 @@ import { Button } from "@/components/ui/button"
 
 export function MobileStickyCTA() {
   const [visible, setVisible] = useState(false)
+  const [pricingReached, setPricingReached] = useState(false)
 
   useEffect(() => {
     const sentinel = document.getElementById("hero-section-end")
-    if (!sentinel) return
+    if (sentinel) {
+      const obs = new IntersectionObserver(
+        ([entry]) => setVisible(!entry.isIntersecting),
+        { rootMargin: "0px", threshold: 0 }
+      )
+      obs.observe(sentinel)
+      return () => obs.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const pricing = document.getElementById("pricing")
+    if (!pricing) return
     const obs = new IntersectionObserver(
-      ([entry]) => setVisible(!entry.isIntersecting),
-      { rootMargin: "0px", threshold: 0 }
+      ([entry]) => {
+        // Mark pricing as reached once it scrolls into view; do NOT reset on scroll back up
+        if (entry.isIntersecting) setPricingReached(true)
+      },
+      { rootMargin: "0px 0px -50% 0px", threshold: 0 }
     )
-    obs.observe(sentinel)
+    obs.observe(pricing)
     return () => obs.disconnect()
   }, [])
+
+  const buttonLabel = pricingReached ? "Start Pro — $99/mo" : "Start in 5 minutes"
+  const subLabel = pricingReached ? "Solo plan also available at $49/mo" : "Choose your plan below"
 
   return (
     <div
@@ -28,15 +47,26 @@ export function MobileStickyCTA() {
         transition: "opacity 0.3s ease, transform 0.3s ease",
       }}
     >
-      <form action="/api/checkout?plan=pro" method="POST">
-        <Button
-          type="submit"
-          className="h-10 w-full rounded-[6px] bg-[#cc785c] text-sm font-medium text-[#faf9f5] hover:bg-[#b86747]"
-        >
-          Start in 5 minutes — $99/mo
-        </Button>
-      </form>
-      <p className="mt-1 text-center text-xs text-[#8a847b]">Solo plan also available at $49/mo</p>
+      {pricingReached ? (
+        <form action="/api/checkout?plan=pro" method="POST">
+          <Button
+            type="submit"
+            className="h-10 w-full rounded-[6px] bg-[#cc785c] text-sm font-medium text-[#faf9f5] hover:bg-[#b86747]"
+          >
+            {buttonLabel}
+          </Button>
+        </form>
+      ) : (
+        <a href="#pricing" className="block">
+          <Button
+            type="button"
+            className="h-10 w-full rounded-[6px] bg-[#cc785c] text-sm font-medium text-[#faf9f5] hover:bg-[#b86747]"
+          >
+            {buttonLabel}
+          </Button>
+        </a>
+      )}
+      <p className="mt-1 text-center text-xs text-[#8a847b]">{subLabel}</p>
     </div>
   )
 }
