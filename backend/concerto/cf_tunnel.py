@@ -2,7 +2,7 @@
 Cloudflare named tunnel management for per-customer Concerto workspaces.
 
 Each customer gets a named CF tunnel with a stable hostname derived from the
-full token via SHA-256: c{sha256(token)[:16]}.workspaces.concerto.run
+full token via SHA-256: c{sha256(token)[:16]}.concerto.run
 
 This replaces the old token[:8].lower() scheme which could produce collisions
 (different tokens with the same first 8 chars after lowercasing).
@@ -53,7 +53,7 @@ def _derive_label(token: str) -> str:
 async def create_named_tunnel(token: str) -> dict:
     """Create (or idempotently reuse) a named CF tunnel for this customer.
 
-    Hostname format: c{sha256(token)[:16]}.workspaces.concerto.run
+    Hostname format: c{sha256(token)[:16]}.concerto.run
 
     Uniqueness guarantee: queries CF DNS for an existing CNAME before creating one.
       - No existing record → create it.
@@ -65,11 +65,11 @@ async def create_named_tunnel(token: str) -> dict:
         {
           "tunnel_id": "uuid",
           "tunnel_token": "eyJ...",
-          "hostname": "c<16hex>.workspaces.concerto.run",
+          "hostname": "c<16hex>.concerto.run",
         }
     """
     label = _derive_label(token)
-    hostname = f"{label}.workspaces.concerto.run"
+    hostname = f"{label}.concerto.run"  # one-level subdomain: covered by the existing *.concerto.run edge cert (a 2-level *.workspaces.concerto.run is NOT covered by Cloudflare Universal SSL -> TLS handshake fails -> client sees 'Couldn't reach the MCP server')
     tunnel_name = f"concerto-{label}"
     account_id = _cf_account_id()
     headers = _cf_headers()
@@ -172,7 +172,7 @@ async def create_named_tunnel(token: str) -> dict:
                 headers=headers,
                 json={
                     "type": "CNAME",
-                    "name": f"{label}.workspaces",
+                    "name": label,  # one-level subdomain (see hostname note above)
                     "content": expected_content,
                     "proxied": True,
                     "ttl": 1,
