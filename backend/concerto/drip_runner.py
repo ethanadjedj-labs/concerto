@@ -24,7 +24,7 @@ FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
 DRIP_SCHEDULE = [
     # (day_offset, column, subject_fn, template_name, hosted_only)
-    (0,  "drip_day_0_sent_at",  lambda b: "Your Concerto workspace is being prepared", "day_0_welcome", False),
+    (0,  "drip_day_0_sent_at",  lambda b: "Your Concerto order is confirmed", "day_0_welcome", False),
     (1,  "drip_day_1_sent_at",  lambda b: "Have you tried your first session?", "day_1_first_session", False),
     (3,  "drip_day_3_sent_at",  lambda b: "Try this: spawn 3 sessions in parallel", "day_3_advanced_pattern", False),
     (7,  "drip_day_7_sent_at",  lambda b: "One week in — how's it going?", "day_7_check_in", False),

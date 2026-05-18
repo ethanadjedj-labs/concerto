@@ -53,31 +53,20 @@ def _mark_processed(event_id: str, event_type: str) -> bool:
 
 async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
     setup_url = f"{_SETUP_BASE}/{token}"
-    if plan in _HOSTED_PLANS:
-        ram = "8GB" if plan == "pro" else "4GB"
-        subject = f"Welcome to Concerto {plan.capitalize()} — your setup link"
-        body_extra = (
-            f"<p>Good news: you don't need a DigitalOcean account — "
-            f"Everything is included — just click below to pick a region "
-            f"and get started in seconds.</p>"
-        )
-    else:
-        subject = "Welcome to Concerto BYOC — your setup link"
-        body_extra = (
-            "<p>Click the link below to connect your DigitalOcean account "
-            "and start your remote Claude Code sessions.</p>"
-        )
+    subject = f"Welcome to Concerto {plan.capitalize()} — your setup link"
     await send_email(
         to=to_email,
         subject=subject,
         html=(
-            "<p>Thanks for purchasing Concerto!</p>"
-            + body_extra
-            + f'<p><a href="{setup_url}" style="background:#7c3aed;color:white;'
-            f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
-            f"Set up my Concerto</a></p>"
-            "<p>This link is unique to your account — keep it safe.</p>"
-            "<p>Questions? Reply to this email — a human will respond within 24 hours.</p>"
+            "<div style='font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;background:#faf9f5'>"
+            "<p style='font-size:18px;font-weight:500;color:#191919;margin:0 0 24px'>Concerto</p>"
+            "<p style='color:#191919;font-size:15px;line-height:1.6'>Thanks for purchasing Concerto! Your account is managed for you — click below to get started in about 5 minutes.</p>"
+            f'<p><a href="{setup_url}" style="background:#cc785c;color:#fff;'
+            f'padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px">'
+            f"Complete Setup →</a></p>"
+            "<p style='color:#8a847b;font-size:13px'>This link is unique to your account — keep it safe. It expires in 48 hours.</p>"
+            "<p style='color:#8a847b;font-size:13px'>Questions? Reply to this email — a human will respond within 24 hours.</p>"
+            "</div>"
         ),
     )
 
@@ -307,7 +296,7 @@ async def stripe_webhook(request: Request):
         if metadata.get("product") != "concerto":
             return {"ignored": True, "reason": "product mismatch"}
 
-        plan = metadata.get("plan", "byoc")
+        plan = metadata.get("plan", "solo")
         trial_token = metadata.get("trial_token", "")
         customer_email = obj.get("customer_email") or (
             (obj.get("customer_details") or {}).get("email")
@@ -362,7 +351,7 @@ async def stripe_webhook(request: Request):
                 from emails.transactional import trial_converted
                 if customer_email:
                     setup_url = f"{_SETUP_BASE}/{trial_token}"
-                    tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
+                    tpl = trial_converted(setup_url=setup_url, email=customer_email, plan_name=f"Concerto {plan.capitalize()}")
                     await send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"])
                 return {"ok": True, "trial_upgraded": True, "token": token}
 

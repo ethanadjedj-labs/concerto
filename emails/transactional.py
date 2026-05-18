@@ -28,7 +28,7 @@ def _load_html(name: str) -> str | None:
 
 def purchase_confirmation(*, token: str, email: str) -> dict:
     setup_url = f"https://concerto.run/setup/{token}"
-    subject = "Your Concerto workspace is being prepared"
+    subject = "Your Concerto order is confirmed"
     text = f"""\
 Hi,
 
@@ -49,11 +49,11 @@ https://concerto.run
 
 
 def provisioning_complete(*, dashboard_url: str, email: str) -> dict:
-    subject = "Your Concerto Droplet is ready"
+    subject = "Your Concerto is live"
     text = f"""\
 Hi,
 
-Your Droplet is provisioned and the MCP tunnel is live.
+Your Concerto account is provisioned and the MCP tunnel is live.
 
 Open your dashboard to grab the connector config:
 {dashboard_url}
@@ -75,13 +75,13 @@ def provisioning_failed(*, reason: str, refund_url: str, retry_url: str, email: 
     text = f"""\
 Hi,
 
-We hit a problem while provisioning your Droplet and couldn't complete the setup.
+We hit a problem getting your account ready and couldn't complete the setup.
 
 Reason: {reason}
 
 You have two options:
 
-1. Retry with a different DigitalOcean API key:
+1. Retry setup:
    {retry_url}
 
 2. Request a full refund (no questions asked):
@@ -103,11 +103,11 @@ We're sorry for the trouble. If you want to understand what went wrong or need h
 
 
 def welcome_after_first_session(*, email: str) -> dict:
-    subject = "You're running Claude Code on your own machine"
+    subject = "Your first Concerto session is done"
     text = f"""\
 Hi,
 
-You just completed your first Concerto session. That means Claude Code ran a real task on your dedicated Droplet — files persisted, network was live, and nothing hit a context wall.
+You just completed your first Concerto session. Claude Code ran a real task on your account — files persisted, network was live, and nothing hit a context wall.
 
 A few things worth knowing now that you're up:
 
@@ -116,8 +116,6 @@ A few things worth knowing now that you're up:
 2. Use the Concerto Custom Style in claude.ai. It tells Claude to treat MCP tools as the primary execution surface and skip the narration. Grab it here: https://concerto.run/docs/custom-style
 
 3. Reply to this email if you have questions or want to share what you built — we read every reply.
-
-4. Your Droplet is yours. SSH in if you want, install whatever you need, or leave it as-is and let Claude handle it.
 
 Let us know how it's going.
 
@@ -131,11 +129,11 @@ https://concerto.run | support@concerto.run
 
 
 def trial_ready(*, dashboard_url: str, email: str, minutes: int = 30) -> dict:
-    subject = "Your Concerto trial workspace is live"
+    subject = "Your Concerto trial is live"
     text = f"""\
 Hi,
 
-Your 30-minute Concerto trial workspace is ready. You have {minutes} minutes to try it.
+Your 30-minute Concerto trial is ready. You have {minutes} minutes to try it.
 
 Open your dashboard and grab the connector config:
 {dashboard_url}
@@ -145,7 +143,7 @@ Steps:
 2. Paste the connector config into claude.ai → Settings → Connectors
 3. Start any conversation — Claude Code is live
 
-After {minutes} minutes the workspace is destroyed automatically.
+After {minutes} minutes your trial ends automatically.
 If you want to keep going, upgrade from inside the dashboard (30 seconds).
 
 — The Concerto team
@@ -162,16 +160,16 @@ https://concerto.run | support@concerto.run
 
 
 def trial_expired(*, upgrade_url: str, email: str) -> dict:
-    subject = "Your Concerto trial has ended — upgrade to keep going"
+    subject = "Your Concerto trial just ended"
     text = f"""\
 Hi,
 
-Your 30-minute Concerto trial has ended and your workspace has been destroyed.
+Your 30-minute Concerto trial just ended.
 
-Everything you experienced is available the moment you upgrade:
+To keep using Concerto, subscribe below — you'll get a fresh environment provisioned in about 5 minutes:
 
-- Solo (Hosted): $49/month — we host the workspace, zero setup
-- BYOC: $129 once — bring your own DigitalOcean account, full control
+- Solo: $49/month
+- Pro: $99/month (parallel runs)
 
 Upgrade here: {upgrade_url}
 
@@ -190,11 +188,11 @@ https://concerto.run | support@concerto.run
 
 
 def trial_converted(*, setup_url: str, email: str, plan_name: str = "Concerto") -> dict:
-    subject = f"Welcome to {plan_name} — your workspace is being prepared"
+    subject = f"Welcome to {plan_name} — your environment is being set up"
     text = f"""\
 Hi,
 
-Your payment is confirmed. Your Concerto workspace is spinning up — it'll be ready in about 3 minutes.
+Your payment is confirmed. We're setting up your account — it'll be ready in about 5 minutes.
 
 Open your dashboard when it's ready:
 {setup_url}
@@ -202,7 +200,7 @@ Open your dashboard when it's ready:
 Steps:
 1. Open the dashboard above
 2. Copy the connector config into claude.ai → Settings → Connectors
-3. Start any conversation — Claude Code is live on your workspace
+3. Start any conversation — Claude Code is live
 
 You tried it for free and decided it was worth it — that's the whole idea. Welcome to the full experience.
 

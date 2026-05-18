@@ -6,8 +6,7 @@ Eligibility rules:
   - Within 14 days of purchase → automatic
   - Beyond 14 days AND provisioning succeeded → requires operator review (queued in MANAGER_STATE)
 
-BYOC: customer keeps their DigitalOcean droplet (Concerto never owned it).
-Hosted: destroy droplet via DO API on refund.
+Solo/Pro: destroy provisioned environment via DO API on refund.
 """
 import asyncio
 import os

@@ -3,86 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Concerto workspace is being prepared</title>
+  <title>Order confirmed — Concerto</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0d0d0d;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      color: #e8e8e8;
-    }
-    .wrapper {
-      max-width: 560px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
-    .logo {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: #ffffff;
-      margin-bottom: 32px;
-    }
-    .card {
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      padding: 32px;
-    }
-    h1 {
-      font-size: 22px;
-      font-weight: 600;
-      color: #ffffff;
-      margin: 0 0 16px 0;
-    }
-    p {
-      font-size: 15px;
-      line-height: 1.6;
-      color: #c0c0c0;
-      margin: 0 0 20px 0;
-    }
-    .cta {
-      display: inline-block;
-      background: #ffffff;
-      color: #0d0d0d;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 15px;
-      padding: 12px 24px;
-      border-radius: 6px;
-      margin-top: 8px;
-    }
-    .note {
-      font-size: 13px;
-      color: #666;
-      margin-top: 24px;
-    }
-    .footer {
-      font-size: 12px;
-      color: #444;
-      margin-top: 32px;
-      text-align: center;
-    }
-    .footer a {
-      color: #666;
-      text-decoration: none;
-    }
+    body { margin:0;padding:0;background:#faf9f5;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#191919; }
+    .wrapper { max-width:560px;margin:40px auto;padding:0 20px; }
+    .header { display:flex;align-items:center;gap:10px;margin-bottom:32px; }
+    .card { background:#fff;border:1px solid #f3efe5;border-radius:10px;padding:32px; }
+    h1 { font-size:22px;font-weight:600;color:#191919;margin:0 0 16px; }
+    p { font-size:15px;line-height:1.6;color:#191919;margin:0 0 20px; }
+    .cta { display:inline-block;background:#cc785c;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 24px;border-radius:6px;margin-top:8px; }
+    a { color:#cc785c; }
+    .footer { font-size:12px;color:#8a847b;margin-top:32px;text-align:center; }
+    .footer a { color:#8a847b;text-decoration:none; }
   </style>
 </head>
 <body>
   <div class="wrapper">
-    <div class="logo">Concerto</div>
+    <div class="header">
+      <img src="https://concerto.run/brand/logo-mark.png?v=3" width="48" height="48" alt="Concerto" style="display:block" />
+      <span style="font-weight:500;font-size:18px;color:#191919">Concerto</span>
+    </div>
     <div class="card">
-      <h1>Order confirmed. Setting up your workspace.</h1>
-      <p>Thanks for purchasing Concerto. Your payment went through and we're getting your Droplet ready.</p>
-      <p>Complete your setup — it takes about 3 minutes:</p>
+      <h1>Order confirmed. Setting up your account.</h1>
+      <p>Thanks for purchasing Concerto. Your payment went through and we're getting your account ready — it takes about 5 minutes.</p>
+      <p>Complete your setup here:</p>
       <a href="{{setup_url}}" class="cta">Complete Setup →</a>
-      <p class="note">This link expires in 48 hours. If it doesn't work, reply to this email.</p>
+      <p style="margin-top:24px;font-size:13px;color:#8a847b;">This link expires in 48 hours. If it doesn't work, reply to this email.</p>
     </div>
     <div class="footer">
       <p>Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a></p>
-      <p>You're receiving this because you purchased Concerto. Reply to this email to talk to a human.</p>
+      <p>Questions? Reply to this email — a human responds fast.</p>
     </div>
   </div>
 </body>

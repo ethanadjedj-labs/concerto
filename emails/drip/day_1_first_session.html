@@ -2,38 +2,37 @@
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Try your first session</title>
 <style>
-  body{margin:0;padding:0;background:#0d0d14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0}
+  body{margin:0;padding:0;background:#faf9f5;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#191919}
   .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
-  .logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
-  .logo-icon{width:36px;height:36px;background:transparent;display:flex;align-items:center;justify-content:center}
-  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#fff}
-  p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0 0 16px}
-  .prompt-box{background:rgba(255,255,255,.03);border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#c4b5fd;line-height:1.7;margin:0 0 24px;white-space:pre-wrap}
-  .btn{display:inline-block;padding:12px 24px;background:#d97757;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;margin:8px 0 24px}
-  .footer{font-size:12px;color:#475569;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
-  a{color:#d97757}
+  .header{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#191919}
+  p{font-size:15px;line-height:1.7;color:#191919;margin:0 0 16px}
+  .prompt-box{background:#fff;border:1px solid #f3efe5;border-radius:12px;padding:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#191919;line-height:1.7;margin:0 0 24px;white-space:pre-wrap}
+  .btn{display:inline-block;padding:12px 24px;background:#cc785c;color:#fff;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600;margin:8px 0 24px}
+  .footer{font-size:12px;color:#8a847b;margin-top:40px;padding-top:20px;border-top:1px solid #f3efe5}
+  a{color:#cc785c}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="logo">
-    <div class="logo-icon" style="background:transparent;padding:0"><svg width="36" height="36" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" stroke-width="12" stroke-linecap="round"/><path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90" fill="none" stroke="#b483ff" stroke-width="12" stroke-linecap="round"/><path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" stroke-width="12" stroke-linecap="round"/><circle cx="115.56" cy="115.56" r="15" fill="#d97757"/><circle cx="61.36" cy="89.65" r="15" fill="#b483ff"/><circle cx="150.23" cy="71.00" r="15" fill="#8b7fff"/><circle cx="100" cy="100" r="20" fill="#f5f0e9"/></svg></div>
-    <span style="font-weight:700;font-size:18px;color:#fff">Concerto</span>
+  <div class="header">
+    <img src="https://concerto.run/brand/logo-mark.png?v=3" width="48" height="48" alt="Concerto" style="display:block" />
+    <span style="font-weight:500;font-size:18px;color:#191919">Concerto</span>
   </div>
 
   <h1>Have you tried your first session?</h1>
   <p>If you've connected the Concerto connector to claude.ai, you're ready to run your first session. Here's a copy-paste prompt that shows what Concerto can do:</p>
 
-  <div class="prompt-box">Open a bash session on the remote Droplet.
-Run: echo "hostname: $(hostname)" && free -h && df -h /
+  <div class="prompt-box">Open a bash session.
+Run: echo "hostname: $(hostname)" && df -h /
 Then create a file called hello.txt in /tmp with today's date inside it.
 Confirm the file exists by reading it back.</div>
 
-  <p>Paste that into any claude.ai conversation. Within seconds Claude Code is running on your VPS — not in a sandbox, not simulated. Real shell, real filesystem, persistent across sessions.</p>
+  <p>Paste that into any claude.ai conversation. Within seconds Claude Code is running through your Concerto account — real shell, real filesystem, persistent across sessions.</p>
 
   <a href="{{dashboard_url}}" class="btn">Open dashboard →</a>
 
-  <p>If setup isn't complete yet, <a href="{{setup_url}}">resume here</a>. It takes about 3 minutes from start to first session.</p>
+  <p>If setup isn't complete yet, <a href="{{setup_url}}">resume here</a>. It takes about 5 minutes from start to first session.</p>
 
   <div class="footer">
     Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a><br>
