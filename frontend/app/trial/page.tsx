@@ -25,21 +25,43 @@ type Phase = "form" | "waiting" | "error"
 // graceful "taking a bit longer" reassurance past the expected window.
 
 const WAIT_STEPS: { key: string; label: string; pct: number }[] = [
-  { key: "paid_unprovisioned", label: "Reserving your machine", pct: 8 },
-  { key: "provisioning", label: "Booting a fresh server", pct: 30 },
-  { key: "installing", label: "Installing Claude Code & friends", pct: 78 },
-  { key: "awaiting_oauth", label: "Ready — taking you in", pct: 100 },
+  { key: "paid_unprovisioned", label: "Setting things up", pct: 8 },
+  { key: "provisioning", label: "Preparing your space", pct: 30 },
+  { key: "installing", label: "Getting Claude ready", pct: 78 },
+  { key: "awaiting_oauth", label: "Almost there", pct: 100 },
 ]
 
 const STORY: string[] = [
-  "Spinning up a brand-new server, just for you. No roommates.",
-  "It's a real machine in a real data center. We didn't fake this part.",
-  "Installing Node, Claude Code, and a few trusted accomplices.",
-  "Teaching your environment how to take orders from Claude.",
-  "Most of this wait is npm. It's always npm. We're sorry.",
-  "Wiring a private tunnel so only you can reach your box.",
-  "Almost there. Your future self is already saving hours.",
-  "Pro tip: once you're in, just tell Claude what you want built.",
+  "Good things take a moment. This is one of them.",
+  "Setting the stage so Claude can get straight to work.",
+  "You're about to delegate the boring parts. All of them.",
+  "Quietly putting the pieces in place.",
+  "Soon: you describe what you want, Claude builds it.",
+  "Think of the most tedious task on your list. That one's leaving.",
+  "Almost ready to hand Claude the keys.",
+  "This is the longest you'll wait. Promise.",
+  "Tuning the last few details so the first run feels effortless.",
+  "Your future self is already three tasks ahead.",
+  "We could show a fake progress bar. This one's real.",
+  "Patience now, superpowers in a minute.",
+  "Lining everything up so nothing breaks later.",
+  "The hard part is on us. The fun part is on you.",
+  "Getting everything just so. You'll only do this once.",
+  "A short wait for a long-term shortcut.",
+  "Claude's warming up. It doesn't stretch, but you get the idea.",
+  "Almost there — the good kind of almost.",
+  "Putting the finishing touches where you can't see them.",
+  "You bring the ideas. Claude brings the hours back.",
+  "Nearly set. Keep this tab open and relax.",
+  "Coffee's optional. The wait is short enough without it.",
+  "Assembling something that works the first time.",
+  "Last stretch. This is where it gets good.",
+  "Soon you'll wonder how you did things the old way.",
+  "Making sure day one feels like day one hundred.",
+  "Tidying up so your first task is the only thing you think about.",
+  "We're almost done so you can barely start — then never stop.",
+  "Hold tight. The handoff is worth the minute.",
+  "Everything's coming together. Just a little longer.",
 ]
 
 const EXPECTED_MS = 200_000 // ~3min 20s; past this we switch to reassurance
@@ -52,7 +74,18 @@ function WaitingExperience({
   startedAt: number
 }) {
   const [now, setNow] = useState(Date.now())
-  const [storyIdx, setStoryIdx] = useState(0)
+  // Shuffle once so the sequence differs every visit and never repeats
+  // a line within a single wait (30 lines >> ~3min / 6.5s).
+  const orderRef = useRef<number[]>([])
+  if (orderRef.current.length === 0) {
+    const idxs = STORY.map((_, i) => i)
+    for (let i = idxs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[idxs[i], idxs[j]] = [idxs[j], idxs[i]]
+    }
+    orderRef.current = idxs
+  }
+  const [storyPos, setStoryPos] = useState(0)
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -61,11 +94,13 @@ function WaitingExperience({
 
   useEffect(() => {
     const t = setInterval(
-      () => setStoryIdx((i) => (i + 1) % STORY.length),
+      () => setStoryPos((p) => (p + 1) % orderRef.current.length),
       6500
     )
     return () => clearInterval(t)
   }, [])
+
+  const storyIdx = orderRef.current[storyPos] ?? 0
 
   const elapsed = startedAt ? now - startedAt : 0
   const overdue = elapsed > EXPECTED_MS
@@ -123,15 +158,14 @@ function WaitingExperience({
         className="mb-1.5 text-center text-[22px] font-medium"
         style={{ color: "#191919" }}
       >
-        Building your environment
+        Getting everything ready
       </h2>
       <p
         className="mx-auto mb-6 max-w-sm text-center text-[14px] leading-relaxed"
         style={{ color: "#8a847b" }}
       >
-        This takes about 3 minutes — a real server is being created from
-        scratch. Keep this tab open; you&apos;ll be taken in automatically.
-        No need to click anything.
+        This takes about three minutes. Keep this tab open and you&apos;ll
+        be taken in automatically — nothing to click.
       </p>
 
       {/* Progress bar */}
@@ -204,8 +238,8 @@ function WaitingExperience({
       >
         {overdue ? (
           <span>
-            Still going — some regions are slower than others. Hang tight,
-            this almost always finishes within a minute or two. ☕
+            Still working on it — this occasionally takes a little
+            longer. It almost always wraps up within another minute. ☕
           </span>
         ) : (
           <span
