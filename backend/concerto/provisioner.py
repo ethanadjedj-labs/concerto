@@ -240,8 +240,13 @@ async def provision_droplet(
         async with httpx.AsyncClient(
             base_url=_DO_API_BASE, headers=headers, timeout=30
         ) as client:
+            # Sanitize: DO requires [a-z0-9-], no consecutive/leading/trailing hyphens
+            _raw = f"concerto-{token[:8].lower()}"
+            _safe = re.sub(r"[^a-z0-9-]", "-", _raw)
+            _safe = re.sub(r"-+", "-", _safe).strip("-")
+            droplet_name = (_safe[:63] or "concerto-trial")
             droplet_id = await _create_droplet_with_fallback(
-                client, f"concerto-{token[:8].replace("_", "-")}", region, size, cloud_init, tag
+                client, droplet_name, region, size, cloud_init, tag
             )
 
             # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
