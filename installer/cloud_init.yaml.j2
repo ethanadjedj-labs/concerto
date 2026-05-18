@@ -361,7 +361,7 @@ write_files:
           """Read a JSON store, tolerating a concurrent atomic replace.
 
           Writes use os.replace (atomic), so a reader either sees the old file or
-          the new one — never a partial one. We still retry briefly in case the
+          the new one - never a partial one. We still retry briefly in case the
           file is momentarily absent during the rename window, and we NEVER
           silently return {} on a parse error of a non-empty file (that used to
           mask token loss as an intermittent 401)."""
