@@ -217,8 +217,8 @@ async def provision_droplet(
     ttyd_password = secrets.token_hex(16)
 
     # Create named CF tunnel before droplet so the stable hostname is ready.
-    # Covers solo/pro/trial (all use the platform DO account); byoc gets ephemeral tunnel.
-    is_hosted = mode in ("solo", "pro", "trial")
+    # trial/byoc use quick tunnel (trycloudflare.com) — ephemeral, no stable hostname needed.
+    is_hosted = mode in ("solo", "pro")
     tunnel_info: dict = {}
     if is_hosted:
         tunnel_info = await create_named_tunnel(token)
@@ -242,7 +242,7 @@ async def provision_droplet(
     )
     _validate_cloud_init_yaml(cloud_init, token)
 
-    tag = f"concerto-{mode}-{token[:8].replace("_", "-")}" if is_hosted else f"concerto-byoc-{token[:8].replace("_", "-")}"
+    tag = f"concerto-{mode}-{token[:8].replace('_', '-')}"
 
     # For platform-hosted plans use PLAN_TO_SIZE (trial keeps its caller-supplied size)
     if mode in ("solo", "pro"):

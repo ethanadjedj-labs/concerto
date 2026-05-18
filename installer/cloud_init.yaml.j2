@@ -528,7 +528,7 @@ write_files:
 
       [Service]
       Type=simple
-      {% if tunnel_token %}ExecStart=/usr/local/bin/cloudflared tunnel run --token {{ tunnel_token }}
+      {% if tunnel_hostname %}ExecStart=/usr/local/bin/cloudflared tunnel run --token {{ tunnel_token }}
       {% else %}ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8080
       StandardOutput=append:/var/log/cloudflared-quicktunnel.log
       StandardError=append:/var/log/cloudflared-quicktunnel.log
