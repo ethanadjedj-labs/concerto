@@ -244,39 +244,39 @@ async def provision_droplet(
                 client, f"concerto-{token[:8]}", region, size, cloud_init, tag
             )
 
-        # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
-        if mode in ("solo", "pro"):
-            await db.upsert_hosted_pool(
-                droplet_id=droplet_id,
-                buyer_token=token,
-                ipv4=None,
-                status="provisioning",
-                created_at=int(time.time()),
-            )
-
-        # Poll for active + public IP (max 5 min)
-        for _ in range(60):
-            await asyncio.sleep(5)
-            r = await client.get(f"/droplets/{droplet_id}")
-            r.raise_for_status()
-            d = r.json()["droplet"]
-            if d["status"] == "error":
-                raise DropletBootError(
-                    f"Droplet {droplet_id} entered error state during boot"
+            # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
+            if mode in ("solo", "pro"):
+                await db.upsert_hosted_pool(
+                    droplet_id=droplet_id,
+                    buyer_token=token,
+                    ipv4=None,
+                    status="provisioning",
+                    created_at=int(time.time()),
                 )
-            if d["status"] == "active":
-                for net in d.get("networks", {}).get("v4", []):
-                    if net["type"] == "public":
-                        ipv4 = net["ip_address"]
-                        if mode in ("solo", "pro"):
-                            await db.upsert_hosted_pool(
-                                droplet_id=droplet_id,
-                                buyer_token=token,
-                                ipv4=ipv4,
-                                status="active",
-                                created_at=int(time.time()),
-                            )
-                        return droplet_id, ipv4, private_key_path, ttyd_password
+
+            # Poll for active + public IP (max 5 min)
+            for _ in range(60):
+                await asyncio.sleep(5)
+                r = await client.get(f"/droplets/{droplet_id}")
+                r.raise_for_status()
+                d = r.json()["droplet"]
+                if d["status"] == "error":
+                    raise DropletBootError(
+                        f"Droplet {droplet_id} entered error state during boot"
+                    )
+                if d["status"] == "active":
+                    for net in d.get("networks", {}).get("v4", []):
+                        if net["type"] == "public":
+                            ipv4 = net["ip_address"]
+                            if mode in ("solo", "pro"):
+                                await db.upsert_hosted_pool(
+                                    droplet_id=droplet_id,
+                                    buyer_token=token,
+                                    ipv4=ipv4,
+                                    status="active",
+                                    created_at=int(time.time()),
+                                )
+                            return droplet_id, ipv4, private_key_path, ttyd_password
 
     except Exception:
         # CF tunnel was created but droplet creation/boot failed — clean it up

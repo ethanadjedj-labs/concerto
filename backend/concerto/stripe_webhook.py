@@ -55,17 +55,17 @@ async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
     setup_url = f"{_SETUP_BASE}/{token}"
     if plan in _HOSTED_PLANS:
         ram = "8GB" if plan == "pro" else "4GB"
-        subject = f"Welcome to Concerto {plan.capitalize()} — provision your workspace"
+        subject = f"Welcome to Concerto {plan.capitalize()} — your setup link"
         body_extra = (
             f"<p>Good news: you don't need a DigitalOcean account — "
-            f"we host the VPS for you ({ram} / 2-vCPU droplet). Just click below to pick a region "
-            f"and provision your Concerto workspace in seconds.</p>"
+            f"Everything is included — just click below to pick a region "
+            f"and get started in seconds.</p>"
         )
     else:
-        subject = "Welcome to Concerto BYOC — provision your remote workspace"
+        subject = "Welcome to Concerto BYOC — your setup link"
         body_extra = (
             "<p>Click the link below to connect your DigitalOcean account "
-            "and provision your remote Claude Code workspace.</p>"
+            "and start your remote Claude Code sessions.</p>"
         )
     await send_email(
         to=to_email,
@@ -93,7 +93,7 @@ async def _send_payment_failed_email(to_email: str, day: int) -> None:
             f'<a href="https://billing.stripe.com">billing.stripe.com</a> '
             f"to avoid suspension.</p>"
             f"<p>If payment is not resolved within 7 days, "
-            f"your workspace will be suspended (not deleted — just paused).</p>"
+            f"your account will be suspended (not deleted — just paused).</p>"
             f"<p>Questions? Email support@concerto.run — a human will reply within 24 hours.</p>"
         ),
     )
@@ -102,9 +102,9 @@ async def _send_payment_failed_email(to_email: str, day: int) -> None:
 async def _send_suspended_email(to_email: str) -> None:
     await send_email(
         to=to_email,
-        subject="Your Concerto workspace has been suspended",
+        subject="Your Concerto account has been suspended",
         html=(
-            "<p>Your Concerto workspace has been <strong>suspended</strong> "
+            "<p>Your Concerto account has been <strong>suspended</strong> "
             "due to a failed payment.</p>"
             "<p>Your data is safe. Update your payment method at "
             '<a href="https://billing.stripe.com">billing.stripe.com</a> '
@@ -117,9 +117,9 @@ async def _send_suspended_email(to_email: str) -> None:
 async def _send_resumed_email(to_email: str) -> None:
     await send_email(
         to=to_email,
-        subject="Your Concerto workspace has been resumed",
+        subject="Your Concerto account has been resumed",
         html=(
-            "<p>Your Concerto payment succeeded. Your workspace is back online!</p>"
+            "<p>Your Concerto payment succeeded. Your account is back online!</p>"
             '<p><a href="https://concerto.run/dashboard">Open my Concerto</a></p>'
         ),
     )
@@ -132,7 +132,7 @@ async def _send_cancellation_email(to_email: str, token: str) -> None:
         subject="Your Concerto subscription has been cancelled",
         html=(
             "<p>Your Concerto subscription has been cancelled. "
-            "Your workspace will remain accessible until the end of the current billing period.</p>"
+            "Your account will remain accessible until the end of the current billing period.</p>"
             f'<p><a href="{survey_url}">Why did you cancel?</a> (one question, 10 seconds)</p>'
             "<p>You can reactivate at any time at concerto.run.</p>"
         ),
@@ -382,7 +382,7 @@ async def stripe_webhook(request: Request):
             await db.update_buyer(token, stripe_customer_id=stripe_customer_id)
 
         if customer_email:
-            await _send_confirmation(customer_email, token, plan)
+            asyncio.create_task(_send_confirmation(customer_email, token, plan))
 
     # ── invoice.payment_failed ────────────────────────────────────────────
     elif event_type == "invoice.payment_failed":
