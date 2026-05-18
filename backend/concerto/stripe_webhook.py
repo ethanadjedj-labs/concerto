@@ -51,37 +51,6 @@ def _mark_processed(event_id: str, event_type: str) -> bool:
 # ─── Email helpers ────────────────────────────────────────────────────────────
 
 
-async def _send_confirmation(to_email: str, token: str, plan: str) -> None:
-    setup_url = f"{_SETUP_BASE}/{token}"
-    if plan in _HOSTED_PLANS:
-        ram = "8GB" if plan == "pro" else "4GB"
-        subject = f"Welcome to Concerto {plan.capitalize()} — your setup link"
-        body_extra = (
-            f"<p>Good news: you don't need a DigitalOcean account — "
-            f"Everything is included — just click below to pick a region "
-            f"and get started in seconds.</p>"
-        )
-    else:
-        subject = "Welcome to Concerto BYOC — your setup link"
-        body_extra = (
-            "<p>Click the link below to connect your DigitalOcean account "
-            "and start your remote Claude Code sessions.</p>"
-        )
-    await send_email(
-        to=to_email,
-        subject=subject,
-        html=(
-            "<p>Thanks for purchasing Concerto!</p>"
-            + body_extra
-            + f'<p><a href="{setup_url}" style="background:#7c3aed;color:white;'
-            f'padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">'
-            f"Set up my Concerto</a></p>"
-            "<p>This link is unique to your account — keep it safe.</p>"
-            "<p>Questions? Reply to this email — a human will respond within 24 hours.</p>"
-        ),
-    )
-
-
 async def _send_payment_failed_email(to_email: str, day: int) -> None:
     await send_email(
         to=to_email,
@@ -382,7 +351,13 @@ async def stripe_webhook(request: Request):
             await db.update_buyer(token, stripe_customer_id=stripe_customer_id)
 
         if customer_email:
-            asyncio.create_task(_send_confirmation(customer_email, token, plan))
+            from concerto.email_templates import trial_converted, byoc_purchase_confirmed
+            setup_url = f"{_SETUP_BASE}/{token}"
+            if plan in _HOSTED_PLANS:
+                tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
+            else:
+                tpl = byoc_purchase_confirmed(setup_url=setup_url, email=customer_email)
+            asyncio.create_task(send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"]))
 
     # ── invoice.payment_failed ────────────────────────────────────────────
     elif event_type == "invoice.payment_failed":
