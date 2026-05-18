@@ -675,9 +675,10 @@ export default function DashboardPage({
 
   const mcpUrl = dashData?.mcp_url ?? "Loading..."
 
-  const hideAccountSettings = ["trial_expired", "cancelled", "refunded"].includes(
-    uiState
-  )
+  // Account settings must ALWAYS be reachable — especially in trial_expired /
+  // cancelled / refunded, which is precisely when a user wants to manage or
+  // cancel their account. Never hide this link.
+  const hideAccountSettings = false
   const isWizardState =
     uiState === "step1" || uiState === "step2" || uiState === "step3"
   const wizardStep: 1 | 2 | 3 =

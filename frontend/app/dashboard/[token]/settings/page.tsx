@@ -394,7 +394,7 @@ export default function SettingsPage({
             style={{ color: "#8a847b" }}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to setup
+            Back to dashboard
           </Link>
         </div>
       </header>
