@@ -18,19 +18,13 @@ import { Check, ArrowRight, Star } from "lucide-react"
 
 function LogoMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 128 128" fill="none" aria-hidden="true">
-      <defs>
-        <clipPath id="nav-bubble-clip">
-          <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"/>
-        </clipPath>
-      </defs>
-      <g clipPath="url(#nav-bubble-clip)">
-        <line x1="26" y1="96" x2="104" y2="18" stroke="#cc785c" strokeWidth={12} strokeLinecap="butt"/>
-        <circle cx="104" cy="18" r="9" fill="#cc785c"/>
-      </g>
-      <path d="M 32,8 H 96 a 18,18 0 0 1 18,18 V 90 a 18,18 0 0 1 -18,18 H 32 L 7,115 L 14,90 V 26 a 18,18 0 0 1 18,-18 Z"
-        fill="none" stroke="#1f1e1c" strokeWidth={4} strokeLinejoin="round"/>
-    </svg>
+    <img
+      src="/brand/logo-mark.png?v=3"
+      alt="Concerto"
+      width={size}
+      height={size}
+      style={{ display: "block", width: size, height: size }}
+    />
   )
 }
 
