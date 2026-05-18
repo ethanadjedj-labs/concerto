@@ -118,6 +118,7 @@ async def _provision_trial(token: str, email: str) -> None:
         await db.update_buyer(token, status="provisioning_failed", failure_reason=str(exc))
         return
     except Exception as exc:
+        logger.exception("Trial provision failed for token %.8s", token)
         await db.update_buyer(
             token, status="provisioning_failed",
             failure_reason=f"{type(exc).__name__}: {str(exc)[:200]}",
@@ -134,16 +135,6 @@ async def _provision_trial(token: str, email: str) -> None:
         provisioned_at=int(time.time()),
     )
 
-    # Send trial_ready email
-    dashboard_url = f"{_FRONTEND_URL}/dashboard/{token}"
-    buyer = await db.get_buyer(token)
-    expires_at = buyer.get("expires_at", 0) if buyer else 0
-    import math
-    minutes_left = math.ceil((expires_at - time.time()) / 60) if expires_at else 30
-
-    from concerto.email_templates import trial_ready
-    tpl = trial_ready(dashboard_url=dashboard_url, email=email, minutes=minutes_left)
-    await send_email(email, tpl["subject"], tpl["html"] or tpl["text"])
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────

@@ -629,6 +629,7 @@ write_files:
       # -- POST results back to empire backend -----------------------------------
       curl -fsSL -X POST "${CONCERTO_CALLBACK_URL}" \
         -H "Content-Type: application/json" \
+        -H "X-Callback-Secret: ${TTYD_PASSWORD}" \
         -d "{
           \"token\":         \"${CONCERTO_TOKEN}\",
           \"mcp_url\":       \"${TUNNEL_URL}\",
@@ -641,6 +642,13 @@ write_files:
 # --- runcmd (runs on first boot as root, sequentially) -----------------------
 
 runcmd:
+  # -- 0. Lock root password + manually write SSH key FIRST
+  # passwd -l root: prevents PAM forced-change from blocking BatchMode SSH sessions.
+  # Manual authorized_keys write: belt-and-suspenders in case ssh_authorized_keys
+  # cloud-init module runs late (after write_files). Key is then available immediately.
+  - ["bash", "-c", "passwd -l root || true"]
+  - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && echo \"{{ ssh_authorized_key }}\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys"]
+
   # -- 1. System packages ----------------------------------------------------
   - ["apt-get", "update", "-qq"]
   - ["apt-get", "install", "-y", "curl", "python3-venv", "tmux", "git", "ttyd", "nginx"]
@@ -669,6 +677,7 @@ runcmd:
   # -- 8. F4: verify SSH authorized_keys before starting services ------------
   # cloud-init ssh_authorized_keys runs before runcmd, so key is already present.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys 2>/dev/null || true"]
+
 
   # -- 9. nginx: disable default site, test config ---------------------------
   - ["bash", "-c", "rm -f /etc/nginx/sites-enabled/default && nginx -t"]

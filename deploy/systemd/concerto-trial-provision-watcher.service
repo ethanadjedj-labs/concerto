@@ -1,0 +1,16 @@
+[Unit]
+Description=Concerto Trial Provision Watcher — SSH-probe installing trials
+Documentation=https://github.com/ethanadjedja-labs/concerto
+After=network.target concerto-backend.service
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=-/etc/cortex/env
+WorkingDirectory=/opt/concerto/backend
+ExecStart=/opt/concerto/backend/.venv/bin/python -m concerto.trial_provision_watcher
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
