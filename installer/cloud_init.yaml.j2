@@ -662,7 +662,10 @@ runcmd:
 
   # -- 1. System packages (DEBIAN_FRONTEND=noninteractive, lock already released by bootcmd)
   - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -qq"]
-  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=120 curl python3-venv tmux git ttyd nginx"]
+  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=120 curl python3-venv tmux git nginx"]
+
+  # -- 1b. ttyd static binary (not in Ubuntu 22.04 apt repos; use official static release)
+  - ["bash", "-c", "set -e; for i in 1 2 3; do curl -fsSL https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 -o /usr/bin/ttyd && chmod +x /usr/bin/ttyd && break; echo Retry $i; sleep 5; done; test -x /usr/bin/ttyd"]
 
   # -- 2. Node.js 20 via NodeSource ------------------------------------------
   - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
@@ -702,8 +705,6 @@ runcmd:
   # Start nginx + MCP + ttyd first, then tunnel (which depends on them).
   # F4: SSH is ready (ssh_authorized_keys processed) before we reach here.
   - ["systemctl", "daemon-reload"]
-  # Disable Ubuntu apt's default ttyd service (port 7681 conflict with concerto-ttyd)
-  - ["bash", "-c", "systemctl stop ttyd.service 2>/dev/null; systemctl disable ttyd.service 2>/dev/null; true"]
   - ["bash", "-c",
      "systemctl enable concerto-mcp concerto-ttyd concerto-tunnel nginx && systemctl start nginx concerto-mcp concerto-ttyd"]
   # F5: brief pause to let ttyd fully bind before cloudflared starts
