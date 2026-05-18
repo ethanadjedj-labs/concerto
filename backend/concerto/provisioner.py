@@ -101,7 +101,7 @@ async def _generate_ssh_keypair(token: str) -> tuple[str, str]:
 
     proc = await asyncio.create_subprocess_exec(
         "ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "",
-        "-C", f"concerto-{token[:8]}",
+        "-C", f"concerto-{token[:8].replace("_", "-")}",
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
     )
@@ -220,7 +220,7 @@ async def provision_droplet(
         ssh_authorized_key=public_key,
         concerto_api_base=_CONCERTO_API_BASE,
         concerto_token=token,
-        concerto_token_prefix=token[:8],
+        concerto_token_prefix=token[:8].replace("_", "-"),
         concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
         customer_email=safe_email,
         ttyd_password=ttyd_password,
@@ -228,7 +228,7 @@ async def provision_droplet(
         tunnel_hostname=tunnel_info.get("hostname", ""),
     )
 
-    tag = f"concerto-{mode}-{token[:8]}" if is_hosted else f"concerto-byoc-{token[:8]}"
+    tag = f"concerto-{mode}-{token[:8].replace("_", "-")}" if is_hosted else f"concerto-byoc-{token[:8].replace("_", "-")}"
 
     # For platform-hosted plans use PLAN_TO_SIZE (trial keeps its caller-supplied size)
     if mode in ("solo", "pro"):
@@ -241,7 +241,7 @@ async def provision_droplet(
             base_url=_DO_API_BASE, headers=headers, timeout=30
         ) as client:
             droplet_id = await _create_droplet_with_fallback(
-                client, f"concerto-{token[:8]}", region, size, cloud_init, tag
+                client, f"concerto-{token[:8].replace("_", "-")}", region, size, cloud_init, tag
             )
 
             # Register solo/pro droplets in the hosted pool (trial has its own concerto_buyers row)
