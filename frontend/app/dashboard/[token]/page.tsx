@@ -244,11 +244,11 @@ function ConcertoStyleCard() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-            Use the Concerto style
+            Want to go further?
           </p>
           <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            Add our recommended Claude style for orchestration — Claude will spawn sessions
-            more proactively and report back clearly.
+            Add the Concerto style and Claude orchestrates on its own —
+            spinning up parallel sessions and reporting back without being asked.
           </p>
         </div>
       </div>
@@ -274,9 +274,9 @@ function ConcertoStyleCard() {
       {expanded && (
         <div className="mt-4 space-y-2 pt-4" style={{ borderTop: "1px solid #f3efe5" }}>
           {[
-            "Open claude.ai → Settings → Custom Styles",
-            "Click \"Add style\" and paste the copied text",
-            "Name it \"Concerto Orchestrator\" and save",
+            "In Claude, open the style picker above the message box",
+            "Click \"Create & Edit Styles\" -> \"Create Custom Style\"",
+            "Paste the copied text, name it \"Concerto\", save",
           ].map((step, i) => (
             <p key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "#8a847b" }}>
               <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
@@ -745,7 +745,7 @@ export default function DashboardPage({
       </header>
 
       {/* ── Main ── */}
-      <main className="mx-auto flex min-h-[calc(100vh-57px)] max-w-md flex-col px-5 py-10">
+      <main className="mx-auto w-full max-w-md px-5 py-10">
         {/* Progress bar — wizard states only */}
         {isWizardState && (
           <div className="mb-8">
@@ -1329,80 +1329,77 @@ export default function DashboardPage({
 
         {/* ── Step 3: You're ready ── */}
         {uiState === "step3" && (
-          <div className="flex flex-1 flex-col">
-            {/* Arrival moment — celebratory header */}
-            <div className="flex flex-col items-center pt-2 text-center">
+          <div className="flex flex-col items-center text-center">
+            {/* Arrival moment */}
+            <div
+              className="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
+              }}
+            >
               <div
-                className="mb-5 flex h-16 w-16 items-center justify-center rounded-full"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
-                }}
+                className="flex h-11 w-11 items-center justify-center rounded-full"
+                style={{ backgroundColor: "#cc785c" }}
               >
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full"
-                  style={{ backgroundColor: "#cc785c" }}
-                >
-                  <Check className="h-6 w-6" style={{ color: "#fff" }} strokeWidth={3} />
-                </div>
+                <Check className="h-5 w-5" style={{ color: "#fff" }} strokeWidth={3} />
               </div>
-              <h1
-                className="mb-2 text-[24px] font-semibold tracking-tight"
-                style={{ color: "#191919" }}
-              >
-                You&apos;re all set.
-              </h1>
-              <p
-                className="max-w-[19rem] text-[15px] leading-relaxed"
-                style={{ color: "#8a847b" }}
-              >
-                Concerto is connected. Ask Claude for anything that needs code
-                or a shell — it&apos;ll orchestrate the sessions for you.
-              </p>
             </div>
+            <h1
+              className="mb-1.5 text-[22px] font-semibold tracking-tight"
+              style={{ color: "#191919" }}
+            >
+              You&apos;re all set.
+            </h1>
+            <p
+              className="mb-6 max-w-[20rem] text-[14px] leading-relaxed"
+              style={{ color: "#8a847b" }}
+            >
+              Concerto is connected. Ask Claude for anything that needs code or
+              a shell — it&apos;ll orchestrate the work for you.
+            </p>
 
-            {/* Primary CTA — warm, unmissable, right after the moment */}
+            {/* Primary CTA */}
             <a
               href="https://claude.ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
               style={{
                 backgroundColor: "#cc785c",
                 color: "#fff",
-                minHeight: "50px",
+                minHeight: "48px",
                 boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
               }}
             >
               Open Claude <ExternalLink className="h-4 w-4" />
             </a>
 
-            {/* Try-asking — compact 2x2 grid, no longer a tall stack */}
+            {/* Go further — directly under the CTA */}
+            <div className="mt-3 w-full">
+              <ConcertoStyleCard />
+            </div>
+
+            {/* Real, enticing example prompts */}
             <p
-              className="mb-3 mt-8 text-[11px] font-medium uppercase tracking-widest"
+              className="mb-3 mt-7 w-full text-left text-[11px] font-medium uppercase tracking-widest"
               style={{ color: "#b5ab9c" }}
             >
-              Try asking Claude
+              Things to try
             </p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid w-full grid-cols-1 gap-2 text-left sm:grid-cols-2">
               {[
-                "Build and deploy a landing page",
-                "Try three fixes in parallel, tell me which passes",
-                "Audit my repo and return a report",
-                "Refactor this while another session checks regressions",
+                "Build me a Next.js landing page for my product and deploy it live",
+                "Find and fix the failing tests in my repo, then open a PR",
+                "Add Stripe checkout to my app end to end",
+                "Take this Figma-style spec and ship a working dashboard",
               ].map((prompt) => (
                 <PromptCard key={prompt} text={prompt} />
               ))}
             </div>
 
-            <div className="mt-5">
-              <ConcertoStyleCard />
-            </div>
-
             {/* Condensed footer */}
-            <div
-              className="mt-auto flex flex-col items-center gap-1.5 pt-8 text-center"
-            >
+            <div className="mt-7 flex flex-col items-center gap-1.5">
               <p className="text-[13px]" style={{ color: "#8a847b" }}>
                 Need help?{" "}
                 <a
