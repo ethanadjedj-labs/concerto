@@ -16,10 +16,11 @@ import { Check, ArrowRight, Star } from "lucide-react"
 
 /* ─── Logo mark — bubble+baton, works on cream background ───── */
 
-function LogoMark({ size = 22 }: { size?: number }) {
+function LogoMark({ size = 22, variant = "dark" }: { size?: number; variant?: "dark" | "light" }) {
+  const src = variant === "light" ? "/brand/logo-mark-light.png?v=1" : "/brand/logo-mark.png?v=3"
   return (
     <img
-      src="/brand/logo-mark.png?v=3"
+      src={src}
       alt="Concerto"
       width={size}
       height={size}
@@ -400,7 +401,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <div className="flex items-center gap-2.5">
-              <LogoMark size={18} />
+              <LogoMark size={18} variant="light" />
               <span className="text-sm font-medium text-[rgba(250,249,245,0.55)]">Concerto</span>
             </div>
             <p className="text-sm text-[rgba(250,249,245,0.30)]">&copy; {new Date().getFullYear()} Concerto. All rights reserved.</p>
@@ -419,7 +420,7 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="mt-6 text-center text-xs text-[rgba(250,249,245,0.25)]">
-            Built by an operator in Almaty.{" "}
+            Built by a solo operator who uses Concerto every day.{" "}
             <a href="https://www.anthropic.com/legal/aup" target="_blank" rel="noopener noreferrer" className="hover:text-[rgba(250,249,245,0.50)] transition-colors">
               Subject to Anthropic&apos;s Acceptable Use Policy.
             </a>
