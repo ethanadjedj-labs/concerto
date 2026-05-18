@@ -1090,6 +1090,7 @@ runcmd:
   # UsePAM yes causes PAM to deny even SSH key auth (shadow '!' prefix). DO NOT re-add.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && echo \"{{ ssh_authorized_key }}\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys"]
 
+{% if not prewarmed|default(false) %}
   # -- 1. System packages (DEBIAN_FRONTEND=noninteractive, lock already released by bootcmd)
   - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -qq"]
   - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=120 curl python3-venv tmux git nginx"]
@@ -1111,7 +1112,7 @@ runcmd:
   # -- 5. Concerto Python venv + MCP deps ------------------------------------
   - ["bash", "-c",
      "python3 -m venv /opt/concerto/.venv && /opt/concerto/.venv/bin/pip install --quiet --upgrade pip && /opt/concerto/.venv/bin/pip install --quiet 'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]'"]
-
+{% endif %}
   # -- 6. Generate MCP bearer token -----------------------------------------
   - ["bash", "-c", "openssl rand -hex 32 > /etc/concerto/token && chmod 600 /etc/concerto/token"]
 

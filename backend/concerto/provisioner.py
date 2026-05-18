@@ -16,6 +16,16 @@ from concerto.cf_tunnel import create_named_tunnel, destroy_named_tunnel
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _DEFAULT_IMAGE = "ubuntu-22-04-x64"
 _KEYS_DIR = os.getenv("CONCERTO_KEYS_DIR", "/var/lib/concerto/keys")
+
+# Pre-warmed snapshot: cuts ~4 min install time to ~1 min on first boot.
+# Set CONCERTO_BASE_SNAPSHOT_ID=0 in env to force full ubuntu install (for debugging/fallback).
+_BASE_SNAPSHOT_ID: int | None = None
+_env_snap = os.getenv("CONCERTO_BASE_SNAPSHOT_ID", "229167442")
+if _env_snap and _env_snap != "0":
+    try:
+        _BASE_SNAPSHOT_ID = int(_env_snap)
+    except ValueError:
+        pass
 _CLOUD_INIT_TEMPLATE = os.path.join(
     os.path.dirname(__file__), "..", "..", "installer", "cloud_init.yaml.j2"
 )
@@ -134,18 +144,29 @@ async def _create_droplet_with_fallback(
     cloud_init: str,
     tag: str,
     ssh_key_ids: list[int] | None = None,
+    image: str = _DEFAULT_IMAGE,
+    fallback_cloud_init: str | None = None,
 ) -> str:
-    """Create a droplet, handling 401/402/422 errors and auto-fallback on 422."""
+    """Create a droplet, handling 401/402/422 errors and auto-fallback on 422.
+
+    When `image` is a snapshot id (int as str), it is used only for the primary region.
+    Fallback regions always use `_DEFAULT_IMAGE` + `fallback_cloud_init` (full ubuntu install)
+    because snapshots are region-specific and may not be present in fallback regions.
+    """
     regions_to_try = [region] + _REGION_FALLBACK.get(region, [])
     last_error: Exception | None = None
 
-    for r in regions_to_try:
+    for i, r in enumerate(regions_to_try):
+        # Snapshots are region-specific; fall back to ubuntu image + full cloud-init
+        # for any region beyond the primary attempt.
+        _img = image if i == 0 else _DEFAULT_IMAGE
+        _ci = cloud_init if i == 0 else (fallback_cloud_init if fallback_cloud_init is not None else cloud_init)
         _body: dict = {
             "name": name,
             "region": r,
             "size": size,
-            "image": _DEFAULT_IMAGE,
-            "user_data": cloud_init,
+            "image": _img,
+            "user_data": _ci,
             "tags": [tag],
         }
         if ssh_key_ids:
@@ -227,21 +248,6 @@ async def provision_droplet(
     # Sanitize email to safe chars before rendering into shell-sourced env file (Bug #24)
     safe_email = re.sub(r"[^a-zA-Z0-9.+\-_@]", "", customer_email or "")
 
-    cloud_init = Template(_load_cloud_init_template()).render(
-        token=token,
-        ssh_public_key=public_key,
-        ssh_authorized_key=public_key,
-        concerto_api_base=_CONCERTO_API_BASE,
-        concerto_token=token,
-        concerto_token_prefix=token[:8].replace("_", "-"),
-        concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
-        customer_email=safe_email,
-        ttyd_password=ttyd_password,
-        tunnel_token=tunnel_info.get("tunnel_token", ""),
-        tunnel_hostname=tunnel_info.get("hostname", ""),
-    )
-    _validate_cloud_init_yaml(cloud_init, token)
-
     tag = f"concerto-{mode}-{token[:8].replace('_', '-')}"
 
     # For platform-hosted plans use PLAN_TO_SIZE (trial keeps its caller-supplied size)
@@ -254,6 +260,63 @@ async def provision_droplet(
         async with httpx.AsyncClient(
             base_url=_DO_API_BASE, headers=headers, timeout=30
         ) as client:
+            # Check whether the pre-warmed snapshot is available in the requested region.
+            # The snapshot is region-specific; if unavailable we fall back to ubuntu + full install.
+            _use_snapshot = False
+            if _BASE_SNAPSHOT_ID is not None:
+                try:
+                    _sr = await client.get(f"/snapshots/{_BASE_SNAPSHOT_ID}")
+                    if _sr.status_code == 200:
+                        _snap_meta = _sr.json()["snapshot"]
+                        if region in _snap_meta.get("regions", []):
+                            _use_snapshot = True
+                        else:
+                            logger.warning(
+                                "Snapshot %s not available in region %s (available: %s) — falling back to ubuntu",
+                                _BASE_SNAPSHOT_ID, region, _snap_meta.get("regions", []),
+                            )
+                    else:
+                        logger.warning(
+                            "Snapshot %s lookup returned HTTP %s — falling back to ubuntu",
+                            _BASE_SNAPSHOT_ID, _sr.status_code,
+                        )
+                except Exception as _se:
+                    logger.warning(
+                        "Could not verify snapshot %s: %s — falling back to ubuntu",
+                        _BASE_SNAPSHOT_ID, _se,
+                    )
+
+            # Render cloud-init; prewarmed=True skips the 6 slow install steps baked into the snapshot.
+            _tmpl = _load_cloud_init_template()
+            _render_kwargs: dict = dict(
+                token=token,
+                ssh_public_key=public_key,
+                ssh_authorized_key=public_key,
+                concerto_api_base=_CONCERTO_API_BASE,
+                concerto_token=token,
+                concerto_token_prefix=token[:8].replace("_", "-"),
+                concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
+                customer_email=safe_email,
+                ttyd_password=ttyd_password,
+                tunnel_token=tunnel_info.get("tunnel_token", ""),
+                tunnel_hostname=tunnel_info.get("hostname", ""),
+            )
+            cloud_init = Template(_tmpl).render(**_render_kwargs, prewarmed=_use_snapshot)
+            _validate_cloud_init_yaml(cloud_init, token)
+
+            # Pre-render ubuntu fallback cloud-init for region-fallback attempts (snapshot
+            # is region-specific; if the primary region fails and we try another, we must
+            # fall back to the full ubuntu install path so all packages are present).
+            _ubuntu_cloud_init: str | None = (
+                Template(_tmpl).render(**_render_kwargs, prewarmed=False) if _use_snapshot else None
+            )
+            _image = str(_BASE_SNAPSHOT_ID) if _use_snapshot else _DEFAULT_IMAGE
+            if _use_snapshot:
+                logger.info(
+                    "Provisioning with pre-warmed snapshot %s for region %s (prewarmed=True)",
+                    _BASE_SNAPSHOT_ID, region,
+                )
+
             # Sanitize: DO requires [a-z0-9-], no consecutive/leading/trailing hyphens
             _raw = f"concerto-{token[:8].lower()}"
             _safe = re.sub(r"[^a-z0-9-]", "-", _raw)
@@ -276,6 +339,8 @@ async def provision_droplet(
             droplet_id = await _create_droplet_with_fallback(
                 client, droplet_name, region, size, cloud_init, tag,
                 ssh_key_ids=[_do_key_id] if _do_key_id else None,
+                image=_image,
+                fallback_cloud_init=_ubuntu_cloud_init,
             )
 
             # Remove temp key from DO account immediately after droplet creation
