@@ -525,6 +525,21 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  # -- concerto-login-shell: wrapper spawned by ttyd ----------------------------
+  # On connect the user sees `claude login` already running — they just paste
+  # the OAuth code. After login exits ttyd shows "connection closed"; the wizard
+  # auto-advances via the oauth-status poll. Reconnecting re-runs the wrapper
+  # (claude login is idempotent when already authenticated).
+  - path: /usr/local/bin/concerto-login-shell
+    owner: root:root
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      clear
+      echo "Sign in to Claude — follow the URL below in your browser, then paste the code here."
+      echo ""
+      exec claude login
+
   # -- systemd: ttyd web terminal ----------------------------------------------
   # F2: --credential from TTYD_PASSWORD env var (set via EnvironmentFile)
   # F3: --client-option flags for iframe embedding
@@ -546,11 +561,11 @@ write_files:
         --credential concerto:${TTYD_PASSWORD} \
         --client-option disableLeaveAlert=true \
         --client-option titleFixed=Concerto \
-        bash
+        /usr/local/bin/concerto-login-shell
       Restart=always
       RestartSec=5
       KillMode=control-group
-      ExecStopPost=/bin/bash -c 'pkill -TERM -x bash 2>/dev/null || true'
+      ExecStopPost=/bin/bash -c 'pkill -TERM -x concerto-login-shell 2>/dev/null || true'
 
       [Install]
       WantedBy=multi-user.target

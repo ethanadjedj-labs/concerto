@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your Concerto workspace is being prepared</title>
+  <title>Your Concerto order is confirmed</title>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #0d0d0d;
+      background-color: #faf9f5;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      color: #e8e8e8;
+      color: #191919;
     }
     .wrapper {
       max-width: 560px;
@@ -18,54 +18,69 @@
       padding: 0 20px;
     }
     .logo {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: #ffffff;
-      margin-bottom: 32px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #191919;
+      margin-bottom: 28px;
     }
     .card {
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #f3efe5;
+      border-radius: 16px;
       padding: 32px;
     }
     h1 {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 600;
-      color: #ffffff;
-      margin: 0 0 16px 0;
+      color: #191919;
+      margin: 0 0 12px 0;
     }
     p {
       font-size: 15px;
       line-height: 1.6;
-      color: #c0c0c0;
-      margin: 0 0 20px 0;
+      color: #8a847b;
+      margin: 0 0 16px 0;
+    }
+    .style-note {
+      background: rgba(204,120,92,0.07);
+      border-left: 3px solid #cc785c;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 20px 0;
+    }
+    .style-note p {
+      margin: 0;
+      font-size: 14px;
+      color: #555049;
+    }
+    .style-note a {
+      color: #cc785c;
+      text-decoration: none;
     }
     .cta {
       display: inline-block;
-      background: #ffffff;
-      color: #0d0d0d;
+      background: #cc785c;
+      color: #ffffff;
       text-decoration: none;
       font-weight: 600;
       font-size: 15px;
-      padding: 12px 24px;
-      border-radius: 6px;
+      padding: 13px 26px;
+      border-radius: 10px;
       margin-top: 8px;
     }
     .note {
       font-size: 13px;
-      color: #666;
-      margin-top: 24px;
+      color: #8a847b;
+      margin-top: 20px;
     }
     .footer {
       font-size: 12px;
-      color: #444;
-      margin-top: 32px;
+      color: #8a847b;
+      margin-top: 28px;
       text-align: center;
     }
     .footer a {
-      color: #666;
+      color: #8a847b;
       text-decoration: none;
     }
   </style>
@@ -74,11 +89,17 @@
   <div class="wrapper">
     <div class="logo">Concerto</div>
     <div class="card">
-      <h1>Order confirmed. Setting up your workspace.</h1>
-      <p>Thanks for purchasing Concerto. Your payment went through and we're getting your Droplet ready.</p>
-      <p>Complete your setup — it takes about 3 minutes:</p>
+      <h1>Order confirmed. Setting up your environment.</h1>
+      <p>Thanks for purchasing Concerto. Your payment went through and we're getting your environment ready — usually takes about 3 minutes.</p>
+      <p>Complete your setup:</p>
       <a href="{{setup_url}}" class="cta">Complete Setup →</a>
-      <p class="note">This link expires in 48 hours. If it doesn't work, reply to this email.</p>
+
+      <div class="style-note">
+        <p>After setup, we recommend activating the <strong>Concerto Orchestrator</strong> style in Claude — it primes Claude to spawn sessions proactively.<br>
+        Style text + instructions: <a href="https://concerto.run/style">concerto.run/style</a></p>
+      </div>
+
+      <p class="note">The setup link expires in 48 hours. If anything goes wrong, reply to this email.</p>
     </div>
     <div class="footer">
       <p>Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a></p>

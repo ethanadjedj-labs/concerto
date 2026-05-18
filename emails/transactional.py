@@ -37,6 +37,9 @@ Thanks for purchasing Concerto. Your order is confirmed.
 Complete your setup here:
 {setup_url}
 
+After setup, we recommend activating the Concerto Orchestrator style in Claude.
+Style text + instructions: https://concerto.run/style
+
 The link expires in 48 hours. If anything goes wrong, reply to this email — we're fast.
 
 — The Concerto team
