@@ -116,6 +116,24 @@ function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
   )
 }
 
+/* A keyword that maps to a clickable element inside Claude's UI.
+   Rendered as a small pill so users can visually match it on screen. */
+function UIChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="mx-0.5 inline-flex items-center rounded-md px-1.5 py-0.5 text-[12px] font-medium align-baseline"
+      style={{
+        backgroundColor: "rgba(204,120,92,0.10)",
+        color: "#b3613f",
+        border: "1px solid rgba(204,120,92,0.22)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 function ValueCard({
   label,
   value,
@@ -1221,7 +1239,7 @@ export default function DashboardPage({
                   Showing only the URL was causing failed connections. */}
               <div className="space-y-3">
                 <ValueCard label="Name" value="Concerto" />
-                <ValueCard label="Connector URL" value={mcpUrl} />
+                <ValueCard label="Remote MCP server URL" value={mcpUrl} />
               </div>
 
               {/* Instructions — up to date with Claude's current UI */}
@@ -1247,12 +1265,7 @@ export default function DashboardPage({
                           left sidebar
                         </strong>
                         , click{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Customize
-                        </strong>{" "}
+                        <UIChip>Customize</UIChip>{" "}
                         (just under{" "}
                         <strong
                           className="font-medium"
@@ -1264,21 +1277,11 @@ export default function DashboardPage({
                       </>,
                       <>
                         Click{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Connectors
-                        </strong>
+                        <UIChip>Connectors</UIChip>
                       </>,
                       <>
                         Click{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Add custom connector
-                        </strong>
+                        <UIChip>Add custom connector</UIChip>
                         , enter the{" "}
                         <strong
                           className="font-medium"
@@ -1291,31 +1294,16 @@ export default function DashboardPage({
                           className="font-medium"
                           style={{ color: "#191919" }}
                         >
-                          Connector URL
+                          Remote MCP server URL
                         </strong>{" "}
                         above, then click{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Add
-                        </strong>
+                        <UIChip>Add</UIChip>
                       </>,
                       <>
                         Click{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Connect
-                        </strong>{" "}
+                        <UIChip>Connect</UIChip>{" "}
                         on the new connector, then{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Authorize
-                        </strong>{" "}
+                        <UIChip>Authorize</UIChip>{" "}
                         — it returns to Claude on its own
                       </>,
                     ] as ReactNode[]
