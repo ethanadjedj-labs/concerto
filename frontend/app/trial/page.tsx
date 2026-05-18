@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 function LogoMark({ size = 28 }: { size?: number }) {
@@ -15,16 +16,222 @@ function LogoMark({ size = 28 }: { size?: number }) {
   )
 }
 
-type Phase = "form" | "provisioning" | "ready" | "error"
+type Phase = "form" | "waiting" | "error"
+
+// ── Waiting experience ────────────────────────────────────────────
+// One continuous screen: honest progress (calibrated to real measured
+// timings — boot ~30s, install ~2.5min) driven by live backend status,
+// with rotating English storytelling (a little dry humour) and a
+// graceful "taking a bit longer" reassurance past the expected window.
+
+const WAIT_STEPS: { key: string; label: string; pct: number }[] = [
+  { key: "paid_unprovisioned", label: "Reserving your machine", pct: 8 },
+  { key: "provisioning", label: "Booting a fresh server", pct: 30 },
+  { key: "installing", label: "Installing Claude Code & friends", pct: 78 },
+  { key: "awaiting_oauth", label: "Ready — taking you in", pct: 100 },
+]
+
+const STORY: string[] = [
+  "Spinning up a brand-new server, just for you. No roommates.",
+  "It's a real machine in a real data center. We didn't fake this part.",
+  "Installing Node, Claude Code, and a few trusted accomplices.",
+  "Teaching your environment how to take orders from Claude.",
+  "Most of this wait is npm. It's always npm. We're sorry.",
+  "Wiring a private tunnel so only you can reach your box.",
+  "Almost there. Your future self is already saving hours.",
+  "Pro tip: once you're in, just tell Claude what you want built.",
+]
+
+const EXPECTED_MS = 200_000 // ~3min 20s; past this we switch to reassurance
+
+function WaitingExperience({
+  status,
+  startedAt,
+}: {
+  status: string | null
+  startedAt: number
+}) {
+  const [now, setNow] = useState(Date.now())
+  const [storyIdx, setStoryIdx] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const t = setInterval(
+      () => setStoryIdx((i) => (i + 1) % STORY.length),
+      6500
+    )
+    return () => clearInterval(t)
+  }, [])
+
+  const elapsed = startedAt ? now - startedAt : 0
+  const overdue = elapsed > EXPECTED_MS
+
+  // Status drives the floor; time gently fills the gap so the bar always
+  // moves (never stalls, never lies past the real step).
+  const stepIdx = Math.max(
+    0,
+    WAIT_STEPS.findIndex((x) => x.key === status)
+  )
+  const floor = stepIdx >= 0 ? WAIT_STEPS[stepIdx].pct : 8
+  const ceil =
+    stepIdx >= 0 && stepIdx < WAIT_STEPS.length - 1
+      ? WAIT_STEPS[stepIdx + 1].pct
+      : floor
+  const timeFrac = Math.min(1, elapsed / EXPECTED_MS)
+  const pct = Math.min(
+    99,
+    Math.max(floor, Math.round(floor + (ceil - floor) * timeFrac))
+  )
+  const displayPct = status === "awaiting_oauth" ? 100 : pct
+
+  const currentLabel =
+    WAIT_STEPS[stepIdx]?.label ?? "Setting things up"
+
+  return (
+    <div
+      className="rounded-2xl p-8"
+      style={{
+        backgroundColor: "#fff",
+        boxShadow:
+          "0 1px 4px rgba(25,25,25,0.06), 0 4px 24px rgba(25,25,25,0.04)",
+        border: "1px solid #f3efe5",
+      }}
+    >
+      {/* Pulsing indicator */}
+      <div className="mb-6 flex justify-center">
+        <div className="relative flex h-14 w-14 items-center justify-center">
+          <div
+            className="absolute h-14 w-14 rounded-full animate-ping"
+            style={{ backgroundColor: "rgba(204,120,92,0.15)" }}
+          />
+          <div
+            className="relative h-8 w-8 rounded-full"
+            style={{ backgroundColor: "rgba(204,120,92,0.2)" }}
+          />
+          <div
+            className="absolute h-4 w-4 rounded-full"
+            style={{ backgroundColor: "#cc785c" }}
+          />
+        </div>
+      </div>
+
+      <h2
+        className="mb-1.5 text-center text-[22px] font-medium"
+        style={{ color: "#191919" }}
+      >
+        Building your environment
+      </h2>
+      <p
+        className="mx-auto mb-6 max-w-sm text-center text-[14px] leading-relaxed"
+        style={{ color: "#8a847b" }}
+      >
+        This takes about 3 minutes — a real server is being created from
+        scratch. Keep this tab open; you&apos;ll be taken in automatically.
+        No need to click anything.
+      </p>
+
+      {/* Progress bar */}
+      <div className="mb-2 flex items-center justify-between text-[12px]">
+        <span style={{ color: "#191919", fontWeight: 500 }}>
+          {currentLabel}
+        </span>
+        <span style={{ color: "#8a847b" }}>{displayPct}%</span>
+      </div>
+      <div
+        className="mb-6 h-2 w-full overflow-hidden rounded-full"
+        style={{ backgroundColor: "#f3efe5" }}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{
+            width: `${displayPct}%`,
+            backgroundColor: "#cc785c",
+          }}
+        />
+      </div>
+
+      {/* Step checklist */}
+      <ol className="mb-6 space-y-2.5">
+        {WAIT_STEPS.slice(0, 3).map((st, i) => {
+          const done = stepIdx > i || status === "awaiting_oauth"
+          const active = stepIdx === i && status !== "awaiting_oauth"
+          return (
+            <li key={st.key} className="flex items-center gap-3">
+              <span
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                style={{
+                  backgroundColor: done
+                    ? "rgba(34,197,94,0.12)"
+                    : active
+                    ? "rgba(204,120,92,0.14)"
+                    : "#f3efe5",
+                  color: done ? "#16a34a" : active ? "#cc785c" : "#b8b2a8",
+                }}
+              >
+                {done ? "✓" : i + 1}
+              </span>
+              <span
+                className="text-[13px]"
+                style={{
+                  color: done
+                    ? "#16a34a"
+                    : active
+                    ? "#191919"
+                    : "#b8b2a8",
+                  fontWeight: active ? 500 : 400,
+                }}
+              >
+                {st.label}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+
+      {/* Rotating storytelling / reassurance */}
+      <div
+        className="rounded-xl px-4 py-3 text-center text-[13px] leading-relaxed"
+        style={{
+          backgroundColor: "#faf9f5",
+          border: "1px solid #f3efe5",
+          color: "#8a847b",
+          minHeight: "44px",
+        }}
+      >
+        {overdue ? (
+          <span>
+            Still going — some regions are slower than others. Hang tight,
+            this almost always finishes within a minute or two. ☕
+          </span>
+        ) : (
+          <span
+            key={storyIdx}
+            className="animate-in fade-in"
+            style={{ animationDuration: "400ms" }}
+          >
+            {STORY[storyIdx]}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 export default function TrialPage() {
   const [email, setEmail] = useState("")
   const [phase, setPhase] = useState<Phase>("form")
   const [errorMsg, setErrorMsg] = useState("")
-  const [dashUrl, setDashUrl] = useState("")
-  const [token, setToken] = useState("")
   const [busy, setBusy] = useState(false)
+  // live backend status: paid_unprovisioned -> provisioning -> installing -> awaiting_oauth
+  const [provStatus, setProvStatus] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startedAtRef = useRef<number>(0)
+  const router = useRouter()
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
 
@@ -58,13 +265,13 @@ export default function TrialPage() {
         return
       }
       if (parsed.token) {
-        const url = parsed.dashboard_url || `/dashboard/${parsed.token}`
-        setToken(parsed.token)
-        setDashUrl(url)
-        setPhase("provisioning")
+        startedAtRef.current = Date.now()
+        setPhase("waiting")
         startPolling(parsed.token)
       } else {
-        setPhase("provisioning")
+        const msg = "Trial started but no token returned. Contact support."
+        setErrorMsg(msg)
+        setPhase("error")
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -82,12 +289,18 @@ export default function TrialPage() {
         const r = await fetch(`${backendUrl}/api/buyer/${tok}/status`)
         if (!r.ok) return
         const d = await r.json()
-        if (d.status === "awaiting_oauth" || d.status === "active" || d.mcp_url) {
+        if (d.status) setProvStatus(d.status as string)
+        if (
+          d.status === "awaiting_oauth" ||
+          d.status === "active" ||
+          d.mcp_url
+        ) {
           if (pollRef.current) clearInterval(pollRef.current)
-          setPhase("ready")
+          // Zero intermediate clicks: go straight to the dashboard.
+          router.push(`/dashboard/${tok}`)
         }
       } catch { /* ignore poll errors */ }
-    }, 5000)
+    }, 4000)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -242,91 +455,8 @@ export default function TrialPage() {
             </div>
           )}
 
-          {/* Provisioning phase */}
-          {phase === "provisioning" && (
-            <div
-              className="rounded-2xl p-8 text-center"
-              style={{
-                backgroundColor: "#fff",
-                boxShadow: "0 1px 4px rgba(25,25,25,0.06), 0 4px 24px rgba(25,25,25,0.04)",
-                border: "1px solid #f3efe5",
-              }}
-            >
-              {/* Pulsing indicator */}
-              <div className="mb-6 flex justify-center">
-                <div className="relative flex h-14 w-14 items-center justify-center">
-                  <div
-                    className="absolute h-14 w-14 rounded-full animate-ping"
-                    style={{ backgroundColor: "rgba(204,120,92,0.15)" }}
-                  />
-                  <div
-                    className="relative h-8 w-8 rounded-full"
-                    style={{ backgroundColor: "rgba(204,120,92,0.2)" }}
-                  />
-                  <div
-                    className="absolute h-4 w-4 rounded-full"
-                    style={{ backgroundColor: "#cc785c" }}
-                  />
-                </div>
-              </div>
-
-              <h2 className="mb-2 text-[22px] font-medium" style={{ color: "#191919" }}>
-                Provisioning your environment
-              </h2>
-              <p className="mb-6 text-[14px] leading-relaxed" style={{ color: "#8a847b" }}>
-                Usually takes about 3 minutes. We&apos;ll send you an email when it&apos;s ready.
-              </p>
-
-              {dashUrl && (
-                <a
-                  href={dashUrl}
-                  className="inline-flex items-center justify-center rounded-xl px-6 text-[14px] font-medium transition-opacity hover:opacity-80"
-                  style={{
-                    backgroundColor: "#191919",
-                    color: "#faf9f5",
-                    minHeight: "44px",
-                  }}
-                >
-                  Open dashboard →
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Ready phase */}
-          {phase === "ready" && (
-            <div
-              className="rounded-2xl p-8 text-center"
-              style={{
-                backgroundColor: "#fff",
-                boxShadow: "0 1px 4px rgba(25,25,25,0.06), 0 4px 24px rgba(25,25,25,0.04)",
-                border: "1px solid #f3efe5",
-              }}
-            >
-              <div className="mb-4 flex justify-center">
-                <span className="text-[40px]" aria-hidden>✓</span>
-              </div>
-              <h2 className="mb-2 text-[22px] font-medium" style={{ color: "#191919" }}>
-                Your environment is live
-              </h2>
-              <p className="mb-6 text-[14px] leading-relaxed" style={{ color: "#8a847b" }}>
-                Check your email for the setup link, or open the dashboard directly.
-              </p>
-              {dashUrl && (
-                <a
-                  href={dashUrl}
-                  className="flex items-center justify-center rounded-xl text-[15px] font-medium transition-opacity hover:opacity-80"
-                  style={{
-                    backgroundColor: "#cc785c",
-                    color: "#fff",
-                    minHeight: "48px",
-                  }}
-                >
-                  Open dashboard →
-                </a>
-              )}
-            </div>
-          )}
+          {/* Waiting phase — single continuous experience, auto-redirects */}
+          {phase === "waiting" && <WaitingExperience status={provStatus} startedAt={startedAtRef.current} />}
 
           {/* Footer */}
           <p className="mt-6 text-center text-[12px]" style={{ color: "#8a847b" }}>
