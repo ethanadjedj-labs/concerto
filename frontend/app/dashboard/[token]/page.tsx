@@ -515,8 +515,9 @@ export default function DashboardPage({
         throw new Error(d.detail ?? "Sign-in failed. Please try again.")
       }
       // Backend accepted the code and is finalizing in the background.
-      // Poll oauth-status until the box is credentialed (the request itself
-      // returns instantly so we never hit the tunnel timeout).
+      // Poll /status until the buyer flips to oauth_complete. (We do NOT use
+      // /oauth-status: it checks ~/.claude/.credentials.json, which
+      // `claude setup-token` never writes — it would stay false forever.)
       setSignInPhase("finishing")
       const deadline = Date.now() + 150_000
       const tick = async (): Promise<void> => {
@@ -529,10 +530,14 @@ export default function DashboardPage({
         }
         try {
           const sr = await fetch(
-            `${backendUrl}/api/buyer/${params.token}/oauth-status`
+            `${backendUrl}/api/buyer/${params.token}/status`
           )
           const sd = await sr.json().catch(() => ({}))
-          if (sd.oauth_complete) {
+          if (
+            sd.status === "oauth_complete" ||
+            sd.status === "mcp_active" ||
+            sd.status === "active"
+          ) {
             setSignInPhase("success")
             setOauthSuccess(true)
             setTimeout(() => {
@@ -593,17 +598,21 @@ export default function DashboardPage({
     return () => clearInterval(id)
   }, [backendUrl, params.token, fetchTrigger])
 
-  // OAuth safety-net poll — if the box gets credentialed by any path
-  // (e.g. submit-code finalized server-side), auto-advance.
+  // OAuth safety-net poll — if the buyer flips to oauth_complete by any
+  // path (e.g. submit-code finalized server-side), auto-advance.
   useEffect(() => {
     if (uiState !== "step1" || oauthSuccess) return
     const id = setInterval(async () => {
       try {
         const r = await fetch(
-          `${backendUrl}/api/buyer/${params.token}/oauth-status`
+          `${backendUrl}/api/buyer/${params.token}/status`
         )
         const d = await r.json()
-        if (d.oauth_complete) {
+        if (
+          d.status === "oauth_complete" ||
+          d.status === "mcp_active" ||
+          d.status === "active"
+        ) {
           setOauthSuccess(true)
           clearInterval(id)
           setTimeout(() => {
