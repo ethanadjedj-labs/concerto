@@ -15,7 +15,6 @@ import logging
 import os
 import sqlite3
 import time
-from pathlib import Path
 
 import httpx
 
@@ -26,8 +25,6 @@ DB_PATH       = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 DO_API_TOKEN  = os.getenv("CONCERTO_DO_API_TOKEN", "")
 FRONTEND_URL  = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 DO_API_BASE   = "https://api.digitalocean.com/v2"
-
-_EMAILS_DIR = Path(__file__).parent.parent.parent / "emails"
 
 
 # ─── DB ──────────────────────────────────────────────────────────────────────
@@ -99,9 +96,8 @@ async def _send_expired_email(email: str, token: str) -> None:
     if not email:
         return
     try:
-        import sys
-        sys.path.insert(0, str(_EMAILS_DIR.parent))
-        from emails.transactional import trial_expired
+
+        from concerto.email_templates import trial_expired
         from concerto.transactional import get_client
 
         upgrade_url = f"{FRONTEND_URL}/upgrade/{token}"

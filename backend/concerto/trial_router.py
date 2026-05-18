@@ -141,7 +141,7 @@ async def _provision_trial(token: str, email: str) -> None:
     import math
     minutes_left = math.ceil((expires_at - time.time()) / 60) if expires_at else 30
 
-    from emails.transactional import trial_ready
+    from concerto.email_templates import trial_ready
     tpl = trial_ready(dashboard_url=dashboard_url, email=email, minutes=minutes_left)
     await send_email(email, tpl["subject"], tpl["html"] or tpl["text"])
 

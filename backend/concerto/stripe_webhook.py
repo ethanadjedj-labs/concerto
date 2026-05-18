@@ -359,7 +359,7 @@ async def stripe_webhook(request: Request):
                 token = trial_token
 
                 # Send trial converted email
-                from emails.transactional import trial_converted
+                from concerto.email_templates import trial_converted
                 if customer_email:
                     setup_url = f"{_SETUP_BASE}/{trial_token}"
                     tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
