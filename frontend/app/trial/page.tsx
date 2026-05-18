@@ -9,7 +9,7 @@ export default function TrialPage() {
 
   async function startTrial() {
     setBusy(true)
-    setStatus("Starting trial...")
+    setStatus("Starting…")
     setDashUrl("")
     try {
       const r = await fetch("/api/trial/start", {
@@ -17,23 +17,28 @@ export default function TrialPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      const text = await r.text()
+      const ct = r.headers.get("content-type") || ""
+      let parsed: { token?: string; dashboard_url?: string; error?: string; message?: string; detail?: unknown } = {}
+      if (ct.includes("application/json")) {
+        try { parsed = await r.json() } catch { /* fall through */ }
+      }
       if (!r.ok) {
-        setStatus(`✗ ${r.status}: ${text}`)
+        const detail = parsed.detail && typeof parsed.detail === "object" ? parsed.detail : parsed
+        const errLabel = (detail as { error?: string }).error || `HTTP ${r.status}`
+        const errMsg = (detail as { message?: string }).message || ""
+        setStatus(`✗ ${errLabel}${errMsg ? ` — ${errMsg}` : ""}`)
         return
       }
-      let data: { token?: string; dashboard_url?: string }
-      try { data = JSON.parse(text) } catch { setStatus(`✓ ${text}`); return }
-      if (data.token) {
-        const url = data.dashboard_url || `/dashboard/${data.token}`
+      if (parsed.token) {
+        const url = parsed.dashboard_url || `/dashboard/${parsed.token}`
         setDashUrl(url)
-        setStatus(`✓ Trial started. Token: ${data.token.slice(0, 12)}…\n\nProvisioning takes ~3 minutes. The dashboard button will work once ready.`)
+        setStatus(`✓ Trial started.\n\nSetup takes ~3 minutes. The button below will work once it's ready.`)
       } else {
-        setStatus(`✓ ${text}`)
+        setStatus(`✓ Started.`)
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      setStatus(`✗ ${msg}`)
+      setStatus(`✗ Network error — ${msg}`)
     } finally {
       setBusy(false)
     }
@@ -43,7 +48,7 @@ export default function TrialPage() {
     <div style={{ padding: 32, fontFamily: "system-ui, sans-serif", maxWidth: 480, margin: "0 auto", minHeight: "100vh", background: "#faf9f5" }}>
       <h1 style={{ fontSize: 24, marginBottom: 8 }}>Start a trial</h1>
       <p style={{ color: "#666", marginBottom: 24, fontSize: 14 }}>
-        Provisions a real DigitalOcean droplet. Auto-destroyed after 30 minutes.
+        Try Concerto for 30 minutes. No payment, no card.
       </p>
       <label style={{ display: "block", fontSize: 13, color: "#191919", marginBottom: 8, fontWeight: 500 }}>Email</label>
       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} style={{
@@ -55,9 +60,9 @@ export default function TrialPage() {
         background: busy ? "#d4d0c8" : "#cc785c", color: "#fff", border: "none",
         borderRadius: 8, cursor: busy ? "wait" : "pointer",
       }}>
-        {busy ? "Provisioning…" : "Start trial"}
+        {busy ? "Starting…" : "Start trial"}
       </button>
-      {status && <pre style={{ marginTop: 24, padding: 16, background: "#f3efe5", borderRadius: 8, fontSize: 13, whiteSpace: "pre-wrap" }}>{status}</pre>}
+      {status && <pre style={{ marginTop: 24, padding: 16, background: "#f3efe5", borderRadius: 8, fontSize: 13, whiteSpace: "pre-wrap", color: "#191919" }}>{status}</pre>}
       {dashUrl && (
         <a href={dashUrl} style={{
           display: "block", marginTop: 16, padding: "14px 20px", fontSize: 16, fontWeight: 500,
