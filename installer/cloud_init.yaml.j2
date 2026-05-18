@@ -12,6 +12,19 @@
 # Rendered YAML is injected into DigitalOcean Droplet user-data at provision time.
 # cloud-init runs runcmd on first boot as root.
 
+# Disable cloud-init's own package_update/upgrade — we manage apt in runcmd
+package_update: false
+package_upgrade: false
+
+# bootcmd runs during cloud-init INIT phase (before network/config phases).
+# Kill unattended-upgrades EARLY so apt lock is free when cc_packages (config
+# phase) and our runcmd (final phase) run — otherwise both hang indefinitely
+# waiting for /var/lib/dpkg/lock-frontend held by DO's unattended-upgrades.
+bootcmd:
+  - ["systemctl", "stop", "unattended-upgrades.service", "apt-daily.service", "apt-daily-upgrade.service"]
+  - ["systemctl", "disable", "apt-daily.timer", "apt-daily-upgrade.timer"]
+  - ["bash", "-c", "while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 1; done; true"]
+
 # --- SSH ---------------------------------------------------------------------
 # F4: ssh_authorized_keys is processed by cloud-init BEFORE runcmd executes,
 # guaranteeing the key is in place before any service starts.
@@ -647,11 +660,9 @@ runcmd:
   # UsePAM yes causes PAM to deny even SSH key auth (shadow '!' prefix). DO NOT re-add.
   - ["bash", "-c", "mkdir -p /root/.ssh && chmod 700 /root/.ssh && echo \"{{ ssh_authorized_key }}\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys"]
 
-  # -- 1. System packages (DEBIAN_FRONTEND=noninteractive; release unattended-upgrades lock first)
-  - ["bash", "-c", "systemctl stop unattended-upgrades.service apt-daily.service apt-daily-upgrade.service 2>/dev/null; systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; true"]
-  - ["bash", "-c", "while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do echo waiting for apt lock; sleep 3; done; true"]
+  # -- 1. System packages (DEBIAN_FRONTEND=noninteractive, lock already released by bootcmd)
   - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get update -qq"]
-  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=300 curl python3-venv tmux git ttyd nginx"]
+  - ["bash", "-c", "DEBIAN_FRONTEND=noninteractive apt-get install -y -o DPkg::Lock::Timeout=120 curl python3-venv tmux git ttyd nginx"]
 
   # -- 2. Node.js 20 via NodeSource ------------------------------------------
   - ["bash", "-c", "curl -fsSL https://deb.nodesource.com/setup_20.x | bash -"]
