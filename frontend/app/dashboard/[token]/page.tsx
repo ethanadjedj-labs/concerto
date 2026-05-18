@@ -432,7 +432,12 @@ export default function DashboardPage({
   // GitHub-style sign-in flow:
   //   idle -> starting -> awaiting_code (authUrl ready) -> submitting -> success
   const [signInPhase, setSignInPhase] = useState<
-    "idle" | "starting" | "awaiting_code" | "submitting" | "success"
+    | "idle"
+    | "starting"
+    | "awaiting_code"
+    | "submitting"
+    | "finishing"
+    | "success"
   >("idle")
   const [authUrl, setAuthUrl] = useState<string | null>(null)
   const [oauthCode, setOauthCode] = useState("")
@@ -505,15 +510,43 @@ export default function DashboardPage({
         }
       )
       const d = await r.json().catch(() => ({}))
-      if (!r.ok || !d.oauth_complete) {
+      // 4xx with a detail = real rejection (bad code / expired session).
+      if (!r.ok) {
         throw new Error(d.detail ?? "Sign-in failed. Please try again.")
       }
-      setSignInPhase("success")
-      setOauthSuccess(true)
-      setTimeout(() => {
-        setUIState("step2")
-        uiStateRef.current = "step2"
-      }, 1600)
+      // Backend accepted the code and is finalizing in the background.
+      // Poll oauth-status until the box is credentialed (the request itself
+      // returns instantly so we never hit the tunnel timeout).
+      setSignInPhase("finishing")
+      const deadline = Date.now() + 90_000
+      const tick = async (): Promise<void> => {
+        if (Date.now() > deadline) {
+          setSignInError(
+            "This is taking longer than usual. Your code may still be processing — wait a moment, or click \"Sign in with Claude\" to retry."
+          )
+          setSignInPhase("awaiting_code")
+          return
+        }
+        try {
+          const sr = await fetch(
+            `${backendUrl}/api/buyer/${params.token}/oauth-status`
+          )
+          const sd = await sr.json().catch(() => ({}))
+          if (sd.oauth_complete) {
+            setSignInPhase("success")
+            setOauthSuccess(true)
+            setTimeout(() => {
+              setUIState("step2")
+              uiStateRef.current = "step2"
+            }, 1400)
+            return
+          }
+        } catch {
+          /* transient — keep polling */
+        }
+        setTimeout(tick, 3500)
+      }
+      tick()
     } catch (e) {
       setSignInError(e instanceof Error ? e.message : "Sign-in failed.")
       setSignInPhase("awaiting_code")
@@ -951,7 +984,8 @@ export default function DashboardPage({
 
               {/* awaiting_code / submitting → authorize link + code input */}
               {(signInPhase === "awaiting_code" ||
-                signInPhase === "submitting") &&
+                signInPhase === "submitting" ||
+                signInPhase === "finishing") &&
                 !oauthSuccess && (
                   <div className="space-y-4">
                     <ol
@@ -1024,7 +1058,10 @@ export default function DashboardPage({
                         placeholder="Paste authorization code"
                         autoComplete="off"
                         spellCheck={false}
-                        disabled={signInPhase === "submitting"}
+                        disabled={
+                          signInPhase === "submitting" ||
+                          signInPhase === "finishing"
+                        }
                         className="w-full rounded-xl px-4 py-3 text-[14px] outline-none"
                         style={{
                           backgroundColor: "#faf9f5",
@@ -1035,7 +1072,9 @@ export default function DashboardPage({
                       <Button
                         onClick={submitCode}
                         disabled={
-                          signInPhase === "submitting" || !oauthCode.trim()
+                          signInPhase === "submitting" ||
+                          signInPhase === "finishing" ||
+                          !oauthCode.trim()
                         }
                         className="w-full rounded-xl text-[15px] font-medium"
                         style={{
@@ -1044,10 +1083,13 @@ export default function DashboardPage({
                           minHeight: "48px",
                         }}
                       >
-                        {signInPhase === "submitting" ? (
+                        {signInPhase === "submitting" ||
+                        signInPhase === "finishing" ? (
                           <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            Finishing sign-in…
+                            {signInPhase === "finishing"
+                              ? "Finalizing on your server…"
+                              : "Sending code…"}
                           </>
                         ) : (
                           "Complete sign-in"

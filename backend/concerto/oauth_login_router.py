@@ -178,37 +178,16 @@ async def oauth_start(token: str):
     return {"auth_url": auth_url}
 
 
-@router.post("/api/buyer/{token}/oauth/submit-code")
-async def oauth_submit_code(token: str, body: _CodeIn):
-    buyer = await _buyer_or_404(token)
-    vps_ip = buyer["vps_ip"]
-    key_path = buyer["ssh_keypair_private_path"]
+async def _finalize_oauth(token: str, vps_ip: str, key_path: str) -> None:
+    """Background: wait for setup-token to mint the token, persist it, promote.
 
-    code = body.code.strip()
-    # Users sometimes paste the whole redirect URL or "code#state"; take the code.
-    if "code=" in code:
-        code = re.sub(r".*code=", "", code)
-        code = re.split(r"[&\s]", code)[0]
-    code = code.strip()
-    if not code or len(code) < 8:
-        raise HTTPException(status_code=400, detail="That doesn't look like a valid code.")
-
-    # tmux send-keys: type the code then Enter into the waiting setup-token prompt.
-    # Single-quote escape the code for the remote shell safely.
-    safe = code.replace("'", "'\\''")
-    send = (
-        f"tmux send-keys -t {_TMUX_SESSION} '{safe}' Enter 2>/dev/null && echo sent || echo nosession"
-    )
-    rc, out, err = await _ssh(vps_ip, key_path, send, timeout=15)
-    if "nosession" in out or rc != 0:
-        raise HTTPException(
-            status_code=409,
-            detail="Sign-in session expired. Click \"Start sign-in\" again.",
-        )
-
-    # Wait for the token to be minted, then wire it up so claude uses it.
+    Runs detached from the HTTP request so submit-code can return instantly
+    (the SSH wait used to exceed the cloudflared ~60s timeout -> 504 ->
+    "Failed to fetch" in the browser). The frontend observes completion via
+    the existing /oauth-status poll.
+    """
     token_val = None
-    for _ in range(16):
+    for _ in range(20):
         await asyncio.sleep(2)
         rc, out, _ = await _ssh(
             vps_ip,
@@ -224,14 +203,10 @@ async def oauth_submit_code(token: str, body: _CodeIn):
             break
         low = cleaned.lower()
         if "invalid" in low or "error" in low or "expired" in low:
-            raise HTTPException(
-                status_code=422,
-                detail="Anthropic rejected that code. Start sign-in again and use a fresh code.",
-            )
+            # Leave the buyer in awaiting_oauth so they can retry from the UI.
+            return
 
     if not token_val:
-        # setup-token may have already written ~/.claude credentials directly
-        # (some versions persist without echoing the token). Check for that.
         rc, out, _ = await _ssh(
             vps_ip,
             key_path,
@@ -239,25 +214,16 @@ async def oauth_submit_code(token: str, body: _CodeIn):
             timeout=12,
         )
         if "HAVE_CREDS" not in out:
-            raise HTTPException(
-                status_code=504,
-                detail="Timed out finalizing sign-in. Please retry.",
-            )
+            return  # give up silently; UI poll keeps waiting / user can retry
 
-    # Persist the token for every claude process on the box:
-    #  - /etc/concerto/claude.env  (EnvironmentFile-style, root-owned 600)
-    #  - export it from the login shell + the MCP service environment
     if token_val:
         safe_tok = token_val.replace("'", "'\\''")
         persist = (
             "mkdir -p /etc/concerto && "
             f"printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\\n' '{safe_tok}' > /etc/concerto/claude.env && "
             "chmod 600 /etc/concerto/claude.env && "
-            # make interactive + MCP sessions inherit it
             "grep -q CLAUDE_CODE_OAUTH_TOKEN /root/.bashrc 2>/dev/null || "
             "echo 'set -a; [ -f /etc/concerto/claude.env ] && . /etc/concerto/claude.env; set +a' >> /root/.bashrc && "
-            # restart the MCP server so spawned `claude -p` sessions pick it up
-            "systemctl set-environment CLAUDE_CODE_OAUTH_TOKEN= 2>/dev/null; "
             "mkdir -p /etc/systemd/system/concerto-mcp.service.d && "
             "printf '[Service]\\nEnvironmentFile=-/etc/concerto/claude.env\\n' "
             "> /etc/systemd/system/concerto-mcp.service.d/oauth.conf && "
@@ -266,12 +232,41 @@ async def oauth_submit_code(token: str, body: _CodeIn):
         )
         await _ssh(vps_ip, key_path, persist, timeout=25)
 
-    # Tidy up the login session.
     await _ssh(
         vps_ip, key_path,
         f"tmux kill-session -t {_TMUX_SESSION} 2>/dev/null; rm -f /tmp/concerto-oauth.log; echo done",
         timeout=12,
     )
-
     await db.update_buyer(token, status="oauth_complete")
-    return {"oauth_complete": True}
+
+
+@router.post("/api/buyer/{token}/oauth/submit-code")
+async def oauth_submit_code(token: str, body: _CodeIn):
+    buyer = await _buyer_or_404(token)
+    vps_ip = buyer["vps_ip"]
+    key_path = buyer["ssh_keypair_private_path"]
+
+    code = body.code.strip()
+    # Users sometimes paste the whole redirect URL or "code#state"; take the code.
+    if "code=" in code:
+        code = re.sub(r".*code=", "", code)
+        code = re.split(r"[&\s]", code)[0]
+    code = code.strip()
+    if not code or len(code) < 8:
+        raise HTTPException(status_code=400, detail="That doesn't look like a valid code.")
+
+    safe = code.replace("'", "'\\''")
+    send = (
+        f"tmux send-keys -t {_TMUX_SESSION} '{safe}' Enter 2>/dev/null && echo sent || echo nosession"
+    )
+    rc, out, err = await _ssh(vps_ip, key_path, send, timeout=15)
+    if "nosession" in out or rc != 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Sign-in session expired. Click \"Sign in with Claude\" again.",
+        )
+
+    # Finalize in the background; respond immediately so the browser request
+    # never sits long enough to hit the tunnel timeout.
+    asyncio.create_task(_finalize_oauth(token, vps_ip, key_path))
+    return {"accepted": True}
