@@ -1,19 +1,78 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import type { ReactNode } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import {
-  Copy, Check, ExternalLink, Terminal, Zap,
-  CalendarClock, AlertTriangle, Loader2,
-  CreditCard, Ban, RefreshCw, RotateCcw,
-} from "lucide-react"
+import { Copy, Check, Eye, EyeOff, ExternalLink } from "lucide-react"
 
-function CopyField({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied]   = useState(false)
-  const [flash, setFlash]     = useState(false)
-  const timeoutRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
+/* ─── Brand tokens ────────────────────────────────────────────────
+   cream:   #faf9f5
+   peach:   #cc785c  (CTAs, progress, step pills)
+   body:    #191919
+   muted:   #8a847b
+   card:    #fff
+   divider: #f3efe5
+─────────────────────────────────────────────────────────────────── */
+
+function LogoMark({ size = 28 }: { size?: number }) {
+  return (
+    <img
+      src="/brand/logo-mark.png?v=3"
+      alt="Concerto"
+      width={size}
+      height={size}
+      style={{ display: "block", width: size, height: size }}
+    />
+  )
+}
+
+function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
+  const labels = ["Sign in to Claude", "Connect to claude.ai", "You're ready"]
+  return (
+    <div className="flex flex-col items-center gap-2.5">
+      <div className="flex items-center">
+        {([1, 2, 3] as const).map((s, i) => (
+          <div key={s} className="flex items-center">
+            <div
+              className="h-3 w-3 rounded-full transition-colors duration-300"
+              style={{
+                backgroundColor: s <= step ? "#cc785c" : "rgba(25,25,25,0.15)",
+              }}
+            />
+            {i < 2 && (
+              <div
+                className="h-[2px] w-10"
+                style={{ backgroundColor: "rgba(25,25,25,0.12)" }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-[13px]" style={{ color: "#8a847b" }}>
+        Step {step} of 3
+      </p>
+    </div>
+  )
+}
+
+function ValueCard({
+  label,
+  value,
+  secret = false,
+}: {
+  label: string
+  value: string
+  secret?: boolean
+}) {
+  const [revealed, setRevealed] = useState(!secret)
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const displayValue =
+    !revealed && value && value !== "Loading..."
+      ? `••••••••••${value.slice(-6)}`
+      : value
 
   async function copy() {
     if (!value || value === "Loading...") return
@@ -28,457 +87,529 @@ function CopyField({ label, value }: { label: string; value: string }) {
       document.body.removeChild(ta)
     }
     setCopied(true)
-    setFlash(true)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => {
-      setCopied(false)
-      setFlash(false)
-    }, 2000)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-medium uppercase tracking-widest text-white/35">
+    <div
+      className="rounded-xl p-4"
+      style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
+    >
+      <p
+        className="mb-2 text-[11px] font-medium uppercase tracking-widest"
+        style={{ color: "#8a847b" }}
+      >
         {label}
-      </label>
-      <div
-        className={`flex items-center gap-2 overflow-hidden rounded-lg border transition-colors duration-300 ${
-          flash
-            ? "border-green-500/30 bg-green-500/[0.06]"
-            : "border-white/[0.07] bg-white/[0.03]"
-        }`}
-      >
-        <code className="min-w-0 flex-1 break-all px-3 py-2.5 font-mono text-[13px] text-white/75">
-          {value}
-        </code>
-        <button
-          type="button"
-          onClick={copy}
-          aria-label={copied ? "Copied" : `Copy ${label}`}
-          className={`mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all duration-200 ${
-            copied
-              ? "text-green-400"
-              : "text-white/35 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-      {copied && <p className="text-[11px] text-green-400">Copied to clipboard</p>}
-    </div>
-  )
-}
-
-function PastDueBanner() {
-  return (
-    <div role="alert" className="flex items-start gap-3 rounded-xl border border-yellow-500/25 bg-yellow-500/[0.07] px-5 py-4">
-      <CreditCard className="mt-0.5 h-4.5 w-4.5 shrink-0 text-yellow-400" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-yellow-300">Payment past due</p>
-        <p className="mt-1 text-[13px] text-yellow-200/60 leading-relaxed">
-          Your subscription payment failed. Update your payment method to avoid suspension.
-        </p>
-      </div>
-      <a
-        href="https://billing.stripe.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 mt-0.5 inline-flex items-center gap-1.5 rounded-lg bg-yellow-500/15 px-3 py-1.5 text-[13px] font-medium text-yellow-300 hover:bg-yellow-500/25 transition-colors"
-      >
-        Update billing <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-    </div>
-  )
-}
-
-function SuspendedBanner() {
-  return (
-    <div role="alert" className="flex items-start gap-3 rounded-xl border border-orange-500/25 bg-orange-500/[0.07] px-5 py-4">
-      <Ban className="mt-0.5 h-4.5 w-4.5 shrink-0 text-orange-400" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-orange-300">Access suspended</p>
-        <p className="mt-1 text-[13px] text-orange-200/60 leading-relaxed">
-          Your Concerto access is paused due to a failed payment. Your data is safe.
-          Update your payment method to resume instantly.
-        </p>
-      </div>
-      <a
-        href="https://billing.stripe.com"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 mt-0.5 inline-flex items-center gap-1.5 rounded-lg bg-orange-500/15 px-3 py-1.5 text-[13px] font-medium text-orange-300 hover:bg-orange-500/25 transition-colors"
-      >
-        Resume billing <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-    </div>
-  )
-}
-
-function RefundedBanner() {
-  return (
-    <div role="alert" className="flex items-start gap-3 rounded-xl border border-blue-500/25 bg-blue-500/[0.07] px-5 py-4">
-      <RotateCcw className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-400" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold text-blue-300">Refund processed</p>
-        <p className="mt-1 text-[13px] text-blue-200/60 leading-relaxed">
-          Your refund has been issued. Allow 5–10 business days.
-          Questions? <a href="mailto:support@concerto.run" className="underline hover:text-blue-300">support@concerto.run</a>
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function TerminalFallback({ vpsIp }: { vpsIp: string }) {
-  return (
-    <div className="p-5 space-y-3">
+      </p>
       <div className="flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-yellow-400" />
-        <span className="text-[13px] font-medium text-white/70">Terminal unavailable</span>
+        <code
+          className="min-w-0 flex-1 break-all font-mono text-[13px] leading-relaxed"
+          style={{ color: "#191919" }}
+        >
+          {displayValue}
+        </code>
+        <div className="flex shrink-0 items-center gap-1">
+          {secret && (
+            <button
+              type="button"
+              onClick={() => setRevealed((r) => !r)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-[rgba(25,25,25,0.06)]"
+              style={{ color: "#8a847b" }}
+              aria-label={revealed ? "Hide value" : "Reveal value"}
+            >
+              {revealed ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={copy}
+            className="flex h-8 min-w-[64px] items-center justify-center gap-1.5 rounded-lg text-[12px] font-medium transition-all"
+            style={{
+              backgroundColor: copied
+                ? "rgba(204,120,92,0.12)"
+                : "rgba(204,120,92,0.1)",
+              color: "#cc785c",
+            }}
+            aria-label={copied ? "Copied" : `Copy ${label}`}
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
       </div>
-      <p className="text-[13px] text-white/45 leading-relaxed">
-        The browser terminal is temporarily unreachable. Connect via SSH while it recovers:
-      </p>
-      {vpsIp && (
-        <pre className="rounded-lg bg-black/40 p-3 text-[12px] font-mono text-green-300 overflow-x-auto">
-          {`ssh root@${vpsIp}`}
-        </pre>
-      )}
-      <p className="text-[12px] text-white/30">
-        Or{" "}
-        <a href="mailto:support@concerto.run" className="text-violet-400 hover:text-violet-300">
-          contact support
-        </a>{" "}
-        if the issue persists.
-      </p>
     </div>
   )
 }
 
-function RefundButton({ token, backendUrl, eligible }: {
-  token: string
-  backendUrl: string
-  eligible: boolean
-}) {
-  const [step, setStep]       = useState<"idle" | "confirming" | "done" | "error">("idle")
-  const [loading, setLoading] = useState(false)
-  const [errMsg, setErrMsg]   = useState("")
+function PromptCard({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function doRefund() {
-    setLoading(true)
+  async function copy() {
     try {
-      const res = await fetch(`${backendUrl}/api/buyer/${token}/refund`, { method: "POST" })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body?.detail?.message ?? body?.detail ?? "Refund request failed")
-      }
-      setStep("done")
-    } catch (err: unknown) {
-      setStep("error")
-      setErrMsg(err instanceof Error ? err.message : "Unexpected error")
-    } finally {
-      setLoading(false)
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
     }
-  }
-
-  if (!eligible) return null
-
-  if (step === "done") {
-    return <p className="text-[12px] text-green-400">✓ Refund initiated — allow 5–10 business days.</p>
-  }
-
-  if (step === "confirming") {
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <p className="text-[12px] text-white/50">Are you sure? This cannot be undone.</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={doRefund}
-          disabled={loading}
-          className="h-7 px-3 text-[12px] text-red-400 hover:bg-red-500/10 hover:text-red-300"
-        >
-          {loading ? "Processing..." : "Yes, refund"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setStep("idle")}
-          disabled={loading}
-          className="h-7 px-3 text-[12px] text-white/30 hover:bg-white/5"
-        >
-          Cancel
-        </Button>
-      </div>
-    )
+    setCopied(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="space-y-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setStep("confirming")}
-        className="h-7 gap-1.5 px-3 text-[12px] text-white/25 hover:bg-white/5 hover:text-white/50"
-      >
-        <RotateCcw className="h-3 w-3" />
-        Request refund
-      </Button>
-      {step === "error" && <p className="text-[11px] text-red-400">{errMsg}</p>}
-    </div>
+    <button
+      type="button"
+      onClick={copy}
+      className="w-full rounded-xl px-4 py-3.5 text-left text-[14px] leading-relaxed transition-all"
+      style={{
+        border: `1px solid ${copied ? "#cc785c" : "#f3efe5"}`,
+        backgroundColor: copied ? "rgba(204,120,92,0.06)" : "#fff",
+        color: "#191919",
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex-1">{text}</span>
+        <span className="mt-0.5 shrink-0" style={{ color: "#cc785c" }}>
+          {copied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </span>
+      </div>
+    </button>
   )
 }
 
-export default function DashboardPage({ params }: { params: { token: string } }) {
+export default function DashboardPage({
+  params,
+}: {
+  params: { token: string }
+}) {
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [dashData, setDashData] = useState<{
     mcp_url?: string
     bearer_token?: string
-    plan?: string
-    status?: string
-    vps_ip?: string
-    subscription_status?: string
-    next_renewal_at?: number
-    refund_eligible?: boolean
-    refund_window_open?: boolean
   } | null>(null)
-  const [terminalError, setTerminalError] = useState(false)
-  const [terminalRetry, setTerminalRetry] = useState(0)
+  const [terminalVisible, setTerminalVisible] = useState(false)
+  const [oauthSuccess, setOauthSuccess] = useState(false)
 
-  const backendUrl  = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
   const terminalUrl = `${backendUrl}/terminal/${params.token}`
 
   useEffect(() => {
     fetch(`${backendUrl}/api/buyer/${params.token}/status`)
       .then((r) => r.json())
-      .then((d) => setDashData({
-        mcp_url: d.mcp_url,
-        bearer_token: d.bearer_token,
-        plan: d.plan,
-        status: d.status,
-        vps_ip: d.vps_ip,
-        subscription_status: d.subscription_status,
-        next_renewal_at: d.next_renewal_at,
-        refund_eligible: d.refund_eligible,
-        refund_window_open: d.refund_window_open,
-      }))
+      .then((d) =>
+        setDashData({ mcp_url: d.mcp_url, bearer_token: d.bearer_token })
+      )
       .catch(() => {})
   }, [backendUrl, params.token])
 
-  const mcpUrl      = dashData?.mcp_url      ?? `${backendUrl}/mcp/${params.token}`
+  // Poll oauth-status every 5s when terminal is shown (Step 1)
+  useEffect(() => {
+    if (step !== 1 || !terminalVisible) return
+    const id = setInterval(async () => {
+      try {
+        const r = await fetch(
+          `${backendUrl}/api/buyer/${params.token}/oauth-status`
+        )
+        const d = await r.json()
+        if (d.oauth_complete) {
+          setOauthSuccess(true)
+          clearInterval(id)
+          setTimeout(() => setStep(2), 1800)
+        }
+      } catch {
+        // network blip — ignore, retry next tick
+      }
+    }, 5000)
+    return () => clearInterval(id)
+  }, [step, terminalVisible, backendUrl, params.token])
+
+  // Poll first-call-detected every 5s when on Step 2
+  useEffect(() => {
+    if (step !== 2) return
+    const id = setInterval(async () => {
+      try {
+        const r = await fetch(
+          `${backendUrl}/api/buyer/${params.token}/first-call-detected`
+        )
+        const d = await r.json()
+        if (d.detected) {
+          clearInterval(id)
+          setTimeout(() => setStep(3), 800)
+        }
+      } catch {
+        // ignore
+      }
+    }, 5000)
+    return () => clearInterval(id)
+  }, [step, backendUrl, params.token])
+
+  const mcpUrl = dashData?.mcp_url ?? "Loading..."
   const bearerToken = dashData?.bearer_token ?? "Loading..."
-  const plan        = dashData?.plan ?? "solo"
-  const isHosted    = plan === "solo" || plan === "pro" || plan === "hosted"
-  const status      = dashData?.status ?? "active"
-  const vpsIp       = dashData?.vps_ip ?? ""
-
-  const isSuspended = status === "suspended"
-  const isRefunded  = status === "refunded"
-  const isPastDue   = status === "subscription_past_due" || dashData?.subscription_status === "past_due"
-  const isBanned    = isSuspended || isRefunded
-
-  const nextRenewal = dashData?.next_renewal_at
-    ? new Date(dashData.next_renewal_at * 1000).toLocaleDateString("en-US", {
-        year: "numeric", month: "long", day: "numeric",
-      })
-    : null
-
-  const planLabel = plan === "pro" ? "Pro" : "Solo"
-
-  function getBadge() {
-    if (isRefunded)  return <Badge className="shrink-0 border-blue-500/25 bg-blue-500/12 text-[12px] text-blue-400">Refunded</Badge>
-    if (isSuspended) return <Badge className="shrink-0 border-orange-500/25 bg-orange-500/12 text-[12px] text-orange-400"><span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-orange-400" />Suspended</Badge>
-    if (isPastDue)   return <Badge className="shrink-0 border-yellow-500/25 bg-yellow-500/12 text-[12px] text-yellow-400">Payment due</Badge>
-    return (
-      <Badge className="shrink-0 border-green-500/25 bg-green-500/12 text-[12px] text-green-400">
-        <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
-        Online
-      </Badge>
-    )
-  }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white">
-      <header className="border-b border-white/[0.05] bg-[#0a0a0b]/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect width="22" height="22" rx="6" fill="#7c3aed" />
-              <circle cx="11" cy="11" r="5.5" stroke="white" strokeWidth="1.25" fill="none" />
-              <circle cx="11" cy="11" r="2" fill="white" />
-            </svg>
-            <span className="font-semibold tracking-tight text-white">Concerto</span>
-            <Separator orientation="vertical" className="mx-1 h-4 bg-white/[0.1]" />
-            <span className="min-w-0 max-w-[110px] truncate font-mono text-[13px] text-white/30 sm:max-w-[180px]">
-              {params.token}
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "#faf9f5", color: "#191919" }}
+    >
+      {/* ── Header ── */}
+      <header
+        className="sticky top-0 z-10"
+        style={{
+          borderBottom: "1px solid rgba(25,25,25,0.07)",
+          backgroundColor: "rgba(250,249,245,0.90)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <LogoMark size={28} />
+            <span
+              className="text-[18px] font-medium leading-none tracking-tight"
+              style={{ color: "#191919" }}
+            >
+              Concerto
             </span>
-            <span className="hidden text-[11px] font-medium text-white/25 sm:inline">{planLabel}</span>
           </div>
-          {getBadge()}
+          <Link
+            href={`/dashboard/${params.token}/settings`}
+            className="text-[13px] transition-opacity hover:opacity-70"
+            style={{ color: "#8a847b" }}
+          >
+            Account settings
+          </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-4 px-6 py-8">
+      {/* ── Wizard ── */}
+      <main className="mx-auto max-w-md px-5 py-10">
+        {/* Progress */}
+        <div className="mb-8">
+          <ProgressBar step={step} />
+        </div>
 
-        {isPastDue   && <PastDueBanner />}
-        {isSuspended && <SuspendedBanner />}
-        {isRefunded  && <RefundedBanner />}
-
-        {/* Connect card */}
-        {!isBanned && (
-          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-white/[0.025]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/45 to-transparent" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(124,58,237,0.07)_0%,transparent_70%)]" />
-
-            <div className="relative p-6 md:p-8">
-              <div className="mb-5 flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/15">
-                  <Zap className="h-4.5 w-4.5 text-violet-400" />
-                </div>
-                <div>
-                  <h2 className="text-[15px] font-semibold text-white">Connect to claude.ai</h2>
-                  <p className="text-[13px] text-white/40">Settings → Connectors → Add custom connector.</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <CopyField label="MCP URL"        value={mcpUrl} />
-                <CopyField label="Bearer Token"   value={bearerToken} />
-                <CopyField label="Connector Name" value="Concerto" />
-              </div>
-
-              <Separator className="my-6 bg-white/[0.06]" />
-
-              <div className="space-y-3">
-                <p className="text-[11px] font-medium uppercase tracking-widest text-white/30">Step-by-step</p>
-                <ol className="space-y-3">
-                  {[
-                    <>Open <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-violet-400 hover:text-violet-300">claude.ai <ExternalLink className="h-3 w-3" /></a> → your avatar → <strong className="font-medium text-white/70">Settings</strong></>,
-                    <>Navigate to <strong className="font-medium text-white/70">Connectors</strong> → <strong className="font-medium text-white/70">Add custom connector</strong></>,
-                    <>Paste the <strong className="font-medium text-white/70">MCP URL</strong> and <strong className="font-medium text-white/70">Bearer Token</strong> above, name it <strong className="font-medium text-white/70">Concerto</strong>, and click Save</>,
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-[13px]">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/18 text-[11px] font-medium text-violet-300">{i + 1}</span>
-                      <span className="leading-relaxed text-white/45">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Terminal card */}
-        {!isBanned && (
-          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.02]">
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-              <div className="flex items-center gap-2 text-white/50">
-                <Terminal className="h-4 w-4" />
-                <span className="text-[14px] font-medium">Browser Terminal</span>
-                {terminalError && <span className="ml-1 text-[12px] text-yellow-400">— unavailable</span>}
-              </div>
-              <div className="flex items-center gap-2">
-                {terminalError && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setTerminalError(false); setTerminalRetry(r => r + 1) }}
-                    className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
-                  >
-                    <RefreshCw className="h-3 w-3" /> Retry
-                  </Button>
-                )}
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1.5 px-2.5 text-[12px] text-white/35 hover:bg-white/8 hover:text-white"
+        {/* ── Step 1: Sign in to Claude ── */}
+        {step === 1 && (
+          <div
+            className="rounded-2xl"
+            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
+          >
+            <div className="space-y-5 px-6 py-6 md:px-8 md:py-8">
+              <div>
+                <h1
+                  className="mb-2 text-[22px] font-semibold"
+                  style={{ color: "#191919" }}
                 >
-                  <a href={terminalUrl} target="_blank" rel="noopener noreferrer">
-                    Open in new tab <ExternalLink className="h-3 w-3" />
-                  </a>
-                </Button>
+                  Sign in to Claude
+                </h1>
+                <p
+                  className="text-[15px] leading-relaxed"
+                  style={{ color: "#8a847b" }}
+                >
+                  Concerto needs to authenticate with your Claude account to
+                  launch Claude Code sessions on your behalf.
+                </p>
               </div>
-            </div>
 
-            <div className="bg-[#0d0d10]">
-              <div className="flex items-center gap-2 border-b border-white/[0.04] bg-black/20 px-4 py-2.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-500/55" />
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/55" />
-                <span className="h-2.5 w-2.5 rounded-full bg-green-500/55" />
-                <span className="ml-2 font-mono text-[11px] text-white/20">concerto · shell</span>
-              </div>
-              {terminalError ? (
-                <TerminalFallback vpsIp={vpsIp} />
-              ) : (
-                <iframe
-                  key={terminalRetry}
-                  src={terminalUrl}
-                  className="h-[500px] w-full border-0 md:h-[560px]"
-                  title="Concerto Terminal"
-                  allow="clipboard-read; clipboard-write"
-                  onError={() => setTerminalError(true)}
-                />
+              {!terminalVisible && !oauthSuccess && (
+                <Button
+                  onClick={() => setTerminalVisible(true)}
+                  className="w-full rounded-xl text-[15px] font-medium"
+                  style={{
+                    backgroundColor: "#cc785c",
+                    color: "#fff",
+                    minHeight: "48px",
+                  }}
+                >
+                  Start sign-in
+                </Button>
+              )}
+
+              {oauthSuccess && (
+                <div
+                  className="flex items-center gap-2 rounded-xl px-4 py-3 text-[15px] font-medium"
+                  style={{
+                    backgroundColor: "rgba(34,197,94,0.08)",
+                    color: "#16a34a",
+                    border: "1px solid rgba(34,197,94,0.2)",
+                  }}
+                >
+                  <Check className="h-4 w-4 shrink-0" />
+                  Signed in. Moving to next step…
+                </div>
+              )}
+
+              {terminalVisible && !oauthSuccess && (
+                <div className="space-y-3">
+                  {/* overflow:hidden on wrapper suppresses iOS Safari reader-mode overlay */}
+                  <div
+                    style={{
+                      overflow: "hidden",
+                      borderRadius: "12px",
+                      border: "1px solid #f3efe5",
+                      WebkitTextSizeAdjust: "100%",
+                    }}
+                  >
+                    <iframe
+                      src={terminalUrl}
+                      className="w-full border-0"
+                      style={{
+                        display: "block",
+                        height: "320px",
+                        maxHeight: "520px",
+                      }}
+                      title="Concerto Terminal"
+                      allow="clipboard-read; clipboard-write"
+                      sandbox="allow-scripts allow-same-origin allow-forms"
+                    />
+                  </div>
+                  <p
+                    className="text-[13px] leading-relaxed"
+                    style={{ color: "#8a847b" }}
+                  >
+                    Type{" "}
+                    <code
+                      className="rounded px-1 py-0.5 text-[12px]"
+                      style={{
+                        backgroundColor: "#f3efe5",
+                        color: "#191919",
+                      }}
+                    >
+                      claude login
+                    </code>{" "}
+                    if not already started, then follow the OAuth prompts in
+                    the browser tab that opens.
+                  </p>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Subscription panel — Solo + Pro only */}
-        {isHosted && !isBanned && (
-          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-violet-400" />
-              <span className="text-[14px] font-semibold text-white">Subscription</span>
-            </div>
-            <div className="h-px bg-white/[0.07]" />
-            <div className="flex items-center justify-between text-[13px]">
-              <span className="text-white/40">Plan</span>
-              <span className="text-white/70">{planLabel} — {plan === "pro" ? "$99/month" : "$49/month"}</span>
-            </div>
-            <div className="flex items-center justify-between text-[13px]">
-              <span className="text-white/40">Status</span>
-              <span className="text-white/70 capitalize">{dashData?.subscription_status ?? "active"}</span>
-            </div>
-            {nextRenewal && (
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-white/40">Next renewal</span>
-                <span className="text-white/70">{nextRenewal}</span>
+        {/* ── Step 2: Connect to claude.ai ── */}
+        {step === 2 && (
+          <div
+            className="rounded-2xl"
+            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
+          >
+            <div className="space-y-6 px-6 py-6 md:px-8 md:py-8">
+              <div>
+                <h1
+                  className="mb-2 text-[22px] font-semibold"
+                  style={{ color: "#191919" }}
+                >
+                  Connect Concerto to claude.ai
+                </h1>
+                <p
+                  className="text-[15px] leading-relaxed"
+                  style={{ color: "#8a847b" }}
+                >
+                  In Claude&apos;s Settings → Connectors, add a custom connector
+                  with the values below.
+                </p>
               </div>
-            )}
-            <div className="h-px bg-white/[0.07]" />
-            <a
-              href="https://billing.stripe.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-[13px] text-white/60 transition-colors hover:border-violet-500/30 hover:bg-violet-500/8 hover:text-white"
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              Manage subscription via Stripe
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-            <p className="text-center text-[11px] text-white/20">
-              Cancel, update payment method, or download invoices. Need to upgrade Solo → Pro? Email support@concerto.run.
-            </p>
+
+              {/* Value sub-cards */}
+              <div className="space-y-3">
+                <ValueCard label="MCP URL" value={mcpUrl} />
+                <ValueCard label="Bearer token" value={bearerToken} secret />
+                <ValueCard label="Connector name" value="Concerto" />
+              </div>
+
+              {/* Instructions */}
+              <div
+                className="space-y-4 pt-5"
+                style={{ borderTop: "1px solid #f3efe5" }}
+              >
+                <p
+                  className="text-[11px] font-medium uppercase tracking-widest"
+                  style={{ color: "#8a847b" }}
+                >
+                  Step-by-step
+                </p>
+                <ol className="space-y-3">
+                  {(
+                    [
+                      <>
+                        Open claude.ai → click your avatar →{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Settings
+                        </strong>
+                      </>,
+                      <>
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Connectors
+                        </strong>{" "}
+                        →{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Add custom connector
+                        </strong>
+                      </>,
+                      <>
+                        Paste the values above →{" "}
+                        <strong
+                          className="font-medium"
+                          style={{ color: "#191919" }}
+                        >
+                          Save
+                        </strong>
+                      </>,
+                    ] as ReactNode[]
+                  ).map((item, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 text-[14px]"
+                      style={{ color: "#8a847b" }}
+                    >
+                      <span
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                        style={{
+                          backgroundColor: "rgba(204,120,92,0.1)",
+                          color: "#cc785c",
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ol>
+
+                <a
+                  href="https://claude.ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-[14px] font-medium transition-opacity hover:opacity-75"
+                  style={{ borderColor: "#f3efe5", color: "#191919" }}
+                >
+                  Open claude.ai <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+
+              <Button
+                onClick={() => setStep(3)}
+                className="w-full rounded-xl text-[15px] font-medium"
+                style={{
+                  backgroundColor: "#cc785c",
+                  color: "#fff",
+                  minHeight: "48px",
+                }}
+              >
+                I&apos;ve connected → Continue
+              </Button>
+            </div>
           </div>
         )}
 
+        {/* ── Step 3: You're ready ── */}
+        {step === 3 && (
+          <div
+            className="rounded-2xl"
+            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
+          >
+            <div className="space-y-6 px-6 py-6 md:px-8 md:py-8">
+              <div>
+                <h1
+                  className="mb-2 text-[22px] font-semibold"
+                  style={{ color: "#191919" }}
+                >
+                  You&apos;re ready.
+                </h1>
+                <p
+                  className="text-[15px] leading-relaxed"
+                  style={{ color: "#8a847b" }}
+                >
+                  In your Claude chat, ask Claude to do anything that needs
+                  code or shell. Concerto will spawn Claude Code sessions for
+                  you.
+                </p>
+              </div>
 
-        {/* Refund + Support */}
-        <div className="flex flex-col items-center gap-2 pb-4">
-          {dashData?.refund_window_open && (
-            <RefundButton
-              token={params.token}
-              backendUrl={backendUrl}
-              eligible={dashData?.refund_eligible ?? false}
-            />
-          )}
-          <p className="text-center text-[13px] text-white/25">
-            Need help?{" "}
-            <a href="mailto:support@concerto.run" className="text-violet-400 transition-colors hover:text-violet-300">
-              support@concerto.run
-            </a>
-          </p>
-        </div>
+              {/* Example prompt cards */}
+              <div className="space-y-2">
+                <p
+                  className="mb-3 text-[11px] font-medium uppercase tracking-widest"
+                  style={{ color: "#8a847b" }}
+                >
+                  Try asking Claude
+                </p>
+                {[
+                  "Build and deploy a landing page for X",
+                  "Try three fixes for this bug in parallel and tell me which one passes the tests cleanly",
+                  "Audit my repo and return a structured report",
+                  "Refactor this feature while another session checks for regressions",
+                ].map((prompt) => (
+                  <PromptCard key={prompt} text={prompt} />
+                ))}
+              </div>
+
+              <a
+                href="https://claude.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: "#cc785c",
+                  color: "#fff",
+                  minHeight: "48px",
+                }}
+              >
+                Open claude.ai <ExternalLink className="h-4 w-4" />
+              </a>
+
+              {/* Subtle footer */}
+              <div
+                className="flex flex-col items-center gap-1.5 pt-2"
+                style={{ borderTop: "1px solid #f3efe5" }}
+              >
+                <p className="text-[13px]" style={{ color: "#8a847b" }}>
+                  Need help?{" "}
+                  <a
+                    href="mailto:support@concerto.run"
+                    className="underline transition-opacity hover:opacity-70"
+                    style={{ color: "#cc785c" }}
+                  >
+                    support@concerto.run
+                  </a>
+                </p>
+                <Link
+                  href={`/dashboard/${params.token}/settings`}
+                  className="text-[13px] transition-opacity hover:opacity-70"
+                  style={{ color: "#8a847b" }}
+                >
+                  Account settings →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
