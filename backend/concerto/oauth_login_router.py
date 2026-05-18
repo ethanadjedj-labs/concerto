@@ -48,10 +48,44 @@ _SSH_OPTS = [
 #   https://console.anthropic.com/oauth/authorize?...
 #   https://platform.claude.com/oauth/authorize?...
 _URL_RE = re.compile(
-    r"https://(?:claude\.ai|console\.anthropic\.com|platform\.claude\.com)/[^\s\"']+",
+    r"https://(?:claude\.com|claude\.ai|console\.anthropic\.com|platform\.claude\.com)/"
+    r"[A-Za-z0-9/_\-]*oauth/authorize\?[A-Za-z0-9%&=_\-\.]+",
     re.IGNORECASE,
 )
 _TOKEN_RE = re.compile(r"sk-ant-oat01-[A-Za-z0-9_\-]+")
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;>?]*[A-Za-z]")
+
+
+def _clean_pane(raw: str) -> str:
+    """Strip ANSI escapes and CR noise, then join hard-wrapped URL lines.
+
+    claude setup-token (2.1.x) prints the auth URL wrapped at the terminal
+    width with ANSI color codes, so the raw capture has the URL split across
+    several lines. We strip escapes, drop CRs, then glue consecutive lines
+    that look like a continued URL (no spaces) back together.
+    """
+    txt = _ANSI_RE.sub("", raw or "")
+    txt = txt.replace("\r", "")
+    lines = txt.split("\n")
+    glued: list[str] = []
+    buf = ""
+    for ln in lines:
+        stripped = ln.strip()
+        if buf:
+            # still inside a URL run: a continuation has no spaces
+            if stripped and " " not in stripped:
+                buf += stripped
+                continue
+            glued.append(buf)
+            buf = ""
+        if "https://" in stripped and " " not in stripped:
+            buf = stripped
+        else:
+            glued.append(ln)
+    if buf:
+        glued.append(buf)
+    return "\n".join(glued)
 
 # in-memory throttle so a double-click doesn't spawn two setup-token procs
 _start_locks: dict[str, float] = {}
@@ -129,9 +163,9 @@ async def oauth_start(token: str):
             "echo '---'; cat /tmp/concerto-oauth.log 2>/dev/null",
             timeout=15,
         )
-        m = _URL_RE.search(out or "")
+        m = _URL_RE.search(_clean_pane(out))
         if m:
-            auth_url = m.group(0).rstrip(").,")
+            auth_url = m.group(0).rstrip(").,'\"")
             break
         await asyncio.sleep(1.5)
 
@@ -183,11 +217,12 @@ async def oauth_submit_code(token: str, body: _CodeIn):
             f"tmux capture-pane -p -t {_TMUX_SESSION} 2>/dev/null",
             timeout=15,
         )
-        m = _TOKEN_RE.search(out or "")
+        cleaned = _clean_pane(out)
+        m = _TOKEN_RE.search(cleaned)
         if m:
             token_val = m.group(0)
             break
-        low = (out or "").lower()
+        low = cleaned.lower()
         if "invalid" in low or "error" in low or "expired" in low:
             raise HTTPException(
                 status_code=422,
