@@ -644,7 +644,26 @@ class CombinedApp:
             await response(scope, receive, send)
             return
 
-        # Authenticated -- forward to MCP app
+        # Authenticated -- forward to the MCP app.
+        # FastMCP's streamable transport only serves the protocol at /mcp.
+        # Claude, given the bare connector URL (no /mcp suffix), performs
+        # OAuth fine but then POSTs its JSON-RPC to "/" -> FastMCP 404 ->
+        # Claude reports "Authorization with the MCP server failed". Normalise
+        # the path so the MCP protocol is reachable at BOTH "/" and "/mcp"
+        # (and "/mcp/..."), regardless of what the user pasted.
+        mcp_path = "/mcp"
+        if path != mcp_path and not path.startswith(mcp_path + "/"):
+            scope = dict(scope)
+            scope["path"] = mcp_path
+            raw = scope.get("raw_path")
+            if raw is not None:
+                try:
+                    query = scope.get("query_string", b"")
+                    scope["raw_path"] = mcp_path.encode() + (
+                        b"?" + query if query else b""
+                    )
+                except Exception:
+                    scope["raw_path"] = mcp_path.encode()
         await self.mcp_app(scope, receive, send)
 
 
