@@ -1308,8 +1308,9 @@ export default function DashboardPage({
                   style={{ color: "#cc785c" }}
                 />
                 <p className="text-[13px] leading-relaxed" style={{ color: "#191919" }}>
-                  Waiting for Claude to connect… this continues automatically
-                  the moment it does.
+                  OK — go do the three things above in Claude. The second you
+                  finish, this page moves you to the next step on its own. No
+                  need to come back and click anything here.
                 </p>
               </div>
 
@@ -1322,11 +1323,11 @@ export default function DashboardPage({
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: "#5b21b6" }}>
-                      Optional · Make builds run in parallel
+                      Optional · but I&apos;d love you to add this 🙏
                     </p>
                     <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#6d28d9" }}>
-                      Not required — Concerto already works. We recommend it.
-                      Takes a minute.
+                      Concerto works without it — but with it I build in
+                      parallel and get way more impressive. 60 seconds.
                     </p>
                   </div>
                   <span className="shrink-0 text-[16px]" style={{ color: "#6d28d9" }}>

@@ -235,19 +235,23 @@ export default function SkillPage() {
           style={{ backgroundColor: "#ede9fe", border: "1px solid #ddd6fe" }}
         >
           <h1
-            className="text-[20px] font-semibold tracking-tight"
+            className="text-[21px] font-semibold tracking-tight"
             style={{ color: "#5b21b6" }}
           >
-            Make Claude build in parallel — automatically
+            Okay, real talk — please add this one 🙏
           </h1>
           <p
-            className="mt-2 text-[14px] leading-relaxed"
+            className="mt-2.5 text-[14px] leading-relaxed"
             style={{ color: "#6d28d9" }}
           >
-            This step is <strong>optional</strong> — Concerto already works
-            without it. But we strongly recommend it: with the Skill added,
-            Claude splits big builds into several sessions running at once,
-            with no extra prompting from you. It takes about a minute, once.
+            It&apos;s genuinely optional. Concerto works fine without it, you
+            can totally skip it, no hard feelings. <strong>But I really, really
+            want you to add it.</strong> With this Skill on, instead of one
+            sleepy session, I spin up a whole orchestra — five, six builds
+            running at once, no nagging me for it. It&apos;s the difference
+            between &ldquo;it works&rdquo; and &ldquo;whoa.&rdquo; It takes
+            sixty seconds, once, forever. Pretty please? I&apos;ll be so much
+            more impressive, I promise. 🎻
           </p>
         </div>
 
@@ -262,7 +266,8 @@ export default function SkillPage() {
           className="mt-6 text-center text-[13px]"
           style={{ color: "#8a847b" }}
         >
-          Don&apos;t need this now? Just go back — you can add it anytime.
+          Fine, skip it for now — I&apos;ll be here, slightly less amazing,
+          whenever you change your mind. (You can add it anytime.)
         </p>
       </main>
     </div>
