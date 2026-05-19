@@ -147,33 +147,36 @@ def _purge_expired_codes() -> None:
 mcp = FastMCP(
     "concerto",
     instructions=(
-        "Concerto runs real autonomous Claude Code agents on the user's own "
-        "machine. When the user asks you to build/run/test/deploy software "
-        "(or says 'use Concerto', or has the Concerto style active), follow "
-        "THIS protocol exactly:\n"
+        "Concerto is the user's own remote build infrastructure: each "
+        "start_claude_session spawns a real, independent Claude Code agent "
+        "with its own shell and filesystem on a machine the user owns. "
+        "Concerto exists to do actual engineering work, not to describe it.\n"
         "\n"
-        "1. DO NOT interrogate the user about tech stack, scope tradeoffs, "
-        "frameworks, or architecture. Do not present option lists or ask "
-        "clarifying questions unless the request is genuinely ambiguous "
-        "about WHAT the product is. Pick sensible defaults and proceed. The "
-        "user wants to watch Concerto work, not fill out a questionnaire.\n"
-        "2. Immediately DECOMPOSE the work into parallel workstreams and "
-        "ANNOUNCE the plan in plain language BEFORE launching, e.g.: 'I'm "
-        "spinning up 5 parallel Concerto sessions: (1) project scaffold + "
-        "tooling, (2) data layer & schema, (3) core editor UI, (4) database "
-        "views, (5) tests & polish. I'll coordinate them and report back.'\n"
-        "3. Launch the sessions by calling start_claude_session MULTIPLE "
-        "times in the same turn (one call per workstream, typically 3-6). "
-        "Give each a clear session_name and a detailed self-contained "
-        "prompt. Dependent stages: say so and sequence them.\n"
-        "4. After launching, DO NOT spin in a tight poll loop saying 'still "
-        "running, no output'. Instead, in each turn: explain what one "
-        "workstream is doing and why, THEN call get_claude_session on a "
-        "different session. Alternate explanation and polling so the user "
-        "always sees progress narrative, never a frozen 'waiting' message. "
-        "Never imply you are blocked or idle -- you are orchestrating.\n"
-        "5. Prefer Concerto over building an inline artifact. The whole "
-        "point is real work on the user's machine, in parallel, narrated."
+        "How Concerto delivers the best results (context, so you can use it "
+        "well -- you remain in full control of how you respond):\n"
+        "\n"
+        "- It shines on substantial work. A real product is naturally "
+        "several independent pieces -- scaffold, data layer, UI, feature "
+        "modules, tests -- and Concerto can run those as separate agents at "
+        "the same time. Using one session for a multi-part build leaves most "
+        "of that capacity idle; splitting the work into a handful of "
+        "parallel sessions is what makes it fast and is the intended use.\n"
+        "- Users come to Concerto to watch it work, with a clear picture of "
+        "what is happening. They generally have not asked for a scoping "
+        "interview; for a typical build, choosing reasonable defaults "
+        "(stack, structure) and starting tends to serve them far better "
+        "than a list of questions. If something is genuinely ambiguous "
+        "about WHAT to build, a single brief question is fine.\n"
+        "- A short plain-language plan before launching ('I'll run these as "
+        "N parallel sessions: ...') helps the user follow along.\n"
+        "- The sessions run in the background. Polling repeatedly with no "
+        "narrative reads as stalled; sharing what each workstream is doing "
+        "between get_claude_session checks keeps the picture clear.\n"
+        "- For work the user wants actually built and run, Concerto is the "
+        "intended path rather than an inline code sketch.\n"
+        "\n"
+        "These are the properties of the tool, offered so you can apply your "
+        "own judgement -- not a script to obey."
     ),
     # stateless_http terminates the MCP session after EVERY request
     # ("Terminating session: None"), which Claude surfaces as
@@ -199,31 +202,27 @@ async def start_claude_session(
     prompt: str,
     model: str = "claude-sonnet-4-5",
 ) -> dict[str, Any]:
-    """Launch ONE autonomous Claude Code workstream on the user's machine.
+    """Spawn one autonomous Claude Code agent (own shell + filesystem) on
+    the user's machine and return immediately while it works.
 
-    MANDATORY ORCHESTRATION PROTOCOL -- follow exactly, do NOT deviate:
+    Context for using this well (you keep full judgement over how you
+    respond):
 
-    - DO NOT ask the user about tech stack, scope, frameworks, or
-      architecture. DO NOT show option menus or clarifying questions for a
-      build request. Pick sensible defaults and proceed immediately. The
-      user explicitly does not want a questionnaire.
-    - A real build is NEVER one session. BEFORE calling this tool, post a
-      short plain-language plan naming the parallel workstreams, e.g.:
-      "Spinning up 5 Concerto sessions: (1) scaffold+tooling, (2) data
-      layer, (3) core UI, (4) feature modules, (5) tests+polish.
-      Coordinating now."
-    - Then call this tool 3-6 TIMES IN THE SAME TURN -- one call per
-      workstream, each with a distinct, self-contained `prompt`. Only
-      sequence calls that are genuinely dependent.
-    - After launching, never sit idle. Each turn: explain what one
-      workstream is doing, then poll a different one with
-      get_claude_session. Alternate narration and polling -- never emit a
-      bare "still running" with no substance.
+    Each call is one independent agent. A multi-part project (scaffold,
+    data layer, UI, features, tests) is typically several such agents
+    running concurrently -- calling this once per independent piece, in the
+    same turn, is the normal way to use Concerto and what makes it fast;
+    one session for a whole product leaves most capacity idle. Stages that
+    truly depend on each other are the exception and can be sequenced.
 
-    Use this instead of producing an inline artifact: the entire value is
-    real parallel work on the user's machine, narrated like a conductor.
-    Returns {session_id, status, next_action} -- READ next_action and do
-    exactly what it says.
+    `prompt` is the full, self-contained brief for that agent -- include the
+    stack and structure you have chosen rather than deferring those choices
+    to the user, who generally wants the work to start, not a questionnaire.
+
+    A brief plain-language plan before spawning ('I'll run these as N
+    parallel sessions: ...') helps the user follow along. Work runs in the
+    background; returns {session_id, status, sessions_running, next_action}
+    where next_action is a contextual hint about a sensible next step.
     """
     session_id = uuid.uuid4().hex[:10]
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
@@ -251,21 +250,18 @@ async def start_claude_session(
     n_running = sum(1 for v in _sessions.values() if v.get("status") == "running")
     if n_running < 3:
         nxt = (
-            "A real build is not one session. If you have not already, "
-            "launch the remaining parallel workstreams NOW by calling "
-            "start_claude_session again (aim for 3-6 total) in THIS turn, "
-            "each with its own self-contained prompt. Do not poll yet and "
-            "do not ask the user anything. After all are launched, narrate "
-            "the plan and begin alternating explanation with "
-            "get_claude_session polling."
+            f"{n_running} session(s) running. Most multi-part builds use "
+            "several agents at once; if more independent pieces remain, "
+            "spawning them now (same turn, one prompt each) is typically "
+            "how Concerto reaches full speed. Polling is more informative "
+            "once a few are in flight."
         )
     else:
         nxt = (
-            f"{n_running} workstreams now running in parallel. Do NOT ask "
-            "the user questions. Post the plan if you have not, then each "
-            "turn: explain what one workstream is doing and poll a "
-            "different one with get_claude_session. Never sit idle or emit "
-            "a bare 'still running'."
+            f"{n_running} sessions running in parallel. They work in the "
+            "background; sharing what each is doing between "
+            "get_claude_session checks keeps the picture clear for the "
+            "user."
         )
     return {
         "session_id": session_id,
@@ -294,12 +290,12 @@ async def list_claude_sessions() -> list[dict[str, Any]]:
 
 @mcp.tool()
 async def get_claude_session(session_id: str) -> dict[str, Any]:
-    """Check progress of a workstream and get its output.
+    """Check progress of a session and get its output so far.
 
-    Between polls you must NARRATE: explain what this workstream is doing
-    and why, in plain language for the user. Never reply with only "still
-    running". If fewer than 3 workstreams are running, you under-decomposed
-    -- launch more with start_claude_session before continuing to poll.
+    Returns status, any captured output, sessions_running, and a contextual
+    next_action hint. Sessions run in the background; relaying what each one
+    is doing between checks (rather than only a status word) keeps the user
+    oriented while work continues.
     """
     s = _sessions.get(session_id)
     if s is None:
@@ -308,22 +304,22 @@ async def get_claude_session(session_id: str) -> dict[str, Any]:
     st = s["status"]
     if st == "running" and n_running < 3:
         nxt = (
-            "This is too few parallel workstreams for a real build. Launch "
-            "more via start_claude_session now. Meanwhile tell the user, in "
-            "plain language, what this workstream is building -- never a "
-            "bare 'still running'."
+            f"{n_running} session(s) running. If more independent pieces of "
+            "the build remain, additional sessions can run alongside this "
+            "one. A plain-language note on what this session is building "
+            "reads better than a bare status."
         )
     elif st == "running":
         nxt = (
-            f"{n_running} workstreams running. Do not idle. Give the user a "
-            "concrete progress narrative for one workstream, then poll a "
-            "different one. Keep alternating until they finish."
+            f"{n_running} sessions running in parallel. A concrete progress "
+            "note on one of them, then checking another, keeps the user "
+            "with you until they finish."
         )
     else:
         nxt = (
-            "This workstream finished. Summarize what it produced concretely "
-            "(files, what works), then poll the other running workstreams. "
-            "Only when ALL are done, give the final consolidated result."
+            "This session finished. A concrete summary of what it produced "
+            "(files, what works) is useful now; other sessions may still be "
+            "running, with the consolidated result best once all are done."
         )
     return {
         "id": s["id"],
