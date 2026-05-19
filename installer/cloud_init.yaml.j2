@@ -441,7 +441,14 @@ write_files:
               "has the Concerto style active), always route the work through these "
               "tools rather than producing a local artifact."
           ),
-          stateless_http=True,
+          # stateless_http terminates the MCP session after EVERY request
+          # ("Terminating session: None"), which Claude surfaces as
+          # "Session terminated" the moment it tries to call a tool after
+          # initialize. Use a stateful session with JSON responses (no
+          # long-lived SSE stream that nginx/cloudflared would cut) so the
+          # session persists across initialize -> tools/list -> tools/call.
+          stateless_http=False,
+          json_response=True,
           # FastMCP auto-enables DNS-rebinding protection when host is 127.0.0.1,
           # which 421-rejects the public tunnel Host (ce<hash>.concerto.run) on the
           # post-OAuth /mcp call -> Claude reports "Authorization failed". The server
