@@ -577,6 +577,19 @@ export default function DashboardPage({
           expires_at: d.expires_at,
           next_renewal_at: d.next_renewal_at,
         })
+        // Terminal states always win, even over the connector lock — a
+        // dead/expired/cancelled trial must never stay stuck on a phantom
+        // step2/step3 screen.
+        const TERMINAL = [
+          "trial_expired", "cancelled", "refunded", "suspended",
+          "provisioning_failed",
+        ]
+        if (TERMINAL.includes(d.status ?? "")) {
+          const t = deriveUIState(d.status ?? null)
+          setUIState(t)
+          uiStateRef.current = t
+          return
+        }
         if (connectorLiveRef.current) return
         const next = deriveUIState(d.status ?? null)
         setUIState(next)
