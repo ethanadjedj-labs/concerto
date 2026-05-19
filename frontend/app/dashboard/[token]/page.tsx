@@ -255,66 +255,6 @@ function ValueCard({
   )
 }
 
-function StarterPrompt() {
-  const [copied, setCopied] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const text = "Use Concerto to build me a "
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      const ta = document.createElement("textarea")
-      ta.value = text
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand("copy")
-      document.body.removeChild(ta)
-    }
-    setCopied(true)
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div
-      className="mb-5 w-full rounded-xl p-4 text-left"
-      style={{ border: "1px solid #f3d9cd", backgroundColor: "#fffaf7" }}
-    >
-      <p
-        className="text-[13px] font-semibold"
-        style={{ color: "#b3613f" }}
-      >
-        To start, just tell Claude what to build:
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <code
-          className="min-w-0 flex-1 rounded-lg px-3 py-2 font-mono text-[13px]"
-          style={{ backgroundColor: "#fff", border: "1px solid #f3efe5", color: "#191919" }}
-        >
-          &ldquo;Build me a&hellip;&rdquo; <span style={{ color: "#8a847b" }}>— with the Skill on, Concerto runs automatically</span>
-        </code>
-        <button
-          type="button"
-          onClick={copy}
-          className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[12px] font-medium transition-all"
-          style={{ backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
-      <p
-        className="mt-2 text-[12px] leading-relaxed"
-        style={{ color: "#8a847b" }}
-      >
-        Saying &ldquo;Use Concerto&rdquo; is what tells Claude to run the work
-        on your machine. It works in any language.
-      </p>
-    </div>
-  )
-}
-
 function PromptCard({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1544,33 +1484,25 @@ export default function DashboardPage({
                 className="mb-6 mt-1.5 max-w-[22rem] text-[14px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                Concerto is connected. Open Claude and tell it what to
-                build — it runs the work for you.
+                Concerto is connected. Open Claude, describe what you want
+                built, and Concerto orchestrates the work for you.
               </p>
 
-              <div className="w-full">
-                <StarterPrompt />
-              </div>
-
-              <a
-                href={`/dashboard/${params.token}/skill`}
-                className="block w-full rounded-xl px-4 py-3.5 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe" }}
+              <div
+                className="mb-6 w-full rounded-xl px-4 py-4 text-left"
+                style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
               >
-                <div className="flex items-center justify-between gap-3 text-left">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold" style={{ color: "#5b21b6" }}>
-                      Optional · but I&apos;d love you to add this 🙏
-                    </p>
-                    <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#6d28d9" }}>
-                      With one Skill, I build in parallel automatically. 60s.
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[16px]" style={{ color: "#6d28d9" }}>
-                    →
-                  </span>
-                </div>
-              </a>
+                <p className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: "#8a847b" }}>
+                  Just say, for example
+                </p>
+                <p className="mt-1.5 font-mono text-[14px]" style={{ color: "#191919" }}>
+                  &ldquo;Build me a Notion-like app&rdquo;
+                </p>
+                <p className="mt-2 text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+                  Concerto decides whether it&apos;s one focused job or several
+                  parallel workstreams — you don&apos;t have to think about it.
+                </p>
+              </div>
 
               <a
                 href="https://claude.ai"
