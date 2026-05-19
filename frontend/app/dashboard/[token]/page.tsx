@@ -385,6 +385,11 @@ export default function DashboardPage({
 }) {
   const [uiState, setUIState] = useState<UIState>("loading")
   const uiStateRef = useRef<UIState>("loading")
+  // Once the connector is detected, step3 is permanent. Without this lock
+  // the main status poll (status stays "oauth_complete" forever, since
+  // nothing flips it server-side) keeps re-deriving step2 and clobbers the
+  // step3 set by the first-call poll -> infinite step2 loop.
+  const connectorLiveRef = useRef(false)
   const [rawStatus, setRawStatus] = useState<string | null>(null)
   const [dashData, setDashData] = useState<{
     mcp_url?: string
@@ -572,6 +577,7 @@ export default function DashboardPage({
           expires_at: d.expires_at,
           next_renewal_at: d.next_renewal_at,
         })
+        if (connectorLiveRef.current) return
         const next = deriveUIState(d.status ?? null)
         setUIState(next)
         uiStateRef.current = next
@@ -592,7 +598,7 @@ export default function DashboardPage({
   // OAuth safety-net poll — if the buyer flips to oauth_complete by any
   // path (e.g. submit-code finalized server-side), auto-advance.
   useEffect(() => {
-    if (uiState !== "step1" || oauthSuccess) return
+    if (uiState !== "step1" || oauthSuccess || connectorLiveRef.current) return
     const id = setInterval(async () => {
       try {
         const r = await fetch(
@@ -618,6 +624,31 @@ export default function DashboardPage({
     return () => clearInterval(id)
   }, [uiState, oauthSuccess, backendUrl, params.token])
 
+  // Mount-time check: if the connector was already detected (e.g. user
+  // refreshed the page after connecting), lock step3 immediately so the
+  // status poll (still "oauth_complete") cannot drag it back to step2.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r = await fetch(
+          `${backendUrl}/api/buyer/${params.token}/first-call-detected`
+        )
+        const d = await r.json()
+        if (!cancelled && d.detected) {
+          connectorLiveRef.current = true
+          setUIState("step3")
+          uiStateRef.current = "step3"
+        }
+      } catch {
+        // ignore — normal polls will handle it
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [backendUrl, params.token])
+
   // First-call poll — active in step2
   useEffect(() => {
     if (uiState !== "step2") return
@@ -629,6 +660,7 @@ export default function DashboardPage({
         const d = await r.json()
         if (d.detected) {
           clearInterval(id)
+          connectorLiveRef.current = true
           setTimeout(() => {
             setUIState("step3")
             uiStateRef.current = "step3"
