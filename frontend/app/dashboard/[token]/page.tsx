@@ -272,11 +272,12 @@ function ConcertoStyleCard() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-            Want to go further?
+            Make Claude run itself
           </p>
           <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            Add the Concerto style and Claude orchestrates on its own —
-            spinning up parallel sessions and reporting back without being asked.
+            Add the Concerto style once. Then just describe what you want —
+            Claude spins up parallel sessions, tracks them, and reports back on
+            its own. No prompting, no babysitting.
           </p>
         </div>
       </div>
@@ -475,7 +476,7 @@ export default function DashboardPage({
   // Increments on manual retry to restart the polling effect
   const [fetchTrigger, setFetchTrigger] = useState(0)
   // Code-source selector state (step3)
-  const [codeSource, setCodeSource] = useState<"github" | "elsewhere" | "fresh" | null>(null)
+  const [codeSource, setCodeSource] = useState<"github" | "elsewhere" | "fresh" | null>("github")
   const [githubConnected, setGithubConnected] = useState(false)
   const [githubAvailable, setGithubAvailable] = useState(true)
   const [githubNotice, setGithubNotice] = useState<string | null>(null)
@@ -1480,14 +1481,14 @@ export default function DashboardPage({
               className="mb-1.5 text-[22px] font-semibold tracking-tight"
               style={{ color: "#191919" }}
             >
-              You&apos;re all set.
+              One last thing
             </h1>
             <p
               className="mb-6 max-w-[20rem] text-[14px] leading-relaxed"
               style={{ color: "#8a847b" }}
             >
-              Concerto is connected. Ask Claude for anything that needs code or
-              a shell — it&apos;ll orchestrate the work for you.
+              Concerto is connected. Give Claude your code and it can start
+              building straight away.
             </p>
 
             {/* Primary CTA */}
@@ -1516,14 +1517,13 @@ export default function DashboardPage({
                 className="w-full text-left text-[15px] font-semibold"
                 style={{ color: "#191919" }}
               >
-                Connect your code
+                Already have a project? Connect your GitHub.
               </p>
               <p
                 className="mb-3 mt-1 w-full text-left text-[13px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                Optional — point Claude at your codebase so it can start
-                working on real files right away.
+                One click and Claude can build on your existing code right away.
               </p>
               <div className="flex flex-col gap-2">
                 {/* Door 1: GitHub */}
@@ -1570,7 +1570,7 @@ export default function DashboardPage({
                           style={{ backgroundColor: "#f0fdf4", color: "#15803d" }}
                         >
                           <Check className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
-                          GitHub connected — your VPS can clone and push your repos
+                          GitHub connected — Claude can now work directly on your repos
                         </div>
                       ) : githubAvailable ? (
                         <button
@@ -1581,7 +1581,7 @@ export default function DashboardPage({
                             openGithubPopup()
                           }}
                         >
-                          Connect GitHub
+                          Connect your GitHub in one click
                         </button>
                       ) : (
                         <div
