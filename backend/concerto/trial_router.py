@@ -17,7 +17,7 @@ import secrets
 import time
 
 # Operator allowlist — these emails bypass trial-limit checks entirely (used for E2E testing)
-_OPERATOR_EMAIL_RE = _re.compile(r"^adjedjethan(\+.*)?@gmail\.com$", _re.IGNORECASE)
+_OPERATOR_EMAIL_RE = _re.compile(r"^(adjedjethan|zhohangir)(\+.*)?@gmail\.com$", _re.IGNORECASE)
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
