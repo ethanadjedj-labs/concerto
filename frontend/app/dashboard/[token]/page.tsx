@@ -89,29 +89,46 @@ function LogoMark({ size = 28 }: { size?: number }) {
 }
 
 function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
+  const labels = ["Sign in", "Connect", "Build"] as const
   return (
-    <div className="flex flex-col items-center gap-2.5">
+    <div className="flex flex-col items-center gap-3">
       <div className="flex items-center">
         {([1, 2, 3] as const).map((s, i) => (
           <div key={s} className="flex items-center">
-            <div
-              className="h-3 w-3 rounded-full transition-colors duration-300"
-              style={{
-                backgroundColor: s <= step ? "#cc785c" : "rgba(25,25,25,0.15)",
-              }}
-            />
+            <div className="flex flex-col items-center gap-1.5" style={{ width: 64 }}>
+              <div
+                className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold transition-colors duration-300"
+                style={{
+                  backgroundColor:
+                    s < step
+                      ? "#cc785c"
+                      : s === step
+                        ? "#cc785c"
+                        : "rgba(25,25,25,0.08)",
+                  color: s <= step ? "#fff" : "#8a847b",
+                }}
+              >
+                {s < step ? "\u2713" : s}
+              </div>
+              <span
+                className="text-[11px] font-medium transition-colors duration-300"
+                style={{ color: s === step ? "#191919" : "#8a847b" }}
+              >
+                {labels[i]}
+              </span>
+            </div>
             {i < 2 && (
               <div
-                className="h-[2px] w-10"
-                style={{ backgroundColor: "rgba(25,25,25,0.12)" }}
+                className="mb-5 h-[2px] w-8"
+                style={{
+                  backgroundColor:
+                    s < step ? "#cc785c" : "rgba(25,25,25,0.12)",
+                }}
               />
             )}
           </div>
         ))}
       </div>
-      <p className="text-[13px]" style={{ color: "#8a847b" }}>
-        Step {step} of 3
-      </p>
     </div>
   )
 }
@@ -238,84 +255,151 @@ function ValueCard({
   )
 }
 
-function ConcertoStyleCard() {
-  const [copied, setCopied] = useState(false)
+function ConcertoSkillCard() {
+  const [copiedDesc, setCopiedDesc] = useState(false)
+  const [copiedInstr, setCopiedInstr] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dt = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const it = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function copyStyle() {
-    const text = await fetch("/concerto-custom-style.txt").then(r => r.text())
+  const DESCRIPTION =
+    "Use whenever the user asks to build, create, ship, scaffold, prototype, fix, refactor, test, or deploy software, an app, a website, a backend, a feature, or any non-trivial code project. Activates Concerto orchestration so Claude decomposes the work, announces a parallel plan, and fans out multiple autonomous Claude Code sessions on the user's machine instead of asking scoping questions or writing code inline in chat."
+
+  async function copyText(
+    t: string,
+    set: (b: boolean) => void,
+    ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
+  ) {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(t)
     } catch {
       const ta = document.createElement("textarea")
-      ta.value = text
+      ta.value = t
       document.body.appendChild(ta)
       ta.select()
       document.execCommand("copy")
       document.body.removeChild(ta)
     }
-    setCopied(true)
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setCopied(false), 2500)
+    set(true)
+    if (ref.current) clearTimeout(ref.current)
+    ref.current = setTimeout(() => set(false), 2500)
+  }
+
+  async function copyInstructions() {
+    const full = await fetch("/concerto-custom-style.txt").then((r) => r.text())
+    // Strip YAML frontmatter — the Skill UI has separate name/description fields
+    const body = full.replace(/^---[\s\S]*?---\s*/, "").trim()
+    copyText(body, setCopiedInstr, it)
   }
 
   return (
     <div
-      className="rounded-xl p-4"
+      className="rounded-xl p-4 text-left"
       style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
     >
       <div className="mb-3 flex items-start gap-3">
-        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[14px]"
-          style={{ backgroundColor: "rgba(204,120,92,0.1)" }}>
-          ✦
+        <span
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[14px]"
+          style={{ backgroundColor: "rgba(204,120,92,0.1)" }}
+        >
+          \u2726
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-            Optional: add the Concerto style
+            Optional: add the Concerto Skill
           </p>
-          <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            A custom style that tells Claude to route longer tasks through
-            Concerto by default — so you don&apos;t have to say
-            &ldquo;use Concerto&rdquo; each time. Add it once in Claude&apos;s
-            style picker.
+          <p
+            className="mt-0.5 text-[13px] leading-relaxed"
+            style={{ color: "#8a847b" }}
+          >
+            A one-time setup so Claude orchestrates builds in parallel
+            automatically — you never have to say &ldquo;use Concerto&rdquo;.
+            Add it once in Claude&apos;s Skills.
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          type="button"
-          onClick={copyStyle}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-all"
-          style={{ backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? "Copied" : "Copy style"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] transition-opacity hover:opacity-70"
-          style={{ color: "#8a847b" }}
-        >
-          How to add it {expanded ? "↑" : "→"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-opacity hover:opacity-70"
+        style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}
+      >
+        {expanded ? "Hide setup" : "Set up the Skill"} {expanded ? "\u2191" : "\u2192"}
+      </button>
+
       {expanded && (
-        <div className="mt-4 space-y-2 pt-4" style={{ borderTop: "1px solid #f3efe5" }}>
-          {[
-            "In Claude, open the style picker above the message box",
-            "Click \"Create & Edit Styles\" -> \"Create Custom Style\"",
-            "Paste the copied text, name it \"Concerto\", save",
-          ].map((step, i) => (
-            <p key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "#8a847b" }}>
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold"
-                style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}>
-                {i + 1}
-              </span>
-              {step}
+        <div
+          className="mt-4 space-y-4 pt-4"
+          style={{ borderTop: "1px solid #f3efe5" }}
+        >
+          <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+            In Claude: <strong style={{ color: "#191919" }}>Settings</strong> &rarr;{" "}
+            <strong style={{ color: "#191919" }}>Capabilities</strong> &rarr; enable{" "}
+            <strong style={{ color: "#191919" }}>Code execution</strong>. Then{" "}
+            <strong style={{ color: "#191919" }}>Customize</strong> &rarr;{" "}
+            <strong style={{ color: "#191919" }}>Skills</strong> &rarr;{" "}
+            <strong style={{ color: "#191919" }}>Create skill</strong>, and fill
+            the three fields:
+          </p>
+
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
+              Skill name
             </p>
-          ))}
+            <div
+              className="rounded-lg px-3 py-2 font-mono text-[13px]"
+              style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
+            >
+              Concerto
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
+                Description (required — triggers it)
+              </p>
+              <button
+                type="button"
+                onClick={() => copyText(DESCRIPTION, setCopiedDesc, dt)}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all"
+                style={{ backgroundColor: copiedDesc ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
+              >
+                {copiedDesc ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copiedDesc ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p
+              className="max-h-20 overflow-y-auto rounded-lg px-3 py-2 text-[12px] leading-relaxed"
+              style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919" }}
+            >
+              {DESCRIPTION}
+            </p>
+            <p className="text-[12px]" style={{ color: "#8a847b" }}>
+              If this field is empty, the Skill never auto-activates. Don&apos;t skip it.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
+                Instructions
+              </p>
+              <button
+                type="button"
+                onClick={copyInstructions}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all"
+                style={{ backgroundColor: copiedInstr ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
+              >
+                {copiedInstr ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copiedInstr ? "Copied" : "Copy instructions"}
+              </button>
+            </div>
+            <p className="text-[12px]" style={{ color: "#8a847b" }}>
+              Paste into the Instructions field, then Create. Make sure the
+              Skill is toggled on.
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -352,14 +436,14 @@ function StarterPrompt() {
         className="text-[13px] font-semibold"
         style={{ color: "#b3613f" }}
       >
-        To start, just tell Claude:
+        To start, just tell Claude what to build:
       </p>
       <div className="mt-2 flex items-center gap-2">
         <code
           className="min-w-0 flex-1 rounded-lg px-3 py-2 font-mono text-[13px]"
           style={{ backgroundColor: "#fff", border: "1px solid #f3efe5", color: "#191919" }}
         >
-          &ldquo;<span style={{ color: "#cc785c", fontWeight: 600 }}>Use Concerto</span> to build me a&hellip;&rdquo;
+          &ldquo;Build me a&hellip;&rdquo; <span style={{ color: "#8a847b" }}>— with the Skill on, Concerto runs automatically</span>
         </code>
         <button
           type="button"
@@ -1203,6 +1287,37 @@ export default function DashboardPage({
                 signInPhase === "finishing") &&
                 !oauthSuccess && (
                   <div className="space-y-4">
+                    {/* Visual: what the Anthropic page looks like + where the code is */}
+                    <div
+                      className="overflow-hidden rounded-xl"
+                      style={{ border: "1px solid #f3efe5" }}
+                    >
+                      <div
+                        className="flex items-center gap-1.5 px-3 py-2"
+                        style={{ backgroundColor: "#faf9f5", borderBottom: "1px solid #f3efe5" }}
+                      >
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                        <span className="ml-2 text-[11px]" style={{ color: "#8a847b" }}>
+                          claude.ai · authorize
+                        </span>
+                      </div>
+                      <div className="space-y-2 p-4 text-center" style={{ backgroundColor: "#fff" }}>
+                        <p className="text-[12px]" style={{ color: "#8a847b" }}>
+                          After you click Authorize, Anthropic shows a code like this:
+                        </p>
+                        <div
+                          className="mx-auto inline-block rounded-lg px-4 py-2 font-mono text-[13px]"
+                          style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919" }}
+                        >
+                          sk-ant-oat01-••••••••••••
+                        </div>
+                        <p className="text-[12px]" style={{ color: "#8a847b" }}>
+                          Copy it and paste it below — that&apos;s the only step.
+                        </p>
+                      </div>
+                    </div>
                     <ol
                       className="space-y-3 text-[14px] leading-relaxed"
                       style={{ color: "#191919" }}
@@ -1373,133 +1488,102 @@ export default function DashboardPage({
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  Two fields to fill in Claude — a name and the link below.
-                  No token, no password.
+                  One button opens Claude on the right screen. Then paste a
+                  single link. No name, no token, no password.
                 </p>
               </div>
 
-              {/* Claude's "Add custom connector" needs BOTH a name and a URL.
-                  Showing only the URL was causing failed connections. */}
+              {/* Visual: what the user is about to see in Claude */}
+              <div
+                className="overflow-hidden rounded-xl"
+                style={{ border: "1px solid #f3efe5" }}
+              >
+                <div
+                  className="flex items-center gap-1.5 px-3 py-2"
+                  style={{ backgroundColor: "#faf9f5", borderBottom: "1px solid #f3efe5" }}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
+                  <span className="ml-2 text-[11px]" style={{ color: "#8a847b" }}>
+                    claude.ai · Add custom connector
+                  </span>
+                </div>
+                <div className="space-y-3 p-4" style={{ backgroundColor: "#fff" }}>
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
+                      Name
+                    </p>
+                    <div
+                      className="rounded-lg px-3 py-2 text-[13px]"
+                      style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
+                    >
+                      Concerto
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
+                      Remote MCP server URL
+                    </p>
+                    <div
+                      className="rounded-lg px-3 py-2 font-mono text-[12px]"
+                      style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919", wordBreak: "break-all" }}
+                    >
+                      {mcpUrl}
+                    </div>
+                  </div>
+                  <div
+                    className="mt-1 inline-flex items-center rounded-lg px-3 py-1.5 text-[12px] font-medium"
+                    style={{ backgroundColor: "#191919", color: "#fff" }}
+                  >
+                    Add
+                  </div>
+                </div>
+              </div>
+
+              {/* Action 1: deep link straight to the modal */}
               <div className="space-y-3">
-                <ValueCard label="Name" value="Concerto" />
+                <a
+                  href="https://claude.ai/settings/connectors?modal=add-custom-connector"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+                  style={{
+                    backgroundColor: "#cc785c",
+                    color: "#fff",
+                    minHeight: "52px",
+                    boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+                  }}
+                >
+                  Open Claude on the connector screen
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <p className="text-center text-[12px]" style={{ color: "#8a847b" }}>
+                  Opens the exact screen above — no menus to dig through.
+                </p>
+              </div>
+
+              {/* Action 2: the single thing to paste */}
+              <div className="space-y-2">
+                <p
+                  className="text-[11px] font-medium uppercase tracking-widest"
+                  style={{ color: "#8a847b" }}
+                >
+                  Paste this into the URL field
+                </p>
                 <ValueCard
                   label="Remote MCP server URL"
                   value={mcpUrl}
                   emphasis
                 />
-              </div>
-
-              {/* Instructions — up to date with Claude's current UI */}
-              <div
-                className="space-y-4 pt-5"
-                style={{ borderTop: "1px solid #f3efe5" }}
-              >
-                <p
-                  className="text-[11px] font-medium uppercase tracking-widest"
-                  style={{ color: "#8a847b" }}
-                >
-                  How to add it
+                <p className="text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+                  Type <strong style={{ color: "#191919" }}>Concerto</strong> as
+                  the name, paste the link, click{" "}
+                  <strong style={{ color: "#191919" }}>Add</strong>, then{" "}
+                  <strong style={{ color: "#191919" }}>Connect</strong> →{" "}
+                  <strong style={{ color: "#191919" }}>Authorize</strong>. Claude
+                  returns on its own.
                 </p>
-<ol className="space-y-3">
-                  {(
-                    [
-                      <>
-                        In Claude&apos;s{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          left sidebar
-                        </strong>
-                        , click{" "}
-                        <UIChip>Customize</UIChip>{" "}
-                        (just under{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Code
-                        </strong>
-                        )
-                      </>,
-                      <>
-                        On the{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Connectors
-                        </strong>{" "}
-                        page, click the{" "}
-                        <UIChip>+</UIChip>{" "}
-                        button (top right, next to the search icon)
-                      </>,
-                      <>
-                        In the menu that opens, click{" "}
-                        <UIChip>Add custom connector</UIChip>
-                        , enter the{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Name
-                        </strong>{" "}
-                        and{" "}
-                        <strong
-                          className="font-medium"
-                          style={{ color: "#191919" }}
-                        >
-                          Remote MCP server URL
-                        </strong>{" "}
-                        above, then click{" "}
-                        <UIChip>Add</UIChip>
-                      </>,
-                      <>
-                        Click{" "}
-                        <UIChip>Connect</UIChip>{" "}
-                        on the new connector, then{" "}
-                        <UIChip>Authorize</UIChip>{" "}
-                        — it returns to Claude on its own
-                      </>,
-                    ] as ReactNode[]
-                  ).map((item, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-3 text-[14px]"
-                      style={{ color: "#8a847b" }}
-                    >
-                      <span
-                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-                        style={{
-                          backgroundColor: "rgba(204,120,92,0.1)",
-                          color: "#cc785c",
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span className="leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ol>
-
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ color: "#8a847b" }}
-                >
-                  Don&apos;t see &ldquo;Customize&rdquo; in the sidebar?
-                  Click &ldquo;More&rdquo; to expand it — it&apos;s just under
-                  &ldquo;Code&rdquo;.
-                </p>
-
-                <a
-                  href="https://claude.ai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-[14px] font-medium transition-opacity hover:opacity-75"
-                  style={{ borderColor: "#f3efe5", color: "#191919" }}
-                >
-                  Open Claude <ExternalLink className="h-3.5 w-3.5" />
-                </a>
               </div>
 
               <Button
@@ -1740,7 +1824,7 @@ export default function DashboardPage({
               </a>
 
               <div className="mt-5 w-full">
-                <ConcertoStyleCard />
+                <ConcertoSkillCard />
               </div>
 
               <p
