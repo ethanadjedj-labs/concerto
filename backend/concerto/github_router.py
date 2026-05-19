@@ -134,7 +134,13 @@ async def github_status(token: str):
     buyer = await db.get_buyer(token)
     if not buyer:
         raise HTTPException(status_code=404, detail="Buyer not found")
-    return {"connected": bool(buyer.get("github_token"))}
+    # `available` tells the UI whether GitHub OAuth is configured at all, so
+    # it can present the option as "coming soon" instead of navigating the
+    # user to a raw {"error":"github_not_configured"} JSON page.
+    return {
+        "connected": bool(buyer.get("github_token")),
+        "available": bool(_GITHUB_CLIENT_ID),
+    }
 
 
 @router.get("/api/buyer/{token}/git-credentials")

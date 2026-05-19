@@ -138,10 +138,12 @@ function ValueCard({
   label,
   value,
   secret = false,
+  emphasis = false,
 }: {
   label: string
   value: string
   secret?: boolean
+  emphasis?: boolean
 }) {
   const [revealed, setRevealed] = useState(!secret)
   const [copied, setCopied] = useState(false)
@@ -171,12 +173,20 @@ function ValueCard({
 
   return (
     <div
-      className="rounded-xl p-4"
-      style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
+      className="rounded-xl p-4 transition-shadow"
+      style={
+        emphasis
+          ? {
+              border: "1.5px solid #cc785c",
+              backgroundColor: "#fffaf7",
+              boxShadow: "0 2px 10px rgba(204,120,92,0.10)",
+            }
+          : { border: "1px solid #f3efe5", backgroundColor: "#fff" }
+      }
     >
       <p
-        className="mb-2 text-[11px] font-medium uppercase tracking-widest"
-        style={{ color: "#8a847b" }}
+        className="mb-2 text-[11px] font-semibold uppercase tracking-widest"
+        style={{ color: emphasis ? "#b3613f" : "#8a847b" }}
       >
         {label}
       </p>
@@ -467,6 +477,7 @@ export default function DashboardPage({
   // Code-source selector state (step3)
   const [codeSource, setCodeSource] = useState<"github" | "elsewhere" | "fresh" | null>(null)
   const [githubConnected, setGithubConnected] = useState(false)
+  const [githubAvailable, setGithubAvailable] = useState(true)
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
@@ -713,6 +724,8 @@ export default function DashboardPage({
         )
         if (r.ok) {
           const d = await r.json()
+          if (typeof d.available === "boolean")
+            setGithubAvailable(d.available)
           if (d.connected) setGithubConnected(true)
         }
       } catch {
@@ -1239,7 +1252,11 @@ export default function DashboardPage({
                   Showing only the URL was causing failed connections. */}
               <div className="space-y-3">
                 <ValueCard label="Name" value="Concerto" />
-                <ValueCard label="Remote MCP server URL" value={mcpUrl} />
+                <ValueCard
+                  label="Remote MCP server URL"
+                  value={mcpUrl}
+                  emphasis
+                />
               </div>
 
               {/* Instructions — up to date with Claude's current UI */}
@@ -1422,12 +1439,23 @@ export default function DashboardPage({
             </a>
 
             {/* Connect your code — 3-door selector */}
-            <div className="mt-5 w-full">
+            <div className="mt-8 w-full">
+              <div
+                className="mb-4 w-full"
+                style={{ borderTop: "1px solid #efeae0" }}
+              />
               <p
-                className="mb-2 w-full text-left text-[11px] font-medium uppercase tracking-widest"
-                style={{ color: "#b5ab9c" }}
+                className="w-full text-left text-[15px] font-semibold"
+                style={{ color: "#191919" }}
               >
                 Connect your code
+              </p>
+              <p
+                className="mb-3 mt-1 w-full text-left text-[13px] leading-relaxed"
+                style={{ color: "#8a847b" }}
+              >
+                Optional — point Claude at your codebase so it can start
+                working on real files right away.
               </p>
               <div className="flex flex-col gap-2">
                 {/* Door 1: GitHub */}
@@ -1464,7 +1492,7 @@ export default function DashboardPage({
                           <Check className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
                           GitHub connected — your VPS can clone and push your repos
                         </div>
-                      ) : (
+                      ) : githubAvailable ? (
                         <button
                           className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition-opacity hover:opacity-90"
                           style={{ backgroundColor: "#24292f", color: "#fff" }}
@@ -1475,6 +1503,26 @@ export default function DashboardPage({
                         >
                           Connect GitHub
                         </button>
+                      ) : (
+                        <div
+                          className="rounded-lg px-3 py-2.5 text-[13px] leading-relaxed"
+                          style={{
+                            backgroundColor: "#faf7f2",
+                            color: "#8a847b",
+                            border: "1px solid #f3efe5",
+                          }}
+                        >
+                          Direct GitHub connect is coming soon. For now, ask
+                          Claude to clone your repo with a{" "}
+                          <code
+                            className="rounded px-1 py-0.5 font-mono text-[12px]"
+                            style={{ backgroundColor: "#f3efe5", color: "#191919" }}
+                          >
+                            git clone
+                          </code>{" "}
+                          URL (use a token in the URL for private repos) — it
+                          works today.
+                        </div>
                       )}
                     </div>
                   )}
@@ -1559,15 +1607,19 @@ export default function DashboardPage({
               </div>
             </div>
 
-            {/* Go further — directly under the CTA */}
-            <div className="mt-3 w-full">
+            {/* Go further — visually distinct, lower-priority */}
+            <div className="mt-7 w-full">
               <ConcertoStyleCard />
             </div>
 
             {/* Real, enticing example prompts */}
+            <div
+              className="mb-4 mt-8 w-full"
+              style={{ borderTop: "1px solid #efeae0" }}
+            />
             <p
-              className="mb-3 mt-7 w-full text-left text-[11px] font-medium uppercase tracking-widest"
-              style={{ color: "#b5ab9c" }}
+              className="mb-3 w-full text-left text-[15px] font-semibold"
+              style={{ color: "#191919" }}
             >
               Things to try
             </p>
