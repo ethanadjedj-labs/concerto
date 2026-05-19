@@ -1142,24 +1142,33 @@ export default function DashboardPage({
                     </p>
 
                     <div className="space-y-2">
+                      <label
+                        htmlFor="oauth-code-input"
+                        className="block text-[12px] font-semibold uppercase tracking-widest"
+                        style={{ color: "#b3613f" }}
+                      >
+                        Paste your authorization code here
+                      </label>
                       <input
+                        id="oauth-code-input"
                         type="text"
                         value={oauthCode}
                         onChange={(e) => setOauthCode(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") submitCode()
                         }}
-                        placeholder="Paste authorization code"
+                        placeholder="Paste the code from Anthropic..."
                         autoComplete="off"
                         spellCheck={false}
+                        autoFocus
                         disabled={
                           signInPhase === "submitting" ||
                           signInPhase === "finishing"
                         }
-                        className="w-full rounded-xl px-4 py-3 text-[14px] outline-none"
+                        className="w-full rounded-xl px-4 py-3.5 text-[15px] font-mono outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(204,120,92,0.15)]"
                         style={{
-                          backgroundColor: "#faf9f5",
-                          border: "1px solid #f3efe5",
+                          backgroundColor: "#fff",
+                          border: "2px solid #cc785c",
                           color: "#191919",
                         }}
                       />
