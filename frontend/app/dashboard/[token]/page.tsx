@@ -478,6 +478,7 @@ export default function DashboardPage({
   const [codeSource, setCodeSource] = useState<"github" | "elsewhere" | "fresh" | null>(null)
   const [githubConnected, setGithubConnected] = useState(false)
   const [githubAvailable, setGithubAvailable] = useState(true)
+  const [githubNotice, setGithubNotice] = useState<string | null>(null)
 
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.concerto.run"
@@ -708,9 +709,27 @@ export default function DashboardPage({
   // Read ?github=connected from the URL on mount (set after GitHub OAuth callback)
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search)
-    if (sp.get("github") === "connected") {
+    const g = sp.get("github")
+    if (g === "connected") {
       setGithubConnected(true)
       setCodeSource("github")
+    } else if (g === "cancelled") {
+      setCodeSource("github")
+      setGithubNotice("GitHub connection cancelled — you can try again anytime.")
+    } else if (g === "unavailable") {
+      setCodeSource("github")
+      setGithubNotice(null)
+    } else if (g === "error") {
+      setCodeSource("github")
+      setGithubNotice(
+        "Something went wrong connecting GitHub. Please try again, or use a git clone URL for now."
+      )
+    }
+    if (g) {
+      // strip the param so a refresh doesn't replay the notice
+      const url = new URL(window.location.href)
+      url.searchParams.delete("github")
+      window.history.replaceState({}, "", url.toString())
     }
   }, [])
 
@@ -1493,6 +1512,18 @@ export default function DashboardPage({
                   </div>
                   {codeSource === "github" && (
                     <div className="mt-3">
+                      {githubNotice && !githubConnected && (
+                        <div
+                          className="mb-3 rounded-lg px-3 py-2 text-[13px] leading-relaxed"
+                          style={{
+                            backgroundColor: "#fef8f5",
+                            color: "#b3613f",
+                            border: "1px solid #f3d9cd",
+                          }}
+                        >
+                          {githubNotice}
+                        </div>
+                      )}
                       {githubConnected ? (
                         <div
                           className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium"

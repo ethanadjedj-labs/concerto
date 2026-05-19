@@ -36,18 +36,26 @@ def _github_configured() -> bool:
     return bool(_GITHUB_CLIENT_ID and _GITHUB_CLIENT_SECRET)
 
 
+def _dash(token: str, status: str) -> RedirectResponse:
+    """Always send the user back to their dashboard with a readable status
+    instead of dumping a raw JSON error/HTTPException page in the browser."""
+    return RedirectResponse(
+        url=f"{_FRONTEND_URL}/dashboard/{token}?github={status}",
+        status_code=302,
+    )
+
+
 @router.get("/api/buyer/{token}/github/connect")
 async def github_connect(token: str):
     """Redirect the browser to GitHub's OAuth authorization page."""
     if not _github_configured():
-        return JSONResponse(
-            status_code=503,
-            content={"error": "github_not_configured"},
-        )
+        # Dormant feature: never show a raw JSON page -- bounce back to the
+        # dashboard, which renders the clean "coming soon" card.
+        return _dash(token, "unavailable")
 
     buyer = await db.get_buyer(token)
     if not buyer:
-        raise HTTPException(status_code=404, detail="Buyer not found")
+        return _dash(token, "error")
 
     redirect_uri = f"{_API_BASE}/api/buyer/{token}/github/callback"
     auth_url = (
@@ -55,7 +63,10 @@ async def github_connect(token: str):
         f"?client_id={_GITHUB_CLIENT_ID}"
         f"&redirect_uri={redirect_uri}"
         f"&state={token}"
-        "&scope=repo"
+        # `repo` is broad; `public_repo` covers the common case (clone/push
+        # public repos). Private-repo users can still paste a PAT. Narrower
+        # scope = less scary GitHub consent screen = higher conversion.
+        "&scope=public_repo"
     )
     return RedirectResponse(url=auth_url, status_code=302)
 
@@ -64,22 +75,24 @@ async def github_connect(token: str):
 async def github_callback(token: str, request: Request):
     """Exchange GitHub OAuth code for an access token and persist it."""
     if not _github_configured():
-        raise HTTPException(status_code=503, detail="GitHub App not configured")
+        return _dash(token, "unavailable")
 
     query = dict(request.query_params)
     code = query.get("code", "")
     state = query.get("state", "")
 
+    # state must equal the buyer token (basic CSRF binding). On mismatch or
+    # an explicit user denial, bounce cleanly to the dashboard.
     if state != token:
-        raise HTTPException(status_code=400, detail="State mismatch")
+        return _dash(token, "error")
 
     buyer = await db.get_buyer(token)
     if not buyer:
-        raise HTTPException(status_code=404, detail="Buyer not found")
+        return _dash(token, "error")
 
     if not code:
-        error = query.get("error", "access_denied")
-        raise HTTPException(status_code=400, detail=f"GitHub OAuth error: {error}")
+        # GitHub sends ?error=access_denied when the user clicks "Cancel".
+        return _dash(token, "cancelled")
 
     redirect_uri = f"{_API_BASE}/api/buyer/{token}/github/callback"
 
@@ -97,35 +110,27 @@ async def github_callback(token: str, request: Request):
             )
     except httpx.RequestError as exc:
         logger.exception("GitHub token exchange network error: %s", exc)
-        raise HTTPException(
-            status_code=502,
-            detail="GitHub token exchange failed (network error)",
-        )
+        return _dash(token, "error")
 
     if resp.status_code != 200:
-        raise HTTPException(
-            status_code=502,
-            detail=f"GitHub token exchange failed (HTTP {resp.status_code})",
-        )
+        logger.warning("GitHub token exchange HTTP %s", resp.status_code)
+        return _dash(token, "error")
 
     try:
         data = resp.json()
     except Exception:
-        raise HTTPException(status_code=502, detail="GitHub returned non-JSON response")
+        logger.warning("GitHub returned non-JSON response")
+        return _dash(token, "error")
 
     access_token = data.get("access_token")
     if not access_token:
         gh_error = data.get("error", "unknown_error")
         logger.warning("GitHub OAuth error for token %.8s: %s", token, gh_error)
-        raise HTTPException(status_code=400, detail=f"GitHub OAuth error: {gh_error}")
+        return _dash(token, "error")
 
     await db.update_buyer(token, github_token=access_token)
     logger.info("GitHub token stored for buyer %.8s", token)
-
-    return RedirectResponse(
-        url=f"{_FRONTEND_URL}/dashboard/{token}?github=connected",
-        status_code=302,
-    )
+    return _dash(token, "connected")
 
 
 @router.get("/api/buyer/{token}/github/status")
