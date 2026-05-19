@@ -21,9 +21,14 @@ package_upgrade: false
 # phase) and our runcmd (final phase) run -- otherwise both hang indefinitely
 # waiting for /var/lib/dpkg/lock-frontend held by DO's unattended-upgrades.
 bootcmd:
-  - ["systemctl", "stop", "unattended-upgrades.service", "apt-daily.service", "apt-daily-upgrade.service"]
-  - ["systemctl", "disable", "apt-daily.timer", "apt-daily-upgrade.timer"]
-  - ["bash", "-c", "while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 1; done; true"]
+  # `systemctl stop` does NOT kill an unattended-upgrade ALREADY running, and a
+  # bare `while fuser ... lock` wait has no timeout -> cloud-init can hang
+  # forever (observed in the field). Mask the services so they cannot relaunch,
+  # actively kill any running apt/unattended process, then wait for the lock
+  # with a BOUNDED timeout and force-break it if it is still held.
+  - ["bash", "-c", "systemctl stop unattended-upgrades.service apt-daily.service apt-daily-upgrade.service apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; systemctl mask unattended-upgrades.service apt-daily.service apt-daily-upgrade.service apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; true"]
+  - ["bash", "-c", "pkill -TERM -f 'unattended-upgr|apt.systemd.daily' 2>/dev/null; sleep 3; pkill -KILL -f 'unattended-upgr|apt.systemd.daily' 2>/dev/null; true"]
+  - ["bash", "-c", "for i in $(seq 1 60); do fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock >/dev/null 2>&1 || exit 0; sleep 2; done; pkill -KILL -f 'unattended-upgr|apt|dpkg' 2>/dev/null; rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock; dpkg --configure -a 2>/dev/null; true"]
 
 # --- SSH ---------------------------------------------------------------------
 # F4: ssh_authorized_keys is processed by cloud-init BEFORE runcmd executes,
