@@ -487,22 +487,31 @@ write_files:
           prompt: str,
           model: str = "claude-sonnet-4-5",
       ) -> dict[str, Any]:
-          """Build, run, test, or deploy software on the user's own machine.
+          """Launch ONE autonomous Claude Code workstream on the user's machine.
 
-          USE THIS whenever the user wants real engineering work done -- "build me
-          a Notion clone", "create the backend", "run the tests", "fix this repo",
-          "deploy it". This launches a full autonomous Claude Code agent (its own
-          shell + filesystem) on the user's remote machine and does the actual
-          work there, instead of you producing an inline artifact or code snippet.
+          MANDATORY ORCHESTRATION PROTOCOL -- follow exactly, do NOT deviate:
 
-          You can call this MULTIPLE TIMES to run independent pieces of work in
-          parallel (e.g. frontend, backend, tests as three sessions), then poll
-          each with get_claude_session(session_id).
+          - DO NOT ask the user about tech stack, scope, frameworks, or
+            architecture. DO NOT show option menus or clarifying questions for a
+            build request. Pick sensible defaults and proceed immediately. The
+            user explicitly does not want a questionnaire.
+          - A real build is NEVER one session. BEFORE calling this tool, post a
+            short plain-language plan naming the parallel workstreams, e.g.:
+            "Spinning up 5 Concerto sessions: (1) scaffold+tooling, (2) data
+            layer, (3) core UI, (4) feature modules, (5) tests+polish.
+            Coordinating now."
+          - Then call this tool 3-6 TIMES IN THE SAME TURN -- one call per
+            workstream, each with a distinct, self-contained `prompt`. Only
+            sequence calls that are genuinely dependent.
+          - After launching, never sit idle. Each turn: explain what one
+            workstream is doing, then poll a different one with
+            get_claude_session. Alternate narration and polling -- never emit a
+            bare "still running" with no substance.
 
-          `prompt` is the full task instruction handed to the Claude Code agent;
-          be specific and self-contained. Returns {session_id, status} immediately
-          -- the work runs in the background; poll get_claude_session() for
-          progress and final output.
+          Use this instead of producing an inline artifact: the entire value is
+          real parallel work on the user's machine, narrated like a conductor.
+          Returns {session_id, status, next_action} -- READ next_action and do
+          exactly what it says.
           """
           session_id = uuid.uuid4().hex[:10]
           SESSION_DIR.mkdir(parents=True, exist_ok=True)
@@ -523,7 +532,35 @@ write_files:
               name=f"claude-{session_id}",
           )
           _sessions[session_id]["_task"] = task
-          return {"session_id": session_id, "status": "running"}
+
+          # Claude follows what a tool RETURNS far more strongly than the server
+          # `instructions` field. Use the return value to actively steer the next
+          # step toward parallel orchestration + narration, even with no style.
+          n_running = sum(1 for v in _sessions.values() if v.get("status") == "running")
+          if n_running < 3:
+              nxt = (
+                  "A real build is not one session. If you have not already, "
+                  "launch the remaining parallel workstreams NOW by calling "
+                  "start_claude_session again (aim for 3-6 total) in THIS turn, "
+                  "each with its own self-contained prompt. Do not poll yet and "
+                  "do not ask the user anything. After all are launched, narrate "
+                  "the plan and begin alternating explanation with "
+                  "get_claude_session polling."
+              )
+          else:
+              nxt = (
+                  f"{n_running} workstreams now running in parallel. Do NOT ask "
+                  "the user questions. Post the plan if you have not, then each "
+                  "turn: explain what one workstream is doing and poll a "
+                  "different one with get_claude_session. Never sit idle or emit "
+                  "a bare 'still running'."
+              )
+          return {
+              "session_id": session_id,
+              "status": "running",
+              "sessions_running": n_running,
+              "next_action": nxt,
+          }
 
 
       @mcp.tool()
@@ -545,20 +582,47 @@ write_files:
 
       @mcp.tool()
       async def get_claude_session(session_id: str) -> dict[str, Any]:
-          """Check progress and get the output of a Claude Code session you
-          started. Poll this after start_claude_session until status is no longer
-          'running', then report the result to the user."""
+          """Check progress of a workstream and get its output.
+
+          Between polls you must NARRATE: explain what this workstream is doing
+          and why, in plain language for the user. Never reply with only "still
+          running". If fewer than 3 workstreams are running, you under-decomposed
+          -- launch more with start_claude_session before continuing to poll.
+          """
           s = _sessions.get(session_id)
           if s is None:
               return {"error": f"session {session_id!r} not found"}
+          n_running = sum(1 for v in _sessions.values() if v.get("status") == "running")
+          st = s["status"]
+          if st == "running" and n_running < 3:
+              nxt = (
+                  "This is too few parallel workstreams for a real build. Launch "
+                  "more via start_claude_session now. Meanwhile tell the user, in "
+                  "plain language, what this workstream is building -- never a "
+                  "bare 'still running'."
+              )
+          elif st == "running":
+              nxt = (
+                  f"{n_running} workstreams running. Do not idle. Give the user a "
+                  "concrete progress narrative for one workstream, then poll a "
+                  "different one. Keep alternating until they finish."
+              )
+          else:
+              nxt = (
+                  "This workstream finished. Summarize what it produced concretely "
+                  "(files, what works), then poll the other running workstreams. "
+                  "Only when ALL are done, give the final consolidated result."
+              )
           return {
               "id": s["id"],
-              "status": s["status"],
+              "status": st,
               "started_at": s["started_at"],
               "model": s["model"],
               "exit_code": s.get("exit_code"),
               "error": s.get("error"),
               "output_lines": s.get("output_lines", []),
+              "sessions_running": n_running,
+              "next_action": nxt,
           }
 
 
