@@ -272,12 +272,13 @@ function ConcertoStyleCard() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-            Make Claude run itself
+            Optional: add the Concerto style
           </p>
           <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            Add the Concerto style once. Then just describe what you want —
-            Claude spins up parallel sessions, tracks them, and reports back on
-            its own. No prompting, no babysitting.
+            A custom style that tells Claude to route longer tasks through
+            Concerto by default — so you don&apos;t have to say
+            &ldquo;use Concerto&rdquo; each time. Add it once in Claude&apos;s
+            style picker.
           </p>
         </div>
       </div>
@@ -1687,8 +1688,26 @@ export default function DashboardPage({
               </div>
             </div>
 
+            {/* You're all set — reassurance after the optional code step */}
+            <div
+              className="mb-5 mt-8 w-full"
+              style={{ borderTop: "1px solid #efeae0" }}
+            />
+            <p
+              className="w-full text-left text-[15px] font-semibold"
+              style={{ color: "#191919" }}
+            >
+              You&apos;re all set.
+            </p>
+            <p
+              className="mb-1 mt-1 w-full text-left text-[13px] leading-relaxed"
+              style={{ color: "#8a847b" }}
+            >
+              Concerto is connected and ready. Everything below is optional.
+            </p>
+
             {/* Go further — visually distinct, lower-priority */}
-            <div className="mt-7 w-full">
+            <div className="mt-5 w-full">
               <ConcertoStyleCard />
             </div>
 
