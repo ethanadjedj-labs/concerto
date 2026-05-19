@@ -1514,6 +1514,37 @@ export default function DashboardPage({
                 </div>
               </details>
 
+              <div
+                className="rounded-xl"
+                style={{ border: "1px solid #f3efe5", backgroundColor: "#fdfcfa" }}
+              >
+                <details className="group">
+                  <summary
+                    className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
+                        Optional: supercharge it with the Concerto Skill
+                      </p>
+                      <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+                        Concerto already works. Add the Skill if you want Claude
+                        to fan out parallel builds automatically, with no
+                        prompting.
+                      </p>
+                    </div>
+                    <span
+                      className="shrink-0 text-[12px] font-medium transition-transform group-open:rotate-180"
+                      style={{ color: "#cc785c" }}
+                    >
+                      ▾
+                    </span>
+                  </summary>
+                  <div className="px-4 pb-4">
+                    <ConcertoSkillCard />
+                  </div>
+                </details>
+              </div>
+
               <Button
                 onClick={() => {
                   setUIState("step3")
@@ -1731,15 +1762,11 @@ export default function DashboardPage({
                 className="mb-6 mt-1.5 max-w-[22rem] text-[14px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                Concerto is connected. One last setup below, then you&apos;re
-                ready to build.
+                Concerto is connected. Open Claude and tell it what to
+                build — it runs the work for you.
               </p>
 
               <div className="w-full">
-                <ConcertoSkillCard />
-              </div>
-
-              <div className="mt-5 w-full">
                 <StarterPrompt />
               </div>
 
