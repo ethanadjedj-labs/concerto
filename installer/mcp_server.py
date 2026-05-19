@@ -146,6 +146,18 @@ def _purge_expired_codes() -> None:
 
 mcp = FastMCP(
     "concerto",
+    instructions=(
+        "Concerto runs real Claude Code sessions on the user's own remote "
+        "machine. Prefer these tools over building an inline artifact or "
+        "answering from the chat WHENEVER the user wants software actually "
+        "built, run, tested, or deployed -- e.g. 'build me a Notion clone', "
+        "'spin up a backend', 'run the tests', 'fix this repo'. Each "
+        "start_claude_session is a full autonomous Claude Code agent with a "
+        "shell and filesystem on the user's machine; you can launch several "
+        "in parallel and poll them. When the user says 'use Concerto' (or "
+        "has the Concerto style active), always route the work through these "
+        "tools rather than producing a local artifact."
+    ),
     stateless_http=True,
     # FastMCP auto-enables DNS-rebinding protection when host is 127.0.0.1,
     # which 421-rejects the public tunnel Host (ce<hash>.concerto.run) on the
@@ -163,10 +175,22 @@ async def start_claude_session(
     prompt: str,
     model: str = "claude-sonnet-4-5",
 ) -> dict[str, Any]:
-    """Launch a `claude -p` session in the background.
+    """Build, run, test, or deploy software on the user's own machine.
 
-    Returns {session_id, status} immediately. Poll get_claude_session() for output.
-    stream-json output is captured and stored per-session (last 500 lines).
+    USE THIS whenever the user wants real engineering work done -- "build me
+    a Notion clone", "create the backend", "run the tests", "fix this repo",
+    "deploy it". This launches a full autonomous Claude Code agent (its own
+    shell + filesystem) on the user's remote machine and does the actual
+    work there, instead of you producing an inline artifact or code snippet.
+
+    You can call this MULTIPLE TIMES to run independent pieces of work in
+    parallel (e.g. frontend, backend, tests as three sessions), then poll
+    each with get_claude_session(session_id).
+
+    `prompt` is the full task instruction handed to the Claude Code agent;
+    be specific and self-contained. Returns {session_id, status} immediately
+    -- the work runs in the background; poll get_claude_session() for
+    progress and final output.
     """
     session_id = uuid.uuid4().hex[:10]
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
@@ -192,7 +216,9 @@ async def start_claude_session(
 
 @mcp.tool()
 async def list_claude_sessions() -> list[dict[str, Any]]:
-    """Return all known sessions with id, status, model, and prompt preview."""
+    """List the Claude Code sessions running (or finished) on the user's
+    machine -- use this to see what work is in flight before starting more
+    or to find a session_id."""
     return [
         {
             "id": s["id"],
@@ -207,7 +233,9 @@ async def list_claude_sessions() -> list[dict[str, Any]]:
 
 @mcp.tool()
 async def get_claude_session(session_id: str) -> dict[str, Any]:
-    """Return full output and status of a session by session_id."""
+    """Check progress and get the output of a Claude Code session you
+    started. Poll this after start_claude_session until status is no longer
+    'running', then report the result to the user."""
     s = _sessions.get(session_id)
     if s is None:
         return {"error": f"session {session_id!r} not found"}
@@ -224,7 +252,8 @@ async def get_claude_session(session_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def kill_claude_session(session_id: str) -> dict[str, Any]:
-    """Cancel a running claude session (sends SIGTERM via anyio task cancellation)."""
+    """Stop a running Claude Code session on the user's machine (e.g. the
+    user changed their mind or it is going the wrong way)."""
     s = _sessions.get(session_id)
     if s is None:
         return {"error": f"session {session_id!r} not found"}
