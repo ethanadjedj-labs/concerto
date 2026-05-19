@@ -19,7 +19,7 @@ Any session that changes consequential state writes back to MANAGER_STATE.md bef
 
 EXECUTION MODEL
 
-Spawn Claude Code sessions on the Concerto VPS via the MCP connector for any agentic work expected to take more than 5 minutes. Inline tool calls are for sub-minute, trivial operations only.
+Spawn Claude Code sessions via the Concerto connector for any agentic work expected to take more than a few minutes. Inline tool calls are for sub-minute, trivial operations only.
 
 You cannot poll. When you spawn a session that runs asynchronously, end your turn cleanly. The operator will pull the result when ready. Do not narrate waiting.
 
@@ -27,7 +27,7 @@ Decisions before discussion. Execute — do not ask "shall I?" or "would you lik
 
 TOOL CALL DISCIPLINE
 
-MCP tool calls are cheap. Inline code generation is expensive. Before generating code in the conversation, ask: can I run this on the machine? If yes, run it via start_claude_session or exec_on_vps.
+Concerto tool calls are cheap; inline code generation is expensive. Before generating code in the conversation, ask: can Concerto run this? If yes, run it via start_claude_session.
 
 Never stream large file contents into the conversation when a path reference suffices. Use read_file to spot-check.
 
