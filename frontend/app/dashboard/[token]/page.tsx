@@ -333,14 +333,25 @@ function ConcertoSkillCard() {
           style={{ borderTop: "1px solid #f3efe5" }}
         >
           <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            In Claude: <strong style={{ color: "#191919" }}>Settings</strong> &rarr;{" "}
-            <strong style={{ color: "#191919" }}>Capabilities</strong> &rarr; enable{" "}
-            <strong style={{ color: "#191919" }}>Code execution</strong>. Then{" "}
-            <strong style={{ color: "#191919" }}>Customize</strong> &rarr;{" "}
-            <strong style={{ color: "#191919" }}>Skills</strong> &rarr;{" "}
-            <strong style={{ color: "#191919" }}>Create skill</strong>, and fill
-            the three fields:
+            First, make sure{" "}
+            <strong style={{ color: "#191919" }}>Code execution</strong> is on
+            (Settings &rarr; Capabilities). Then open Skills and create a new
+            one with these three fields:
           </p>
+          <a
+            href="https://claude.ai/customize/skills"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-opacity hover:opacity-90"
+            style={{
+              backgroundColor: "#cc785c",
+              color: "#fff",
+              minHeight: "44px",
+            }}
+          >
+            Open Skills in Claude
+            <ExternalLink className="h-4 w-4" />
+          </a>
 
           <div className="space-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
@@ -1544,7 +1555,7 @@ export default function DashboardPage({
               {/* Action 1: deep link straight to the modal */}
               <div className="space-y-3">
                 <a
-                  href="https://claude.ai/settings/connectors?modal=add-custom-connector"
+                  href="https://claude.ai/customize/connectors?modal=add-custom-connector"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
