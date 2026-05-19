@@ -258,7 +258,6 @@ function ValueCard({
 function ConcertoSkillCard() {
   const [copiedDesc, setCopiedDesc] = useState(false)
   const [copiedInstr, setCopiedInstr] = useState(false)
-  const [expanded, setExpanded] = useState(false)
   const dt = useRef<ReturnType<typeof setTimeout> | null>(null)
   const it = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -297,41 +296,21 @@ function ConcertoSkillCard() {
       className="rounded-xl p-4 text-left"
       style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
     >
-      <div className="mb-3 flex items-start gap-3">
-        <span
-          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[14px]"
-          style={{ backgroundColor: "rgba(204,120,92,0.1)" }}
+      <div className="mb-4">
+        <p className="text-[15px] font-semibold" style={{ color: "#191919" }}>
+          Add the Concerto Skill
+        </p>
+        <p
+          className="mt-1 text-[13px] leading-relaxed"
+          style={{ color: "#8a847b" }}
         >
-          \u2726
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-            Optional: add the Concerto Skill
-          </p>
-          <p
-            className="mt-0.5 text-[13px] leading-relaxed"
-            style={{ color: "#8a847b" }}
-          >
-            A one-time setup so Claude orchestrates builds in parallel
-            automatically — you never have to say &ldquo;use Concerto&rdquo;.
-            Add it once in Claude&apos;s Skills.
-          </p>
-        </div>
+          This is what makes Claude orchestrate builds in parallel
+          automatically — so you never have to say &ldquo;use Concerto&rdquo;.
+          One-time setup.
+        </p>
       </div>
-      <button
-        type="button"
-        onClick={() => setExpanded((e) => !e)}
-        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-opacity hover:opacity-70"
-        style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}
-      >
-        {expanded ? "Hide setup" : "Set up the Skill"} {expanded ? "\u2191" : "\u2192"}
-      </button>
-
-      {expanded && (
-        <div
-          className="mt-4 space-y-4 pt-4"
-          style={{ borderTop: "1px solid #f3efe5" }}
-        >
+      {true && (
+        <div className="space-y-4">
           <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
             First, make sure{" "}
             <strong style={{ color: "#191919" }}>Code execution</strong> is on
@@ -1298,103 +1277,30 @@ export default function DashboardPage({
                 signInPhase === "finishing") &&
                 !oauthSuccess && (
                   <div className="space-y-4">
-                    {/* Visual: what the Anthropic page looks like + where the code is */}
-                    <div
-                      className="overflow-hidden rounded-xl"
-                      style={{ border: "1px solid #f3efe5" }}
-                    >
-                      <div
-                        className="flex items-center gap-1.5 px-3 py-2"
-                        style={{ backgroundColor: "#faf9f5", borderBottom: "1px solid #f3efe5" }}
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                        <span className="ml-2 text-[11px]" style={{ color: "#8a847b" }}>
-                          claude.ai · authorize
-                        </span>
-                      </div>
-                      <div className="space-y-2 p-4 text-center" style={{ backgroundColor: "#fff" }}>
-                        <p className="text-[12px]" style={{ color: "#8a847b" }}>
-                          After you click Authorize, Anthropic shows a code like this:
-                        </p>
-                        <div
-                          className="mx-auto inline-block rounded-lg px-4 py-2 font-mono text-[13px]"
-                          style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919" }}
-                        >
-                          sk-ant-oat01-••••••••••••
-                        </div>
-                        <p className="text-[12px]" style={{ color: "#8a847b" }}>
-                          Copy it and paste it below — that&apos;s the only step.
-                        </p>
-                      </div>
-                    </div>
-                    <ol
-                      className="space-y-3 text-[14px] leading-relaxed"
-                      style={{ color: "#191919" }}
-                    >
-                      <li className="flex gap-3">
-                        <span
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                          style={{
-                            backgroundColor: "rgba(204,120,92,0.12)",
-                            color: "#cc785c",
-                          }}
-                        >
-                          1
-                        </span>
-                        <span>
-                          Open the Anthropic authorization page, sign in, and
-                          click <strong>Authorize</strong>.
-                        </span>
-                      </li>
-                      <li className="flex gap-3">
-                        <span
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                          style={{
-                            backgroundColor: "rgba(204,120,92,0.12)",
-                            color: "#cc785c",
-                          }}
-                        >
-                          2
-                        </span>
-                        <span>Copy the code Anthropic shows you and paste it below.</span>
-                      </li>
-                    </ol>
-
                     {authUrl && (
                       <a
                         href={authUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium"
+                        className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold"
                         style={{
                           backgroundColor: "#191919",
                           color: "#fff",
                           minHeight: "48px",
                         }}
                       >
-                        Open Anthropic authorization
+                        Open Anthropic, then click Authorize
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     )}
 
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{ color: "#8a847b" }}
-                    >
-                      A tab may have opened automatically. If your browser
-                      blocked the pop-up, use the button above to open it
-                      manually.
-                    </p>
-
                     <div className="space-y-2">
                       <label
                         htmlFor="oauth-code-input"
-                        className="block text-[12px] font-semibold uppercase tracking-widest"
-                        style={{ color: "#b3613f" }}
+                        className="block text-[13px] font-semibold"
+                        style={{ color: "#191919" }}
                       >
-                        Paste your authorization code here
+                        Paste the code Anthropic gave you
                       </label>
                       <input
                         id="oauth-code-input"
@@ -1404,7 +1310,7 @@ export default function DashboardPage({
                         onKeyDown={(e) => {
                           if (e.key === "Enter") submitCode()
                         }}
-                        placeholder="Paste the code from Anthropic..."
+                        placeholder="Paste the code here…"
                         autoComplete="off"
                         spellCheck={false}
                         autoFocus
@@ -1445,6 +1351,20 @@ export default function DashboardPage({
                           "Complete sign-in"
                         )}
                       </Button>
+                      <p
+                        className="text-[12px] leading-relaxed"
+                        style={{ color: "#8a847b" }}
+                      >
+                        The code looks like{" "}
+                        <code
+                          className="rounded px-1 py-0.5 font-mono text-[11px]"
+                          style={{ backgroundColor: "#f3efe5", color: "#191919" }}
+                        >
+                          sk-ant-oat01-…
+                        </code>
+                        . A tab may have opened on its own — if not, use the
+                        button above.
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1499,61 +1419,16 @@ export default function DashboardPage({
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  One button opens Claude on the right screen. Then paste a
-                  single link. No name, no token, no password.
+                  Three quick steps. The button opens the right screen in
+                  Claude — then you copy two things into it.
                 </p>
               </div>
 
-              {/* Visual: what the user is about to see in Claude */}
-              <div
-                className="overflow-hidden rounded-xl"
-                style={{ border: "1px solid #f3efe5" }}
-              >
-                <div
-                  className="flex items-center gap-1.5 px-3 py-2"
-                  style={{ backgroundColor: "#faf9f5", borderBottom: "1px solid #f3efe5" }}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "#e5dfd2" }} />
-                  <span className="ml-2 text-[11px]" style={{ color: "#8a847b" }}>
-                    claude.ai · Add custom connector
-                  </span>
-                </div>
-                <div className="space-y-3 p-4" style={{ backgroundColor: "#fff" }}>
-                  <div>
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
-                      Name
-                    </p>
-                    <div
-                      className="rounded-lg px-3 py-2 text-[13px]"
-                      style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
-                    >
-                      Concerto
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
-                      Remote MCP server URL
-                    </p>
-                    <div
-                      className="rounded-lg px-3 py-2 font-mono text-[12px]"
-                      style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919", wordBreak: "break-all" }}
-                    >
-                      {mcpUrl}
-                    </div>
-                  </div>
-                  <div
-                    className="mt-1 inline-flex items-center rounded-lg px-3 py-1.5 text-[12px] font-medium"
-                    style={{ backgroundColor: "#191919", color: "#fff" }}
-                  >
-                    Add
-                  </div>
-                </div>
-              </div>
-
-              {/* Action 1: deep link straight to the modal */}
-              <div className="space-y-3">
+              {/* Step 1: open the screen */}
+              <div className="space-y-2">
+                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
+                  1. Open the connector screen in Claude
+                </p>
                 <a
                   href="https://claude.ai/customize/connectors?modal=add-custom-connector"
                   target="_blank"
@@ -1562,39 +1437,40 @@ export default function DashboardPage({
                   style={{
                     backgroundColor: "#cc785c",
                     color: "#fff",
-                    minHeight: "52px",
-                    boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+                    minHeight: "50px",
                   }}
                 >
-                  Open Claude on the connector screen
+                  Open the connector screen
                   <ExternalLink className="h-4 w-4" />
                 </a>
-                <p className="text-center text-[12px]" style={{ color: "#8a847b" }}>
-                  Opens the exact screen above — no menus to dig through.
-                </p>
               </div>
 
-              {/* Action 2: the single thing to paste */}
-              <div className="space-y-2">
-                <p
-                  className="text-[11px] font-medium uppercase tracking-widest"
-                  style={{ color: "#8a847b" }}
-                >
-                  Paste this into the URL field
+              {/* Step 2: copy the two values */}
+              <div className="space-y-3">
+                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
+                  2. Copy these two into the form that opens
                 </p>
+                <ValueCard label="Name" value="Concerto" />
                 <ValueCard
                   label="Remote MCP server URL"
                   value={mcpUrl}
                   emphasis
                 />
-                <p className="text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
-                  Type <strong style={{ color: "#191919" }}>Concerto</strong> as
-                  the name, paste the link, click{" "}
-                  <strong style={{ color: "#191919" }}>Add</strong>, then{" "}
-                  <strong style={{ color: "#191919" }}>Connect</strong> →{" "}
-                  <strong style={{ color: "#191919" }}>Authorize</strong>. Claude
-                  returns on its own.
+              </div>
+
+              {/* Step 3: finish in Claude */}
+              <div className="space-y-2">
+                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
+                  3. Finish in Claude
                 </p>
+                <div
+                  className="rounded-xl p-4 text-[14px] leading-relaxed"
+                  style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
+                >
+                  Click <strong>Add</strong>, then <strong>Connect</strong> on
+                  the new Concerto connector, then <strong>Authorize</strong>.
+                  Claude returns on its own.
+                </div>
               </div>
 
               <Button
@@ -1811,14 +1687,21 @@ export default function DashboardPage({
                 You&apos;re all set.
               </h2>
               <p
-                className="mb-6 mt-1.5 max-w-[20rem] text-[14px] leading-relaxed"
+                className="mb-6 mt-1.5 max-w-[22rem] text-[14px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                Concerto is connected. Open Claude, say
-                &ldquo;Use Concerto&rdquo;, and it orchestrates the work
-                for you.
+                Concerto is connected. One last setup below, then you&apos;re
+                ready to build.
               </p>
-              <StarterPrompt />
+
+              <div className="w-full">
+                <ConcertoSkillCard />
+              </div>
+
+              <div className="mt-5 w-full">
+                <StarterPrompt />
+              </div>
+
               <a
                 href="https://claude.ai"
                 target="_blank"
@@ -1833,10 +1716,6 @@ export default function DashboardPage({
               >
                 Open Claude <ExternalLink className="h-4 w-4" />
               </a>
-
-              <div className="mt-5 w-full">
-                <ConcertoSkillCard />
-              </div>
 
               <p
                 className="mt-8 text-[13px]"
