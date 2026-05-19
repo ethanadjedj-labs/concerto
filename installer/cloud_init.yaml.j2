@@ -485,6 +485,172 @@ write_files:
       )
 
 
+      _PLANNER_PROMPT = (
+          "You are Concerto's build planner. Decide how to execute a software "
+          "build request as one or more PARALLEL autonomous coding agents.\n\n"
+          "Hard rules:\n"
+          "- Parallelize ONLY when the work has genuinely independent parts "
+          "(different files/dirs, no agent needs another's output to start). "
+          "Splitting cohesive or small work makes it SLOWER and WORSE.\n"
+          "- A small or cohesive request is correctly ONE agent. That is a valid, "
+          "good answer -- never invent splits to look busy.\n"
+          "- Each workstream must own a DISJOINT set of paths so two agents never "
+          "edit the same file.\n"
+          "- Max 6 workstreams. Prefer the smallest number that is genuinely "
+          "parallel.\n"
+          "- If workstreams share a contract/dependency, set needs_integration "
+          "true (a final stitch+verify pass will run).\n\n"
+          "Output ONLY minified JSON, no prose, exactly this shape:\n"
+          '{\"mode\":\"single|parallel\",\"reason\":\"one sentence\",'
+          '\"workstreams\":[{\"name\":\"short\",\"scope\":\"what it '
+          'builds\",\"paths\":[\"dir/\",\"file\"],\"prompt\":\"full '
+          'self-contained brief incl. stack\"}],\"needs_integration\":bool}\n\n'
+          "Request: "
+      )
+
+
+      async def _run_planner(request: str) -> dict[str, Any]:
+          """Ask one claude CLI to produce an execution plan. Falls back to a
+          single-session plan if anything about planning fails -- Concerto must
+          never hard-fail just because the planner hiccuped."""
+          fallback = {
+              "mode": "single",
+              "reason": "Planner unavailable; running as one focused session.",
+              "workstreams": [
+                  {
+                      "name": "build",
+                      "scope": request[:200],
+                      "paths": ["."],
+                      "prompt": request,
+                  }
+              ],
+              "needs_integration": False,
+          }
+          if not _claude_authed():
+              return fallback
+          env = _claude_env()
+          env["HOME"] = "/home/concerto"
+          cmd = ["claude", "-p", _PLANNER_PROMPT + request,
+                 "--output-format", "stream-json", "--verbose",
+                 "--model", "claude-sonnet-4-5",
+                 "--permission-mode", "bypassPermissions"]
+          import shutil as _sh
+          if _sh.which("runuser"):
+              cmd = ["runuser", "-u", "concerto", "--", *cmd]
+          try:
+              res = await anyio.run_process(
+                  cmd, check=False, env=env, cwd="/home/concerto"
+              )
+              raw = res.stdout.decode("utf-8", errors="replace")
+              text = ""
+              for ln in raw.splitlines():
+                  ln = ln.strip()
+                  if not ln.startswith("{"):
+                      continue
+                  try:
+                      o = json.loads(ln)
+                  except json.JSONDecodeError:
+                      continue
+                  if o.get("type") == "result" and "result" in o:
+                      text = o["result"]
+                  elif o.get("type") == "assistant":
+                      for c in o.get("message", {}).get("content", []):
+                          if c.get("type") == "text":
+                              text += c["text"]
+              import re as _re
+              m = _re.search(r"\{.*\}", text, _re.S)
+              if not m:
+                  return fallback
+              plan = json.loads(m.group(0))
+              ws = plan.get("workstreams") or []
+              if not ws:
+                  return fallback
+              # Hard safety caps: never more than 6, each must have a prompt.
+              plan["workstreams"] = [
+                  w for w in ws if w.get("prompt")
+              ][:6]
+              if not plan["workstreams"]:
+                  return fallback
+              if len(plan["workstreams"]) == 1:
+                  plan["mode"] = "single"
+              plan.setdefault("mode", "single")
+              plan.setdefault("reason", "")
+              plan.setdefault("needs_integration", False)
+              return plan
+          except Exception:
+              return fallback
+
+
+      @mcp.tool()
+      async def concerto_build(request: str) -> dict[str, Any]:
+          """Build, ship, or run software on the user's machine. Hand this the
+          user's request verbatim (e.g. "build me a Notion-like app", "create the
+          backend and tests"). Call it ONCE -- Concerto itself decides whether the
+          work is one focused job or several genuinely-independent workstreams,
+          plans disjoint file scopes, launches the agents, and (when needed) runs
+          a final integration pass. You do not need to split the work yourself or
+          ask the user scoping questions; Concerto handles orchestration. Returns
+          the plan and the launched session ids; poll get_claude_session for
+          progress and narrate it to the user."""
+          plan = await _run_planner(request)
+          SESSION_DIR.mkdir(parents=True, exist_ok=True)
+          launched = []
+          for w in plan["workstreams"]:
+              sid = uuid.uuid4().hex[:10]
+              scope_hint = ""
+              if w.get("paths"):
+                  scope_hint = (
+                      "\n\nYou OWN these paths exclusively (do not touch files "
+                      "outside them; other agents own the rest): "
+                      + ", ".join(w["paths"])
+                  )
+              full_prompt = w["prompt"] + scope_hint
+              _sessions[sid] = {
+                  "id": sid,
+                  "status": "running",
+                  "started_at": time.time(),
+                  "prompt": (w.get("name", "") + ": " + w.get("scope", ""))[:300],
+                  "model": "claude-sonnet-4-5",
+                  "output_lines": [],
+                  "exit_code": None,
+                  "error": None,
+                  "workstream": w.get("name", "build"),
+              }
+              t = asyncio.get_event_loop().create_task(
+                  _run_claude(sid, full_prompt, "claude-sonnet-4-5"),
+                  name=f"claude-{sid}",
+              )
+              _sessions[sid]["_task"] = t
+              launched.append(
+                  {"session_id": sid, "workstream": w.get("name", "build"),
+                   "scope": w.get("scope", "")}
+              )
+          n = len(launched)
+          if plan["mode"] == "single" or n == 1:
+              narr = (
+                  "Concerto judged this a single focused job (splitting cohesive "
+                  "work would slow it down) and started it. Poll "
+                  "get_claude_session and narrate progress to the user."
+              )
+          else:
+              narr = (
+                  f"Concerto decomposed this into {n} genuinely independent "
+                  f"workstreams now running in parallel, each owning disjoint "
+                  f"files. Tell the user the plan, then poll the sessions and "
+                  f"narrate progress."
+                  + (" A final integration pass should run once they finish."
+                     if plan.get("needs_integration") else "")
+              )
+          return {
+              "mode": plan["mode"],
+              "reason": plan.get("reason", ""),
+              "sessions": launched,
+              "sessions_running": n,
+              "needs_integration": plan.get("needs_integration", False),
+              "next_action": narr,
+          }
+
+
       @mcp.tool()
       async def start_claude_session(
           prompt: str,
