@@ -322,6 +322,66 @@ function ConcertoStyleCard() {
   )
 }
 
+function StarterPrompt() {
+  const [copied, setCopied] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const text = "Use Concerto to build me a "
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      className="mb-5 w-full rounded-xl p-4 text-left"
+      style={{ border: "1px solid #f3d9cd", backgroundColor: "#fffaf7" }}
+    >
+      <p
+        className="text-[13px] font-semibold"
+        style={{ color: "#b3613f" }}
+      >
+        To start, just tell Claude:
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <code
+          className="min-w-0 flex-1 rounded-lg px-3 py-2 font-mono text-[13px]"
+          style={{ backgroundColor: "#fff", border: "1px solid #f3efe5", color: "#191919" }}
+        >
+          &ldquo;<span style={{ color: "#cc785c", fontWeight: 600 }}>Use Concerto</span> to build me a&hellip;&rdquo;
+        </code>
+        <button
+          type="button"
+          onClick={copy}
+          className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[12px] font-medium transition-all"
+          style={{ backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <p
+        className="mt-2 text-[12px] leading-relaxed"
+        style={{ color: "#8a847b" }}
+      >
+        Saying &ldquo;Use Concerto&rdquo; is what tells Claude to run the work
+        on your machine. It works in any language.
+      </p>
+    </div>
+  )
+}
+
 function PromptCard({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1659,9 +1719,11 @@ export default function DashboardPage({
                 className="mb-6 mt-1.5 max-w-[20rem] text-[14px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                Concerto is connected. Open Claude and ask it to build
-                anything — it orchestrates the work for you.
+                Concerto is connected. Open Claude, say
+                &ldquo;Use Concerto&rdquo;, and it orchestrates the work
+                for you.
               </p>
+              <StarterPrompt />
               <a
                 href="https://claude.ai"
                 target="_blank"
