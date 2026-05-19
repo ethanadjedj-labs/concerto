@@ -198,61 +198,129 @@ mcp = FastMCP(
 
 
 _PLANNER_PROMPT = (
-    "You are Concerto's build planner. Decide how to execute a software "
-    "build request as one or more PARALLEL autonomous coding agents.\n\n"
-    "Hard rules:\n"
-    "- Parallelize ONLY when the work has genuinely independent parts "
-    "(different files/dirs, no agent needs another's output to start). "
-    "Splitting cohesive or small work makes it SLOWER and WORSE.\n"
-    "- A small or cohesive request is correctly ONE agent. That is a valid, "
-    "good answer -- never invent splits to look busy.\n"
-    "- Each workstream must own a DISJOINT set of paths so two agents never "
-    "edit the same file.\n"
-    "- Max 6 workstreams. Prefer the smallest number that is genuinely "
-    "parallel.\n"
-    "- If workstreams share a contract/dependency, set needs_integration "
-    "true (a final stitch+verify pass will run).\n\n"
-    "Output ONLY minified JSON, no prose, exactly this shape:\n"
-    '{\"mode\":\"single|parallel\",\"reason\":\"one sentence\",'
-    '\"workstreams\":[{\"name\":\"short\",\"scope\":\"what it '
-    'builds\",\"paths\":[\"dir/\",\"file\"],\"prompt\":\"full '
-    'self-contained brief incl. stack\"}],\"needs_integration\":bool}\n\n'
+    "You are Concerto's build planner. Split a software build request into "
+    "parallel coding agents. Be FAST and terse.\n\n"
+    "Rules:\n"
+    "- A real app = several independent parts. Default to 3-5 parallel "
+    "workstreams for anything that names a product or an 'X-like app' "
+    "(typical seams: shared data/types layer, backend/API+auth, the main "
+    "user-facing UI, a second UI surface like an admin/host area).\n"
+    "- ONE workstream only for genuinely atomic work (a single component, "
+    "one script, a bug fix, a tweak).\n"
+    "- Each workstream owns a DISJOINT top-level path so no two agents edit "
+    "the same file.\n"
+    "- Max 6. Do NOT write implementation briefs -- only a short scope.\n\n"
+    "NEVER ask a question and NEVER write prose. You always have enough "
+    "to decide; an unknown file path is the build agent's problem, not "
+    "yours. Output ONLY this minified JSON, nothing else, one line:\n"
+    '{\"mode\":\"single|parallel\",\"workstreams\":'
+    '[{\"name\":\"kebab-name\",\"scope\":\"one terse line\",'
+    '\"paths\":[\"dir/\"]}]}\n\n'
     "Request: "
 )
 
+# Default stack + quality bar the SERVER injects into every agent brief, so
+# build quality does not depend on the planner being verbose (it must be
+# terse to stay fast).
+_BUILD_STACK = (
+    "Stack: Next.js (App Router) + TypeScript + Tailwind CSS, single repo. "
+    "Persistence: a JSON-file-backed store under ./data (survives restarts) "
+    "with seeded realistic mock data. Lightweight mock auth (cookie/session) "
+    "shared across the app. No external DB."
+)
+_BUILD_QUALITY = (
+    "Write production-quality, polished, visually refined UI (real layout, "
+    "spacing, empty/loading states), not a skeleton. Make it actually run: "
+    "npm install must succeed and `npm run dev` must boot with no errors. "
+    "Add a short README with setup steps."
+)
+
+
+def _agent_brief(request: str, w: dict, all_ws: list, integrate: bool) -> str:
+    """Server-built, self-contained brief for one workstream. Rich and
+    consistent regardless of how terse the planner was."""
+    others = ", ".join(
+        f"{x.get('name')} ({'/'.join(x.get('paths', []) or ['?'])})"
+        for x in all_ws if x is not w
+    )
+    paths = ", ".join(w.get("paths", []) or ["."])
+    parts = [
+        f"You are one of several Concerto agents building, in parallel, "
+        f"this product: \"{request}\".",
+        f"YOUR workstream: {w.get('name','build')} -- {w.get('scope','')}.",
+        f"You exclusively OWN these paths: {paths}. Do NOT create or edit "
+        f"files outside them.",
+    ]
+    if others:
+        parts.append(
+            f"Other agents own (do not touch): {others}. Where you depend "
+            f"on their code, code against a clear, conventional interface "
+            f"and assume it will exist."
+        )
+    parts.append(_BUILD_STACK)
+    parts.append(_BUILD_QUALITY)
+    if integrate:
+        parts.append(
+            "A final integration agent will wire the pieces together; keep "
+            "your public interfaces conventional and documented at the top "
+            "of your main files."
+        )
+    parts.append(
+        "Work autonomously to completion. Do not ask questions; choose "
+        "sensible defaults and build."
+    )
+    return " ".join(parts)
+
+
+def _generic_plan(request: str) -> dict:
+    """Honest, useful fallback when the planner times out / fails: a sane
+    default decomposition for a typical app -- NEVER a silent single
+    session pretending it was a deliberate 'cohesive' judgement."""
+    return {
+        "mode": "parallel",
+        "workstreams": [
+            {"name": "data-and-auth",
+             "scope": "Shared types, JSON-file data store, seed data, mock auth/session",
+             "paths": ["data/", "lib/", "types/"]},
+            {"name": "api",
+             "scope": "API routes / server actions over the data layer",
+             "paths": ["app/api/"]},
+            {"name": "main-ui",
+             "scope": "Primary user-facing experience (browse, detail, core flow)",
+             "paths": ["app/(main)/", "components/main/"]},
+            {"name": "secondary-ui",
+             "scope": "Secondary surface (dashboard / management / admin)",
+             "paths": ["app/(dashboard)/", "components/dashboard/"]},
+        ],
+        "needs_integration": True,
+        "_fallback": True,
+    }
+
 
 async def _run_planner(request: str) -> dict[str, Any]:
-    """Ask one claude CLI to produce an execution plan. Falls back to a
-    single-session plan if anything about planning fails -- Concerto must
-    never hard-fail just because the planner hiccuped."""
-    fallback = {
-        "mode": "single",
-        "reason": "Planner unavailable; running as one focused session.",
-        "workstreams": [
-            {
-                "name": "build",
-                "scope": request[:200],
-                "paths": ["."],
-                "prompt": request,
-            }
-        ],
-        "needs_integration": False,
-    }
+    """Fast, terse planner (haiku, hard 75s deadline, one retry). On
+    failure returns a sane GENERIC PARALLEL plan -- never a fake 'single'.
+    Briefs are built server-side, so the planner only needs to emit a tiny
+    JSON skeleton, which keeps it well under the deadline."""
     if not _claude_authed():
-        return fallback
+        return _generic_plan(request)
     env = _claude_env()
     env["HOME"] = "/home/concerto"
-    cmd = ["claude", "-p", _PLANNER_PROMPT + request,
-           "--output-format", "stream-json", "--verbose",
-           "--model", "claude-sonnet-4-5",
-           "--permission-mode", "bypassPermissions"]
-    import shutil as _sh
-    if _sh.which("runuser"):
-        cmd = ["runuser", "-u", "concerto", "--", *cmd]
-    try:
-        res = await anyio.run_process(
-            cmd, check=False, env=env, cwd="/home/concerto"
-        )
+
+    async def _attempt() -> dict | None:
+        cmd = ["claude", "-p", _PLANNER_PROMPT + request,
+               "--output-format", "stream-json", "--verbose",
+               "--model", "claude-haiku-4-5-20251001",
+               "--permission-mode", "bypassPermissions"]
+        import shutil as _sh
+        if _sh.which("runuser"):
+            cmd = ["runuser", "-u", "concerto", "--", *cmd]
+        with anyio.move_on_after(75) as scope:
+            res = await anyio.run_process(
+                cmd, check=False, env=env, cwd="/home/concerto"
+            )
+        if scope.cancelled_caught:
+            return None
         raw = res.stdout.decode("utf-8", errors="replace")
         text = ""
         for ln in raw.splitlines():
@@ -272,51 +340,59 @@ async def _run_planner(request: str) -> dict[str, Any]:
         import re as _re
         m = _re.search(r"\{.*\}", text, _re.S)
         if not m:
-            return fallback
-        plan = json.loads(m.group(0))
+            return None
+        try:
+            plan = json.loads(m.group(0))
+        except json.JSONDecodeError:
+            return None
         ws = plan.get("workstreams") or []
+        ws = [w for w in ws if w.get("name") and w.get("paths")][:6]
         if not ws:
-            return fallback
-        # Hard safety caps: never more than 6, each must have a prompt.
-        plan["workstreams"] = [
-            w for w in ws if w.get("prompt")
-        ][:6]
-        if not plan["workstreams"]:
-            return fallback
-        if len(plan["workstreams"]) == 1:
-            plan["mode"] = "single"
-        plan.setdefault("mode", "single")
-        plan.setdefault("reason", "")
-        plan.setdefault("needs_integration", False)
+            return None
+        plan["workstreams"] = ws
+        plan["mode"] = "single" if len(ws) == 1 else "parallel"
+        plan["needs_integration"] = (
+            len(ws) > 1 and plan.get("mode") == "parallel"
+        )
         return plan
-    except Exception:
-        return fallback
+
+    for _ in range(2):
+        try:
+            got = await _attempt()
+        except Exception:
+            got = None
+        if got:
+            return got
+    return _generic_plan(request)
 
 
 @mcp.tool()
 async def concerto_build(request: str) -> dict[str, Any]:
-    """Build, ship, or run software on the user's machine. Hand this the
-    user's request verbatim (e.g. "build me a Notion-like app", "create the
-    backend and tests"). Call it ONCE -- Concerto itself decides whether the
-    work is one focused job or several genuinely-independent workstreams,
-    plans disjoint file scopes, launches the agents, and (when needed) runs
-    a final integration pass. You do not need to split the work yourself or
-    ask the user scoping questions; Concerto handles orchestration. Returns
-    the plan and the launched session ids; poll get_claude_session for
-    progress and narrate it to the user."""
+    """Build, ship, or run software on the user's machine.
+
+    This is the right tool the moment the user asks to build/create/make
+    something. Hand it the user's request verbatim (e.g. "build me an
+    Airbnb-like app") and call it ONCE, in this turn, without a scoping
+    interview first. Concerto is designed to choose sensible defaults
+    itself -- stack, structure, and how to split the work -- and it plans +
+    launches the parallel agents server-side. Asking the user a list of
+    framework/scope questions before calling this duplicates what Concerto
+    already does and is the slower, worse path; users come to Concerto to
+    watch it build, not to fill in a questionnaire. If something is truly
+    ambiguous about WHAT the product is, one short question is fine -- but
+    the default is to pass the request straight through.
+
+    Returns the plan (single vs several disjoint workstreams), the launched
+    session ids, and a narration hint. Poll get_claude_session and tell the
+    user what each workstream is doing as it progresses."""
     plan = await _run_planner(request)
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
+    ws = plan["workstreams"]
+    integrate = bool(plan.get("needs_integration"))
     launched = []
-    for w in plan["workstreams"]:
+    for w in ws:
         sid = uuid.uuid4().hex[:10]
-        scope_hint = ""
-        if w.get("paths"):
-            scope_hint = (
-                "\n\nYou OWN these paths exclusively (do not touch files "
-                "outside them; other agents own the rest): "
-                + ", ".join(w["paths"])
-            )
-        full_prompt = w["prompt"] + scope_hint
+        brief = _agent_brief(request, w, ws, integrate)
         _sessions[sid] = {
             "id": sid,
             "status": "running",
@@ -329,7 +405,7 @@ async def concerto_build(request: str) -> dict[str, Any]:
             "workstream": w.get("name", "build"),
         }
         t = asyncio.get_event_loop().create_task(
-            _run_claude(sid, full_prompt, "claude-sonnet-4-5"),
+            _run_claude(sid, brief, "claude-sonnet-4-5"),
             name=f"claude-{sid}",
         )
         _sessions[sid]["_task"] = t
@@ -338,27 +414,36 @@ async def concerto_build(request: str) -> dict[str, Any]:
              "scope": w.get("scope", "")}
         )
     n = len(launched)
-    if plan["mode"] == "single" or n == 1:
+    plan_lines = "; ".join(
+        f"{x['workstream']} ({x['scope']})" for x in launched
+    )
+    if n == 1:
         narr = (
-            "Concerto judged this a single focused job (splitting cohesive "
-            "work would slow it down) and started it. Poll "
-            "get_claude_session and narrate progress to the user."
+            "This is atomic work, so Concerto started one focused agent: "
+            f"{plan_lines}. Tell the user that, then poll get_claude_session "
+            "and narrate concrete progress."
         )
     else:
+        tail = (
+            " A final integration pass wires the pieces together once they "
+            "finish." if integrate else ""
+        )
         narr = (
-            f"Concerto decomposed this into {n} genuinely independent "
-            f"workstreams now running in parallel, each owning disjoint "
-            f"files. Tell the user the plan, then poll the sessions and "
-            f"narrate progress."
-            + (" A final integration pass should run once they finish."
-               if plan.get("needs_integration") else "")
+            f"Concerto split this into {n} workstreams now running in "
+            f"parallel, each owning disjoint files: {plan_lines}.{tail} "
+            "Tell the user this plan in plain language, then keep polling "
+            "get_claude_session across the sessions and narrate concrete "
+            "progress -- never a bare 'still running'."
         )
     return {
-        "mode": plan["mode"],
-        "reason": plan.get("reason", ""),
+        "mode": plan.get("mode", "parallel"),
+        "plan": [
+            {"workstream": x["workstream"], "scope": x["scope"]}
+            for x in launched
+        ],
         "sessions": launched,
         "sessions_running": n,
-        "needs_integration": plan.get("needs_integration", False),
+        "needs_integration": integrate,
         "next_action": narr,
     }
 

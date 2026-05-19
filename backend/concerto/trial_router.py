@@ -29,7 +29,8 @@ from concerto.provisioner import provision_droplet, DOAuthError, DOCreditError
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-_TRIAL_DURATION_S = 30 * 60       # 30 minutes
+_TRIAL_DURATION_S = 30 * 60       # 30 minutes (public)
+_OPERATOR_TRIAL_DURATION_S = 2 * 60 * 60   # 2 hours for whitelisted operators (filming/E2E)
 _HOSTED_REGION    = os.getenv("CONCERTO_TRIAL_REGION", "nyc1")
 _HOSTED_SIZE      = "s-2vcpu-4gb"
 _DO_API_TOKEN     = os.getenv("CONCERTO_DO_API_TOKEN", "")
@@ -172,7 +173,9 @@ async def trial_start(req: TrialStartRequest, request: Request):
             )
 
     token     = secrets.token_urlsafe(32)
-    expires_at = int(time.time()) + _TRIAL_DURATION_S
+    _is_op = bool(_OPERATOR_EMAIL_RE.match(email))
+    _dur = _OPERATOR_TRIAL_DURATION_S if _is_op else _TRIAL_DURATION_S
+    expires_at = int(time.time()) + _dur
 
     await _insert_trial_buyer(token, email, client_ip, expires_at)
 
@@ -184,7 +187,7 @@ async def trial_start(req: TrialStartRequest, request: Request):
         "token": token,
         "dashboard_url": dashboard_url,
         "expires_at": expires_at,
-        "trial_duration_minutes": 30,
+        "trial_duration_minutes": _dur // 60,
     }
 
 
