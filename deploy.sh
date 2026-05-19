@@ -19,19 +19,32 @@ if bad:
     print(f"         context: {raw[max(0,i-40):i+40]!r}")
     print("         cloud-init would reject the whole config -> empty droplets. Aborting.")
     sys.exit(1)
-# embedded copy must equal canonical mcp_server.py
+# embedded gzip+base64 blob must decode to the canonical mcp_server.py
+import gzip, base64
 lines = open(ci, encoding="utf-8").read().split("\n")
-pi = next(i for i, l in enumerate(lines) if l.strip().startswith("- path: /opt/concerto/mcp_server.py"))
+pi = next(i for i, l in enumerate(lines) if l.strip().startswith("- path: /opt/concerto/mcp_server.py.gz.b64"))
 cidx = next(i for i in range(pi, pi + 8) if lines[i].strip() == "content: |")
 start = cidx + 1
 end = next(i for i in range(start, len(lines)) if lines[i].startswith("  - path:") or lines[i].startswith("  # -- "))
-ded = "\n".join((l[6:] if len(l) >= 6 else l) for l in lines[start:end]).rstrip("\n") + "\n"
-cn = open(canon, encoding="utf-8").read().rstrip("\n") + "\n"
-if ded != cn:
-    print("[deploy] FATAL: embedded /opt/concerto/mcp_server.py in cloud_init.yaml.j2")
-    print("         differs from installer/mcp_server.py. Regenerate before deploying.")
+b64 = "".join(l.strip() for l in lines[start:end] if l.strip())
+try:
+    decoded = gzip.decompress(base64.b64decode(b64))
+except Exception as e:
+    print(f"[deploy] FATAL: embedded mcp_server.py.gz.b64 will not decode: {e}")
     sys.exit(1)
-print(f"[deploy] pre-flight OK: cloud-init pure ASCII, embedded mcp_server.py in sync (sha {hashlib.sha256(cn.encode()).hexdigest()[:12]})")
+cn = open(canon, "rb").read()
+if decoded != cn:
+    print("[deploy] FATAL: decoded embedded mcp_server.py differs from installer/mcp_server.py.")
+    print("         Regenerate the gz.b64 blob before deploying.")
+    sys.exit(1)
+# cloud-init must stay under DigitalOcean's 64KB user-data cap
+import re as _re
+approx = _re.sub(r"{{.*?}}", "x" * 16, open(ci, encoding="utf-8").read())
+size = len(approx.encode())
+if size >= 64 * 1024:
+    print(f"[deploy] FATAL: cloud-init ~{size}B exceeds DO 64KB user-data cap.")
+    sys.exit(1)
+print(f"[deploy] pre-flight OK: ASCII, mcp_server.py gz.b64 decodes & matches (sha {hashlib.sha256(cn).hexdigest()[:12]}), cloud-init ~{size}B < 64KB")
 PYGUARD
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

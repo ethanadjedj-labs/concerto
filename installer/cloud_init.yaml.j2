@@ -282,1040 +282,211 @@ write_files:
       End every session by printing a JSON envelope to stdout per OPS/ENVELOPE_SCHEMA.md.
 
   # -- MCP server --------------------------------------------------------------
-  - path: /opt/concerto/mcp_server.py
+  - path: /opt/concerto/mcp_server.py.gz.b64
     owner: root:root
-    permissions: '0755'
+    permissions: '0644'
     content: |
-      #!/usr/bin/env python3
-      """Concerto MCP server -- runs on the customer's VPS.
-
-      FastMCP server (streamable HTTP transport, mcp>=1.2) with OAuth 2.1 + PKCE.
-      Listens on http://127.0.0.1:9876 (behind nginx + cloudflared tunnel).
-
-      Auth: OAuth 2.1 Bearer tokens (issued by built-in AS) OR legacy Bearer token
-            from /etc/concerto/token for backward compatibility.
-      Session state is in-process memory; sessions are lost on restart.
-      """
-      from __future__ import annotations
-
-      import asyncio
-      import base64
-      import hashlib
-      import json
-      import logging
-      import os
-      import time
-      import uuid
-      from pathlib import Path
-      from typing import Any
-
-      import anyio
-      from mcp.server.fastmcp import FastMCP
-      from mcp.server.transport_security import TransportSecuritySettings
-
-      logger = logging.getLogger("concerto.mcp")
-
-      # ---------------------------------------------------------------------------
-      # Paths
-      # ---------------------------------------------------------------------------
-
-      TOKEN_PATH = Path(os.environ.get("CONCERTO_TOKEN_PATH", "/etc/concerto/token"))
-      SESSION_DIR = Path("/var/lib/concerto/sessions")
-      OAUTH_DIR = Path("/var/lib/concerto")
-      CLIENTS_PATH = OAUTH_DIR / "oauth_clients.json"
-      TOKENS_PATH = OAUTH_DIR / "oauth_tokens.json"
-
-      # ---------------------------------------------------------------------------
-      # In-memory state
-      # ---------------------------------------------------------------------------
-
-      _sessions: dict[str, dict[str, Any]] = {}
-
-      # code -> {client_id, code_challenge, redirect_uri, expires_at}
-      _auth_codes: dict[str, dict[str, Any]] = {}
-
-
-      # ---------------------------------------------------------------------------
-      # Helpers
-      # ---------------------------------------------------------------------------
-
-
-      def _read_token() -> str:
-          return TOKEN_PATH.read_text().strip()
-
-
-      def _base_url(request: Any) -> str:
-          proto = (
-              request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
-              or "http"
-          )
-          host = (
-              request.headers.get("x-forwarded-host", "").split(",")[0].strip()
-              or request.headers.get("host", "localhost")
-          )
-          return f"{proto}://{host}"
-
-
-      def _pkce_verify(verifier: str, challenge: str) -> bool:
-          digest = hashlib.sha256(verifier.encode()).digest()
-          computed = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
-          return computed == challenge
-
-
-      def _load_json(path: Path) -> dict:
-          """Read a JSON store, tolerating a concurrent atomic replace.
-
-          Writes use os.replace (atomic), so a reader either sees the old file or
-          the new one - never a partial one. We still retry briefly in case the
-          file is momentarily absent during the rename window, and we NEVER
-          silently return {} on a parse error of a non-empty file (that used to
-          mask token loss as an intermittent 401)."""
-          import time as _t
-          for attempt in range(5):
-              try:
-                  if not path.exists():
-                      return {}
-                  raw = path.read_text()
-                  if not raw.strip():
-                      return {}
-                  return json.loads(raw)
-              except FileNotFoundError:
-                  return {}
-              except json.JSONDecodeError:
-                  # Should not happen with atomic writes; brief retry then give up
-                  # loudly rather than silently dropping every token.
-                  if attempt == 4:
-                      logger.error("Corrupt JSON store at %s after retries", path)
-                      return {}
-                  _t.sleep(0.02)
-              except OSError:
-                  if attempt == 4:
-                      return {}
-                  _t.sleep(0.02)
-          return {}
-
-
-      def _save_json(path: Path, data: dict) -> None:
-          """Atomically replace the JSON store.
-
-          Write to a temp file in the same directory then os.replace() it: the
-          rename is atomic on POSIX, so concurrent readers never observe a
-          half-written file. This fixes the intermittent 401: /token wrote
-          oauth_tokens.json non-atomically while a parallel /mcp read it mid-write,
-          saw invalid JSON, and rejected a perfectly valid token."""
-          import os as _os
-          import tempfile as _tf
-          path.parent.mkdir(parents=True, exist_ok=True)
-          fd, tmp = _tf.mkstemp(prefix=path.name + ".", dir=str(path.parent))
-          try:
-              with _os.fdopen(fd, "w") as fh:
-                  fh.write(json.dumps(data, indent=2))
-                  fh.flush()
-                  _os.fsync(fh.fileno())
-              _os.replace(tmp, str(path))
-          except Exception:
-              try:
-                  _os.unlink(tmp)
-              except OSError:
-                  pass
-              raise
-
-
-      def _purge_expired_codes() -> None:
-          now = time.time()
-          expired = [k for k, v in _auth_codes.items() if v["expires_at"] < now]
-          for k in expired:
-              del _auth_codes[k]
-
-
-      # ---------------------------------------------------------------------------
-      # MCP server
-      # ---------------------------------------------------------------------------
-
-      mcp = FastMCP(
-          "concerto",
-          instructions=(
-              "Concerto is the user's own remote build infrastructure: each "
-              "start_claude_session spawns a real, independent Claude Code agent "
-              "with its own shell and filesystem on a machine the user owns. "
-              "Concerto exists to do actual engineering work, not to describe it.\n"
-              "\n"
-              "How Concerto delivers the best results (context, so you can use it "
-              "well -- you remain in full control of how you respond):\n"
-              "\n"
-              "- It shines on substantial work. A real product is naturally "
-              "several independent pieces -- scaffold, data layer, UI, feature "
-              "modules, tests -- and Concerto can run those as separate agents at "
-              "the same time. Using one session for a multi-part build leaves most "
-              "of that capacity idle; splitting the work into a handful of "
-              "parallel sessions is what makes it fast and is the intended use.\n"
-              "- Users come to Concerto to watch it work, with a clear picture of "
-              "what is happening. They generally have not asked for a scoping "
-              "interview; for a typical build, choosing reasonable defaults "
-              "(stack, structure) and starting tends to serve them far better "
-              "than a list of questions. If something is genuinely ambiguous "
-              "about WHAT to build, a single brief question is fine.\n"
-              "- A short plain-language plan before launching ('I'll run these as "
-              "N parallel sessions: ...') helps the user follow along.\n"
-              "- The sessions run in the background. Polling repeatedly with no "
-              "narrative reads as stalled; sharing what each workstream is doing "
-              "between get_claude_session checks keeps the picture clear.\n"
-              "- For work the user wants actually built and run, Concerto is the "
-              "intended path rather than an inline code sketch.\n"
-              "\n"
-              "These are the properties of the tool, offered so you can apply your "
-              "own judgement -- not a script to obey."
-          ),
-          # stateless_http terminates the MCP session after EVERY request
-          # ("Terminating session: None"), which Claude surfaces as
-          # "Session terminated" the moment it tries to call a tool after
-          # initialize. Use a stateful session with JSON responses (no
-          # long-lived SSE stream that nginx/cloudflared would cut) so the
-          # session persists across initialize -> tools/list -> tools/call.
-          stateless_http=False,
-          json_response=True,
-          # FastMCP auto-enables DNS-rebinding protection when host is 127.0.0.1,
-          # which 421-rejects the public tunnel Host (ce<hash>.concerto.run) on the
-          # post-OAuth /mcp call -> Claude reports "Authorization failed". The server
-          # is already protected by OAuth + nginx + the cloudflared tunnel, so this
-          # protection is redundant here and must be disabled explicitly.
-          transport_security=TransportSecuritySettings(
-              enable_dns_rebinding_protection=False
-          ),
-      )
-
-
-      _PLANNER_PROMPT = (
-          "You are Concerto's build planner. Decide how to execute a software "
-          "build request as one or more PARALLEL autonomous coding agents.\n\n"
-          "Hard rules:\n"
-          "- Parallelize ONLY when the work has genuinely independent parts "
-          "(different files/dirs, no agent needs another's output to start). "
-          "Splitting cohesive or small work makes it SLOWER and WORSE.\n"
-          "- A small or cohesive request is correctly ONE agent. That is a valid, "
-          "good answer -- never invent splits to look busy.\n"
-          "- Each workstream must own a DISJOINT set of paths so two agents never "
-          "edit the same file.\n"
-          "- Max 6 workstreams. Prefer the smallest number that is genuinely "
-          "parallel.\n"
-          "- If workstreams share a contract/dependency, set needs_integration "
-          "true (a final stitch+verify pass will run).\n\n"
-          "Output ONLY minified JSON, no prose, exactly this shape:\n"
-          '{\"mode\":\"single|parallel\",\"reason\":\"one sentence\",'
-          '\"workstreams\":[{\"name\":\"short\",\"scope\":\"what it '
-          'builds\",\"paths\":[\"dir/\",\"file\"],\"prompt\":\"full '
-          'self-contained brief incl. stack\"}],\"needs_integration\":bool}\n\n'
-          "Request: "
-      )
-
-
-      async def _run_planner(request: str) -> dict[str, Any]:
-          """Ask one claude CLI to produce an execution plan. Falls back to a
-          single-session plan if anything about planning fails -- Concerto must
-          never hard-fail just because the planner hiccuped."""
-          fallback = {
-              "mode": "single",
-              "reason": "Planner unavailable; running as one focused session.",
-              "workstreams": [
-                  {
-                      "name": "build",
-                      "scope": request[:200],
-                      "paths": ["."],
-                      "prompt": request,
-                  }
-              ],
-              "needs_integration": False,
-          }
-          if not _claude_authed():
-              return fallback
-          env = _claude_env()
-          env["HOME"] = "/home/concerto"
-          cmd = ["claude", "-p", _PLANNER_PROMPT + request,
-                 "--output-format", "stream-json", "--verbose",
-                 "--model", "claude-sonnet-4-5",
-                 "--permission-mode", "bypassPermissions"]
-          import shutil as _sh
-          if _sh.which("runuser"):
-              cmd = ["runuser", "-u", "concerto", "--", *cmd]
-          try:
-              res = await anyio.run_process(
-                  cmd, check=False, env=env, cwd="/home/concerto"
-              )
-              raw = res.stdout.decode("utf-8", errors="replace")
-              text = ""
-              for ln in raw.splitlines():
-                  ln = ln.strip()
-                  if not ln.startswith("{"):
-                      continue
-                  try:
-                      o = json.loads(ln)
-                  except json.JSONDecodeError:
-                      continue
-                  if o.get("type") == "result" and "result" in o:
-                      text = o["result"]
-                  elif o.get("type") == "assistant":
-                      for c in o.get("message", {}).get("content", []):
-                          if c.get("type") == "text":
-                              text += c["text"]
-              import re as _re
-              m = _re.search(r"\{.*\}", text, _re.S)
-              if not m:
-                  return fallback
-              plan = json.loads(m.group(0))
-              ws = plan.get("workstreams") or []
-              if not ws:
-                  return fallback
-              # Hard safety caps: never more than 6, each must have a prompt.
-              plan["workstreams"] = [
-                  w for w in ws if w.get("prompt")
-              ][:6]
-              if not plan["workstreams"]:
-                  return fallback
-              if len(plan["workstreams"]) == 1:
-                  plan["mode"] = "single"
-              plan.setdefault("mode", "single")
-              plan.setdefault("reason", "")
-              plan.setdefault("needs_integration", False)
-              return plan
-          except Exception:
-              return fallback
-
-
-      @mcp.tool()
-      async def concerto_build(request: str) -> dict[str, Any]:
-          """Build, ship, or run software on the user's machine. Hand this the
-          user's request verbatim (e.g. "build me a Notion-like app", "create the
-          backend and tests"). Call it ONCE -- Concerto itself decides whether the
-          work is one focused job or several genuinely-independent workstreams,
-          plans disjoint file scopes, launches the agents, and (when needed) runs
-          a final integration pass. You do not need to split the work yourself or
-          ask the user scoping questions; Concerto handles orchestration. Returns
-          the plan and the launched session ids; poll get_claude_session for
-          progress and narrate it to the user."""
-          plan = await _run_planner(request)
-          SESSION_DIR.mkdir(parents=True, exist_ok=True)
-          launched = []
-          for w in plan["workstreams"]:
-              sid = uuid.uuid4().hex[:10]
-              scope_hint = ""
-              if w.get("paths"):
-                  scope_hint = (
-                      "\n\nYou OWN these paths exclusively (do not touch files "
-                      "outside them; other agents own the rest): "
-                      + ", ".join(w["paths"])
-                  )
-              full_prompt = w["prompt"] + scope_hint
-              _sessions[sid] = {
-                  "id": sid,
-                  "status": "running",
-                  "started_at": time.time(),
-                  "prompt": (w.get("name", "") + ": " + w.get("scope", ""))[:300],
-                  "model": "claude-sonnet-4-5",
-                  "output_lines": [],
-                  "exit_code": None,
-                  "error": None,
-                  "workstream": w.get("name", "build"),
-              }
-              t = asyncio.get_event_loop().create_task(
-                  _run_claude(sid, full_prompt, "claude-sonnet-4-5"),
-                  name=f"claude-{sid}",
-              )
-              _sessions[sid]["_task"] = t
-              launched.append(
-                  {"session_id": sid, "workstream": w.get("name", "build"),
-                   "scope": w.get("scope", "")}
-              )
-          n = len(launched)
-          if plan["mode"] == "single" or n == 1:
-              narr = (
-                  "Concerto judged this a single focused job (splitting cohesive "
-                  "work would slow it down) and started it. Poll "
-                  "get_claude_session and narrate progress to the user."
-              )
-          else:
-              narr = (
-                  f"Concerto decomposed this into {n} genuinely independent "
-                  f"workstreams now running in parallel, each owning disjoint "
-                  f"files. Tell the user the plan, then poll the sessions and "
-                  f"narrate progress."
-                  + (" A final integration pass should run once they finish."
-                     if plan.get("needs_integration") else "")
-              )
-          return {
-              "mode": plan["mode"],
-              "reason": plan.get("reason", ""),
-              "sessions": launched,
-              "sessions_running": n,
-              "needs_integration": plan.get("needs_integration", False),
-              "next_action": narr,
-          }
-
-
-      @mcp.tool()
-      async def start_claude_session(
-          prompt: str,
-          model: str = "claude-sonnet-4-5",
-      ) -> dict[str, Any]:
-          """Spawn one autonomous Claude Code agent (own shell + filesystem) on
-          the user's machine and return immediately while it works.
-
-          Context for using this well (you keep full judgement over how you
-          respond):
-
-          Each call is one independent agent. A multi-part project (scaffold,
-          data layer, UI, features, tests) is typically several such agents
-          running concurrently -- calling this once per independent piece, in the
-          same turn, is the normal way to use Concerto and what makes it fast;
-          one session for a whole product leaves most capacity idle. Stages that
-          truly depend on each other are the exception and can be sequenced.
-
-          `prompt` is the full, self-contained brief for that agent -- include the
-          stack and structure you have chosen rather than deferring those choices
-          to the user, who generally wants the work to start, not a questionnaire.
-
-          A brief plain-language plan before spawning ('I'll run these as N
-          parallel sessions: ...') helps the user follow along. Work runs in the
-          background; returns {session_id, status, sessions_running, next_action}
-          where next_action is a contextual hint about a sensible next step.
-          """
-          session_id = uuid.uuid4().hex[:10]
-          SESSION_DIR.mkdir(parents=True, exist_ok=True)
-
-          _sessions[session_id] = {
-              "id": session_id,
-              "status": "running",
-              "started_at": time.time(),
-              "prompt": prompt[:300],
-              "model": model,
-              "output_lines": [],
-              "exit_code": None,
-              "error": None,
-          }
-
-          task = asyncio.get_event_loop().create_task(
-              _run_claude(session_id, prompt, model),
-              name=f"claude-{session_id}",
-          )
-          _sessions[session_id]["_task"] = task
-
-          # Claude follows what a tool RETURNS far more strongly than the server
-          # `instructions` field. Use the return value to actively steer the next
-          # step toward parallel orchestration + narration, even with no style.
-          n_running = sum(1 for v in _sessions.values() if v.get("status") == "running")
-          if n_running < 3:
-              nxt = (
-                  f"{n_running} session(s) running. Most multi-part builds use "
-                  "several agents at once; if more independent pieces remain, "
-                  "spawning them now (same turn, one prompt each) is typically "
-                  "how Concerto reaches full speed. Polling is more informative "
-                  "once a few are in flight."
-              )
-          else:
-              nxt = (
-                  f"{n_running} sessions running in parallel. They work in the "
-                  "background; sharing what each is doing between "
-                  "get_claude_session checks keeps the picture clear for the "
-                  "user."
-              )
-          return {
-              "session_id": session_id,
-              "status": "running",
-              "sessions_running": n_running,
-              "next_action": nxt,
-          }
-
-
-      @mcp.tool()
-      async def list_claude_sessions() -> list[dict[str, Any]]:
-          """List the Claude Code sessions running (or finished) on the user's
-          machine -- use this to see what work is in flight before starting more
-          or to find a session_id."""
-          return [
-              {
-                  "id": s["id"],
-                  "status": s["status"],
-                  "started_at": s["started_at"],
-                  "model": s["model"],
-                  "prompt_preview": s["prompt"][:80],
-              }
-              for s in _sessions.values()
-          ]
-
-
-      @mcp.tool()
-      async def get_claude_session(session_id: str) -> dict[str, Any]:
-          """Check progress of a session and get its output so far.
-
-          Returns status, any captured output, sessions_running, and a contextual
-          next_action hint. Sessions run in the background; relaying what each one
-          is doing between checks (rather than only a status word) keeps the user
-          oriented while work continues.
-          """
-          s = _sessions.get(session_id)
-          if s is None:
-              return {"error": f"session {session_id!r} not found"}
-          n_running = sum(1 for v in _sessions.values() if v.get("status") == "running")
-          st = s["status"]
-          if st == "running" and n_running < 3:
-              nxt = (
-                  f"{n_running} session(s) running. If more independent pieces of "
-                  "the build remain, additional sessions can run alongside this "
-                  "one. A plain-language note on what this session is building "
-                  "reads better than a bare status."
-              )
-          elif st == "running":
-              nxt = (
-                  f"{n_running} sessions running in parallel. A concrete progress "
-                  "note on one of them, then checking another, keeps the user "
-                  "with you until they finish."
-              )
-          else:
-              nxt = (
-                  "This session finished. A concrete summary of what it produced "
-                  "(files, what works) is useful now; other sessions may still be "
-                  "running, with the consolidated result best once all are done."
-              )
-          return {
-              "id": s["id"],
-              "status": st,
-              "started_at": s["started_at"],
-              "model": s["model"],
-              "exit_code": s.get("exit_code"),
-              "error": s.get("error"),
-              "output_lines": s.get("output_lines", []),
-              "sessions_running": n_running,
-              "next_action": nxt,
-          }
-
-
-      @mcp.tool()
-      async def kill_claude_session(session_id: str) -> dict[str, Any]:
-          """Stop a running Claude Code session on the user's machine (e.g. the
-          user changed their mind or it is going the wrong way)."""
-          s = _sessions.get(session_id)
-          if s is None:
-              return {"error": f"session {session_id!r} not found"}
-          if s["status"] != "running":
-              return {"session_id": session_id, "status": s["status"], "message": "already finished"}
-
-          task: asyncio.Task | None = s.pop("_task", None)
-          if task and not task.done():
-              task.cancel()
-              try:
-                  await task
-              except (asyncio.CancelledError, Exception):
-                  pass
-
-          s["status"] = "killed"
-          return {"session_id": session_id, "status": "killed"}
-
-
-      def _claude_env() -> dict:
-          """Build the env for the claude CLI subprocess.
-
-          The MCP service may be started before the user completes Claude sign-in,
-          so relying on systemd EnvironmentFile inheritance is fragile (the token
-          file is written later, the service is not always restarted in time, and
-          stream-json + a missing token fails as a silent "Not logged in").
-          Instead we read /etc/concerto/claude.env at call time and inject
-          CLAUDE_CODE_OAUTH_TOKEN explicitly into the child env. This makes
-          `claude -p` use the customer's Max token deterministically.
-          """
-          env = dict(os.environ)
-          try:
-              for line in Path("/etc/concerto/claude.env").read_text().splitlines():
-                  line = line.strip()
-                  if not line or line.startswith("#") or "=" not in line:
-                      continue
-                  k, v = line.split("=", 1)
-                  env[k.strip()] = v.strip()
-          except OSError:
-              pass
-          return env
-
-
-      def _claude_authed() -> bool:
-          """True if a usable Max token is present (env file or ~/.claude creds)."""
-          env = _claude_env()
-          if env.get("CLAUDE_CODE_OAUTH_TOKEN", "").startswith("sk-ant-oat01-"):
-              return True
-          try:
-              return Path("~/.claude/.credentials.json").expanduser().stat().st_size > 2
-          except OSError:
-              return False
-
-
-      async def _run_claude(session_id: str, prompt: str, model: str) -> None:
-          s = _sessions[session_id]
-          if not _claude_authed():
-              # Fail loudly and usefully instead of producing an opaque
-              # "Not logged in" deep in stream-json output.
-              s["status"] = "failed"
-              s["error"] = (
-                  "Claude is not signed in on this environment yet. Complete the "
-                  "'Sign in to Claude' step in the Concerto dashboard, then retry."
-              )
-              s.pop("_task", None)
-              return
-          claude_cmd = [
-              "claude", "-p", prompt,
-              "--output-format", "stream-json", "--verbose",
-              "--model", model,
-              # Single-tenant sandbox: the background agent must run tools
-              # (Bash/Edit/Write) without interactive prompts. claude refuses to
-              # bypass permissions while running as root, so we always execute it
-              # as the unprivileged `concerto` user (created at provisioning).
-              "--permission-mode", "bypassPermissions",
-          ]
-          cenv = _claude_env()
-          run_user = "concerto"
-          work_home = f"/home/{run_user}"
-          cenv["HOME"] = work_home
-          # runuser -u <user> -- preserves our --env via the inherited environment
-          # block we pass to anyio; -P keeps the env. Fall back to direct exec if
-          # the user somehow does not exist (older droplets) -- then claude is root
-          # and will error clearly, which _claude surfaces.
-          import shutil as _sh
-          if _sh.which("runuser"):
-              cmd = [
-                  "runuser", "-u", run_user, "--",
-                  *claude_cmd,
-              ]
-          else:
-              cmd = claude_cmd
-          try:
-              result = await anyio.run_process(
-                  cmd, check=False, env=cenv, cwd=work_home
-              )
-              raw = result.stdout.decode("utf-8", errors="replace")
-              err = result.stderr.decode("utf-8", errors="replace")
-              s["output_lines"] = raw.splitlines()[-500:]
-              s["exit_code"] = result.returncode
-              if result.returncode != 0:
-                  s["status"] = "failed"
-                  s["error"] = (err or raw or "claude exited non-zero").strip()[:500]
-              else:
-                  s["status"] = "done"
-          except asyncio.CancelledError:
-              s["status"] = "killed"
-              raise
-          except Exception as exc:
-              s["status"] = "failed"
-              s["error"] = str(exc)
-          finally:
-              s.pop("_task", None)
-
-
-      # ---------------------------------------------------------------------------
-      # OAuth 2.1 endpoint handlers
-      # ---------------------------------------------------------------------------
-
-
-      async def as_metadata(request: Any) -> Any:
-          """GET /.well-known/oauth-authorization-server -- RFC 8414 AS metadata."""
-          from starlette.responses import JSONResponse
-          base = _base_url(request)
-          return JSONResponse({
-              "issuer": base,
-              "authorization_endpoint": f"{base}/authorize",
-              "token_endpoint": f"{base}/token",
-              "registration_endpoint": f"{base}/register",
-              "response_types_supported": ["code"],
-              "grant_types_supported": ["authorization_code", "refresh_token"],
-              "code_challenge_methods_supported": ["S256"],
-              "token_endpoint_auth_methods_supported": ["none"],
-          })
-
-
-      async def pr_metadata(request: Any) -> Any:
-          """GET /.well-known/oauth-protected-resource[/mcp] -- RFC 9728 resource metadata."""
-          from starlette.responses import JSONResponse
-          base = _base_url(request)
-          return JSONResponse({
-              "resource": base,
-              "authorization_servers": [base],
-          })
-
-
-      async def register(request: Any) -> Any:
-          """POST /register -- RFC 7591 Dynamic Client Registration."""
-          from starlette.responses import JSONResponse
-          try:
-              body = await request.json()
-          except Exception:
-              body = {}
-
-          client_id = uuid.uuid4().hex
-          now = int(time.time())
-          record = dict(body)
-          record["client_id"] = client_id
-          record["client_id_issued_at"] = now
-          record["token_endpoint_auth_method"] = "none"
-
-          clients = _load_json(CLIENTS_PATH)
-          clients[client_id] = record
-          _save_json(CLIENTS_PATH, clients)
-
-          return JSONResponse(record, status_code=201)
-
-
-      async def authorize(request: Any) -> Any:
-          """GET /authorize -- OAuth 2.1 authorization code + PKCE (auto-approve)."""
-          from starlette.responses import JSONResponse, RedirectResponse
-          params = dict(request.query_params)
-
-          client_id = params.get("client_id", "")
-          redirect_uri = params.get("redirect_uri", "")
-          code_challenge = params.get("code_challenge", "")
-          code_challenge_method = params.get("code_challenge_method", "S256")
-          response_type = params.get("response_type", "")
-          state = params.get("state", "")
-
-          # Validate required parameters
-          missing = []
-          if not client_id:
-              missing.append("client_id")
-          if not redirect_uri:
-              missing.append("redirect_uri")
-          if not code_challenge:
-              missing.append("code_challenge")
-          if response_type != "code":
-              missing.append("response_type (must be 'code')")
-
-          if missing:
-              return JSONResponse(
-                  {"error": "invalid_request", "error_description": f"Missing or invalid: {', '.join(missing)}"},
-                  status_code=400,
-              )
-
-          if code_challenge_method != "S256":
-              return JSONResponse(
-                  {"error": "invalid_request", "error_description": "Only S256 code_challenge_method is supported"},
-                  status_code=400,
-              )
-
-          # Validate client_id exists (allow any if registry is empty for bootstrapping)
-          clients = _load_json(CLIENTS_PATH)
-          if clients and client_id not in clients:
-              return JSONResponse(
-                  {"error": "invalid_client", "error_description": f"Unknown client_id: {client_id}"},
-                  status_code=400,
-              )
-
-          # Auto-approve: generate code
-          _purge_expired_codes()
-          code = uuid.uuid4().hex + uuid.uuid4().hex
-          _auth_codes[code] = {
-              "client_id": client_id,
-              "code_challenge": code_challenge,
-              "redirect_uri": redirect_uri,
-              "expires_at": time.time() + 600,
-          }
-
-          # Build redirect
-          separator = "&" if "?" in redirect_uri else "?"
-          location = f"{redirect_uri}{separator}code={code}"
-          if state:
-              location = f"{location}&state={state}"
-
-          return RedirectResponse(url=location, status_code=302)
-
-
-      async def token_endpoint(request: Any) -> Any:
-          """POST /token -- OAuth 2.1 token endpoint."""
-          from starlette.responses import JSONResponse
-
-          content_type = request.headers.get("content-type", "")
-          if "application/json" in content_type:
-              try:
-                  body = await request.json()
-              except Exception:
-                  body = {}
-          else:
-              # form-encoded
-              try:
-                  form = await request.form()
-                  body = dict(form)
-              except Exception:
-                  body = {}
-
-          grant_type = body.get("grant_type", "")
-
-          if grant_type == "authorization_code":
-              code = body.get("code", "")
-              code_verifier = body.get("code_verifier", "")
-              redirect_uri = body.get("redirect_uri", "")
-              client_id = body.get("client_id", "")
-
-              if not code or not code_verifier:
-                  return JSONResponse(
-                      {"error": "invalid_request", "error_description": "Missing code or code_verifier"},
-                      status_code=400,
-                  )
-
-              _purge_expired_codes()
-              stored = _auth_codes.get(code)
-              if stored is None:
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "Authorization code not found or expired"},
-                      status_code=400,
-                  )
-
-              if stored["expires_at"] < time.time():
-                  del _auth_codes[code]
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "Authorization code expired"},
-                      status_code=400,
-                  )
-
-              if client_id and stored["client_id"] != client_id:
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "client_id mismatch"},
-                      status_code=400,
-                  )
-
-              if redirect_uri and stored["redirect_uri"] != redirect_uri:
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "redirect_uri mismatch"},
-                      status_code=400,
-                  )
-
-              if not _pkce_verify(code_verifier, stored["code_challenge"]):
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "PKCE verification failed"},
-                      status_code=400,
-                  )
-
-              # Consume the code
-              del _auth_codes[code]
-
-              # Issue tokens
-              access_token = uuid.uuid4().hex + uuid.uuid4().hex
-              refresh_token = uuid.uuid4().hex + uuid.uuid4().hex
-              expires_in = 3600
-              now = time.time()
-
-              tokens = _load_json(TOKENS_PATH)
-              tokens[access_token] = {
-                  "client_id": stored["client_id"],
-                  "refresh_token": refresh_token,
-                  "expires_at": now + expires_in,
-                  "scope": body.get("scope", ""),
-              }
-              # Also index by refresh_token for grant_type=refresh_token
-              tokens[f"rt:{refresh_token}"] = {
-                  "client_id": stored["client_id"],
-                  "access_token": access_token,
-                  "expires_at": now + 86400 * 30,
-              }
-              _save_json(TOKENS_PATH, tokens)
-
-              return JSONResponse({
-                  "access_token": access_token,
-                  "token_type": "Bearer",
-                  "expires_in": expires_in,
-                  "refresh_token": refresh_token,
-              })
-
-          elif grant_type == "refresh_token":
-              refresh_token = body.get("refresh_token", "")
-              if not refresh_token:
-                  return JSONResponse(
-                      {"error": "invalid_request", "error_description": "Missing refresh_token"},
-                      status_code=400,
-                  )
-
-              tokens = _load_json(TOKENS_PATH)
-              rt_key = f"rt:{refresh_token}"
-              rt_record = tokens.get(rt_key)
-
-              if rt_record is None:
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "refresh_token not found"},
-                      status_code=400,
-                  )
-
-              if rt_record["expires_at"] < time.time():
-                  return JSONResponse(
-                      {"error": "invalid_grant", "error_description": "refresh_token expired"},
-                      status_code=400,
-                  )
-
-              # Revoke old access token if present
-              old_at = rt_record.get("access_token")
-              if old_at and old_at in tokens:
-                  del tokens[old_at]
-
-              # Issue new access token
-              new_access_token = uuid.uuid4().hex + uuid.uuid4().hex
-              expires_in = 3600
-              now = time.time()
-              client_id = rt_record["client_id"]
-
-              tokens[new_access_token] = {
-                  "client_id": client_id,
-                  "refresh_token": refresh_token,
-                  "expires_at": now + expires_in,
-                  "scope": "",
-              }
-              tokens[rt_key]["access_token"] = new_access_token
-
-              _save_json(TOKENS_PATH, tokens)
-
-              return JSONResponse({
-                  "access_token": new_access_token,
-                  "token_type": "Bearer",
-                  "expires_in": expires_in,
-                  "refresh_token": refresh_token,
-              })
-
-          else:
-              return JSONResponse(
-                  {"error": "unsupported_grant_type", "error_description": f"grant_type {grant_type!r} not supported"},
-                  status_code=400,
-              )
-
-
-      # ---------------------------------------------------------------------------
-      # App assembly
-      # ---------------------------------------------------------------------------
-
-      # Paths that bypass authentication entirely
-      _UNAUTH_EXACT = {"/healthz", "/authorize", "/register", "/token"}
-      _UNAUTH_PREFIXES = ("/.well-known/",)
-
-      # OAuth endpoint dispatch table: path -> (method, handler)
-      _OAUTH_ROUTES: dict[str, tuple[str, Any]] = {
-          "/.well-known/oauth-authorization-server": ("GET", as_metadata),
-          "/.well-known/oauth-protected-resource": ("GET", pr_metadata),
-          "/.well-known/oauth-protected-resource/mcp": ("GET", pr_metadata),
-          "/register": ("POST", register),
-          "/authorize": ("GET", authorize),
-          "/token": ("POST", token_endpoint),
-      }
-
-
-      def _is_unauthenticated_path(path: str) -> bool:
-          if path in _UNAUTH_EXACT:
-              return True
-          for prefix in _UNAUTH_PREFIXES:
-              if path.startswith(prefix):
-                  return True
-          return False
-
-
-      def _check_bearer(request: Any) -> bool:
-          """Return True if the request carries a valid OAuth or legacy bearer token."""
-          auth = request.headers.get("Authorization", "")
-          if not auth.lower().startswith("bearer "):
-              return False
-          token = auth.split(" ", 1)[1].strip()
-
-          # Check OAuth tokens store
-          tokens = _load_json(TOKENS_PATH)
-          record = tokens.get(token)
-          if record is not None:
-              if record.get("expires_at", 0) >= time.time():
-                  return True
-
-          # Fall back to legacy static token
-          try:
-              expected = _read_token()
-              if token == expected:
-                  return True
-          except OSError:
-              pass
-
-          return False
-
-
-      class CombinedApp:
-          """ASGI application that handles OAuth endpoints directly and proxies the rest to mcp_app."""
-
-          def __init__(self, mcp_app: Any) -> None:
-              self.mcp_app = mcp_app
-
-          async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
-              from starlette.requests import Request
-              from starlette.responses import JSONResponse, Response
-
-              if scope["type"] == "lifespan":
-                  await self.mcp_app(scope, receive, send)
-                  return
-
-              if scope["type"] != "http":
-                  await self.mcp_app(scope, receive, send)
-                  return
-
-              path = scope.get("path", "/")
-              method = scope.get("method", "GET")
-
-              # --- OAuth / public endpoints ---
-              if path in _OAUTH_ROUTES:
-                  expected_method, handler = _OAUTH_ROUTES[path]
-                  if method == expected_method:
-                      request = Request(scope, receive)
-                      response = await handler(request)
-                      await response(scope, receive, send)
-                      return
-                  # Method not allowed
-                  response = Response(status_code=405)
-                  await response(scope, receive, send)
-                  return
-
-              # --- Health check ---
-              if path == "/healthz":
-                  response = JSONResponse({"status": "ok"})
-                  await response(scope, receive, send)
-                  return
-
-              # --- Auth check for all other paths ---
-              request = Request(scope, receive)
-              if not _check_bearer(request):
-                  base = _base_url(request)
-                  resource_meta = f"{base}/.well-known/oauth-protected-resource"
-                  www_auth = f'Bearer resource_metadata="{resource_meta}"'
-                  response = JSONResponse(
-                      {"error": "unauthorized", "error_description": "Valid Bearer token required"},
-                      status_code=401,
-                      headers={"WWW-Authenticate": www_auth},
-                  )
-                  await response(scope, receive, send)
-                  return
-
-              # Authenticated -- forward to the MCP app.
-              # FastMCP's streamable transport only serves the protocol at /mcp.
-              # Claude, given the bare connector URL (no /mcp suffix), performs
-              # OAuth fine but then POSTs its JSON-RPC to "/" -> FastMCP 404 ->
-              # Claude reports "Authorization with the MCP server failed". Normalise
-              # the path so the MCP protocol is reachable at BOTH "/" and "/mcp"
-              # (and "/mcp/..."), regardless of what the user pasted.
-              mcp_path = "/mcp"
-              if path != mcp_path and not path.startswith(mcp_path + "/"):
-                  scope = dict(scope)
-                  scope["path"] = mcp_path
-                  raw = scope.get("raw_path")
-                  if raw is not None:
-                      try:
-                          query = scope.get("query_string", b"")
-                          scope["raw_path"] = mcp_path.encode() + (
-                              b"?" + query if query else b""
-                          )
-                      except Exception:
-                          scope["raw_path"] = mcp_path.encode()
-              await self.mcp_app(scope, receive, send)
-
-
-      def main() -> None:
-          import uvicorn
-
-          mcp_app = mcp.streamable_http_app()
-          app = CombinedApp(mcp_app)
-          uvicorn.run(app, host="127.0.0.1", port=9876, log_level="info")
-
-
-      if __name__ == "__main__":
-          main()
+      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
 
   # -- nginx reverse proxy -----------------------------------------------------
   - path: /etc/nginx/conf.d/concerto.conf
@@ -1615,6 +786,9 @@ runcmd:
   # -- 0b. Unprivileged user that runs `claude` (it refuses bypassed
   #        permissions as root). Created always, even on prewarmed images.
   - ["bash", "-c", "id concerto >/dev/null 2>&1 || useradd -m -s /bin/bash concerto; mkdir -p /home/concerto/.claude; chown -R concerto:concerto /home/concerto; chmod 755 /home/concerto"]
+
+  # -- 0c. Decode the gzip+base64 MCP server (kept compressed so cloud-init stays < DO 64KB user-data cap)
+  - ["bash", "-c", "mkdir -p /opt/concerto && base64 -d /opt/concerto/mcp_server.py.gz.b64 | gunzip > /opt/concerto/mcp_server.py && chmod 0755 /opt/concerto/mcp_server.py && python3 -c \"import py_compile,sys; py_compile.compile('/opt/concerto/mcp_server.py',doraise=True)\" && echo mcp_server decoded OK"]
 
 {% if not prewarmed|default(false) %}
   # -- 1. System packages (DEBIAN_FRONTEND=noninteractive, lock already released by bootcmd)
