@@ -19,7 +19,7 @@ import os
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from concerto import db
 
@@ -31,18 +31,40 @@ _GITHUB_CLIENT_SECRET = os.getenv("GITHUB_APP_CLIENT_SECRET", "")
 _API_BASE = os.getenv("CONCERTO_API_BASE", "https://api.concerto.run")
 _FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 
+# A GitHub OAuth App registers exactly ONE callback URL, so it cannot carry
+# the per-buyer {token}; the token travels in the OAuth `state` param.
+_STATIC_REDIRECT_URI = f"{_API_BASE}/api/github/callback"
+
 
 def _github_configured() -> bool:
     return bool(_GITHUB_CLIENT_ID and _GITHUB_CLIENT_SECRET)
 
 
-def _dash(token: str, status: str) -> RedirectResponse:
-    """Always send the user back to their dashboard with a readable status
-    instead of dumping a raw JSON error/HTTPException page in the browser."""
-    return RedirectResponse(
-        url=f"{_FRONTEND_URL}/dashboard/{token}?github={status}",
-        status_code=302,
+def _popup_close(token: str, status: str) -> HTMLResponse:
+    """Close the GitHub OAuth popup and notify the opener (Option B: the
+    user never leaves the dashboard). If the page was somehow opened in the
+    same tab (popup blocked), fall back to a normal redirect."""
+    safe_status = "".join(c for c in status if c.isalnum() or c in "_-")[:32]
+    html = (
+        "<!doctype html><html><head><meta charset=utf-8>"
+        "<title>Concerto - GitHub</title></head><body "
+        "style=\"font-family:-apple-system,system-ui,sans-serif;background:"
+        "#faf9f5;color:#191919;display:flex;align-items:center;"
+        "justify-content:center;height:100vh;margin:0\">"
+        "<p>Finishing up - you can close this window.</p>"
+        "<script>(function(){var s=" + repr(safe_status) + ";"
+        "try{if(window.opener&&!window.opener.closed){"
+        "window.opener.postMessage({source:'concerto-github',status:s},'*');"
+        "window.close();return;}}catch(e){}"
+        "location.replace(" + repr(_FRONTEND_URL + "/dashboard/" + token)
+        + "+'?github='+s);})();</script></body></html>"
     )
+    return HTMLResponse(content=html, status_code=200)
+
+
+# Back-compat alias: existing call sites use _dash(token, status).
+def _dash(token: str, status: str) -> HTMLResponse:
+    return _popup_close(token, status)
 
 
 @router.get("/api/buyer/{token}/github/connect")
@@ -57,7 +79,7 @@ async def github_connect(token: str):
     if not buyer:
         return _dash(token, "error")
 
-    redirect_uri = f"{_API_BASE}/api/buyer/{token}/github/callback"
+    redirect_uri = _STATIC_REDIRECT_URI
     auth_url = (
         "https://github.com/login/oauth/authorize"
         f"?client_id={_GITHUB_CLIENT_ID}"
@@ -71,31 +93,9 @@ async def github_connect(token: str):
     return RedirectResponse(url=auth_url, status_code=302)
 
 
-@router.get("/api/buyer/{token}/github/callback")
-async def github_callback(token: str, request: Request):
-    """Exchange GitHub OAuth code for an access token and persist it."""
-    if not _github_configured():
-        return _dash(token, "unavailable")
-
-    query = dict(request.query_params)
-    code = query.get("code", "")
-    state = query.get("state", "")
-
-    # state must equal the buyer token (basic CSRF binding). On mismatch or
-    # an explicit user denial, bounce cleanly to the dashboard.
-    if state != token:
-        return _dash(token, "error")
-
-    buyer = await db.get_buyer(token)
-    if not buyer:
-        return _dash(token, "error")
-
-    if not code:
-        # GitHub sends ?error=access_denied when the user clicks "Cancel".
-        return _dash(token, "cancelled")
-
-    redirect_uri = f"{_API_BASE}/api/buyer/{token}/github/callback"
-
+async def _exchange_and_store(token: str, code: str) -> str:
+    """Exchange the OAuth code, persist the GitHub token, return a status
+    string for the popup ('connected' | 'error')."""
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
@@ -104,33 +104,78 @@ async def github_callback(token: str, request: Request):
                     "client_id": _GITHUB_CLIENT_ID,
                     "client_secret": _GITHUB_CLIENT_SECRET,
                     "code": code,
-                    "redirect_uri": redirect_uri,
+                    "redirect_uri": _STATIC_REDIRECT_URI,
                 },
                 headers={"Accept": "application/json"},
             )
     except httpx.RequestError as exc:
         logger.exception("GitHub token exchange network error: %s", exc)
-        return _dash(token, "error")
+        return "error"
 
     if resp.status_code != 200:
         logger.warning("GitHub token exchange HTTP %s", resp.status_code)
-        return _dash(token, "error")
-
+        return "error"
     try:
         data = resp.json()
     except Exception:
         logger.warning("GitHub returned non-JSON response")
-        return _dash(token, "error")
+        return "error"
 
     access_token = data.get("access_token")
     if not access_token:
-        gh_error = data.get("error", "unknown_error")
-        logger.warning("GitHub OAuth error for token %.8s: %s", token, gh_error)
-        return _dash(token, "error")
+        logger.warning(
+            "GitHub OAuth error for %.8s: %s",
+            token, data.get("error", "unknown_error"),
+        )
+        return "error"
 
     await db.update_buyer(token, github_token=access_token)
     logger.info("GitHub token stored for buyer %.8s", token)
-    return _dash(token, "connected")
+    return "connected"
+
+
+@router.get("/api/github/callback")
+async def github_callback_static(request: Request):
+    """The one registered GitHub callback. Buyer token comes from `state`."""
+    query = dict(request.query_params)
+    code = query.get("code", "")
+    token = query.get("state", "")  # state == buyer token (set in /connect)
+
+    if not token:
+        # Nothing we can do without a token; close the popup quietly.
+        return _popup_close("", "error")
+    if not _github_configured():
+        return _popup_close(token, "unavailable")
+
+    buyer = await db.get_buyer(token)
+    if not buyer:
+        return _popup_close(token, "error")
+    if not code:
+        # GitHub sends ?error=access_denied when the user clicks Cancel.
+        return _popup_close(token, "cancelled")
+
+    status = await _exchange_and_store(token, code)
+    return _popup_close(token, status)
+
+
+@router.get("/api/buyer/{token}/github/callback")
+async def github_callback_legacy(token: str, request: Request):
+    """Back-compat: old per-buyer callback path. Same logic, token from path.
+    Kept so any in-flight links still work; new flows use the static one."""
+    if not _github_configured():
+        return _popup_close(token, "unavailable")
+    query = dict(request.query_params)
+    code = query.get("code", "")
+    state = query.get("state", "")
+    if state != token:
+        return _popup_close(token, "error")
+    buyer = await db.get_buyer(token)
+    if not buyer:
+        return _popup_close(token, "error")
+    if not code:
+        return _popup_close(token, "cancelled")
+    status = await _exchange_and_store(token, code)
+    return _popup_close(token, status)
 
 
 @router.get("/api/buyer/{token}/github/status")

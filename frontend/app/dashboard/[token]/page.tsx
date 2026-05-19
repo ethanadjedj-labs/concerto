@@ -706,16 +706,18 @@ export default function DashboardPage({
     return () => clearInterval(id)
   }, [uiState, backendUrl, params.token])
 
-  // Read ?github=connected from the URL on mount (set after GitHub OAuth callback)
-  useEffect(() => {
-    const sp = new URLSearchParams(window.location.search)
-    const g = sp.get("github")
+  // Apply a GitHub OAuth result (used by both the popup postMessage path
+  // and the same-tab fallback that reads ?github= on mount).
+  function applyGithubStatus(g: string | null) {
     if (g === "connected") {
       setGithubConnected(true)
       setCodeSource("github")
+      setGithubNotice(null)
     } else if (g === "cancelled") {
       setCodeSource("github")
-      setGithubNotice("GitHub connection cancelled — you can try again anytime.")
+      setGithubNotice(
+        "GitHub connection cancelled \u2014 you can try again anytime."
+      )
     } else if (g === "unavailable") {
       setCodeSource("github")
       setGithubNotice(null)
@@ -725,8 +727,46 @@ export default function DashboardPage({
         "Something went wrong connecting GitHub. Please try again, or use a git clone URL for now."
       )
     }
+  }
+
+  // Option B seamless: listen for the popup telling us it finished.
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      const d = e.data
+      if (d && d.source === "concerto-github" && typeof d.status === "string") {
+        applyGithubStatus(d.status)
+      }
+    }
+    window.addEventListener("message", onMsg)
+    return () => window.removeEventListener("message", onMsg)
+  }, [])
+
+  // Open GitHub OAuth in a centered popup (never leaves the dashboard).
+  function openGithubPopup() {
+    const w = 600
+    const h = 720
+    const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2)
+    const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2)
+    const url = `${backendUrl}/api/buyer/${params.token}/github/connect`
+    const popup = window.open(
+      url,
+      "concerto-github",
+      `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    )
+    if (!popup) {
+      // Popup blocked: fall back to a full-page redirect (still works,
+      // the callback page redirects back to the dashboard).
+      window.location.href = url
+    }
+  }
+
+  // Same-tab fallback: if the popup was blocked the callback page redirects
+  // here with ?github=<status>. Reuse the shared handler, then clean the URL.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const g = sp.get("github")
     if (g) {
-      // strip the param so a refresh doesn't replay the notice
+      applyGithubStatus(g)
       const url = new URL(window.location.href)
       url.searchParams.delete("github")
       window.history.replaceState({}, "", url.toString())
@@ -1538,7 +1578,7 @@ export default function DashboardPage({
                           style={{ backgroundColor: "#24292f", color: "#fff" }}
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.location.href = `${backendUrl}/api/buyer/${params.token}/github/connect`
+                            openGithubPopup()
                           }}
                         >
                           Connect GitHub
