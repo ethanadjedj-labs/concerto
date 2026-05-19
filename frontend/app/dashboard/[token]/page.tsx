@@ -632,12 +632,12 @@ export default function DashboardPage({
           setTimeout(() => {
             setUIState("step3")
             uiStateRef.current = "step3"
-          }, 800)
+          }, 300)
         }
       } catch {
         // ignore
       }
-    }, 5000)
+    }, 1500)
     return () => clearInterval(id)
   }, [uiState, backendUrl, params.token])
 
@@ -1209,8 +1209,9 @@ export default function DashboardPage({
                   className="text-[14px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  The button opens Claude with everything pre-filled. Add it,
-                  Connect, Authorize — this page continues on its own.
+                  The button opens Claude with everything pre-filled. Just
+                  click Add, then Connect — this page jumps ahead the moment
+                  you do.
                 </p>
               </div>
 
@@ -1233,8 +1234,7 @@ export default function DashboardPage({
               <div className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: "#191919" }}>
                 <span style={{ color: "#8a847b" }}>In Claude:</span>
                 <span>
-                  <strong>Add</strong> &middot; <strong>Connect</strong> &middot;{" "}
-                  <strong>Authorize</strong>
+                  <strong>Add</strong> &middot; then <strong>Connect</strong>
                 </span>
               </div>
 
@@ -1248,7 +1248,7 @@ export default function DashboardPage({
                   style={{ color: "#cc785c" }}
                 />
                 <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-                  Do those 3 in Claude — this page moves on by itself.
+                  Waiting on Add + Connect in Claude — you&apos;ll jump ahead automatically.
                 </p>
               </div>
 

@@ -53,3 +53,16 @@ async def first_call_detected(token: str):
         return {"detected": True, "detected_at": db_ts}
 
     return {"detected": False, "detected_at": None}
+
+
+@router.post("/api/buyer/{token}/connector-connected")
+async def connector_connected(token: str):
+    """Called by the droplet's MCP server the instant the OAuth /token grant
+    succeeds — i.e. the moment the user clicks Connect/Authorize in Claude.
+    This is the earliest real signal we have that the connector is live, far
+    sooner than the first tool call. Idempotent."""
+    buyer = await db.get_buyer(token)
+    if not buyer:
+        raise HTTPException(status_code=404, detail="Buyer not found")
+    record_first_call(token)
+    return {"ok": True, "detected_at": _first_calls.get(token)}

@@ -822,6 +822,42 @@ async def token_endpoint(request: Any) -> Any:
         }
         _save_json(TOKENS_PATH, tokens)
 
+        # Fire-and-forget: tell the backend the connector just went live
+        # (this /token grant == the user clicked Connect/Authorize in
+        # Claude). Earliest possible signal so the dashboard jumps ahead
+        # within ~1s instead of waiting for the first tool call. Must never
+        # block or fail the OAuth response.
+        try:
+            cb = os.environ.get("CONCERTO_CALLBACK_URL", "")
+            ctok = os.environ.get("CONCERTO_TOKEN", "")
+            if cb and ctok:
+                api_base = cb.split("/api/")[0]
+                url = f"{api_base}/api/buyer/{ctok}/connector-connected"
+
+                import urllib.request as _u
+
+                def _post() -> None:
+                    try:
+                        _u.urlopen(
+                            _u.Request(
+                                url, method="POST", data=b"{}",
+                                headers={"Content-Type": "application/json"},
+                            ),
+                            timeout=5,
+                        )
+                    except Exception:
+                        pass
+
+                async def _notify() -> None:
+                    try:
+                        await anyio.to_thread.run_sync(_post)
+                    except Exception:
+                        pass
+
+                asyncio.get_event_loop().create_task(_notify())
+        except Exception:
+            pass
+
         return JSONResponse({
             "access_token": access_token,
             "token_type": "Bearer",
