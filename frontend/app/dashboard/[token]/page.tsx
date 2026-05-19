@@ -1307,34 +1307,11 @@ export default function DashboardPage({
                   className="h-4 w-4 shrink-0 animate-spin"
                   style={{ color: "#cc785c" }}
                 />
-                <p className="text-[13px] leading-relaxed" style={{ color: "#191919" }}>
-                  OK — go do the three things above in Claude. The second you
-                  finish, this page moves you to the next step on its own. No
-                  need to come back and click anything here.
+                <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
+                  Do those 3 in Claude — this page moves on by itself.
                 </p>
               </div>
 
-              {/* Optional upgrade — distinct (violet) so it reads as not-required */}
-              <a
-                href={`/dashboard/${params.token}/skill`}
-                className="block rounded-xl px-4 py-3.5 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe" }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold" style={{ color: "#5b21b6" }}>
-                      Optional · but I&apos;d love you to add this 🙏
-                    </p>
-                    <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#6d28d9" }}>
-                      Concerto works without it — but with it I build in
-                      parallel and get way more impressive. 60 seconds.
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[16px]" style={{ color: "#6d28d9" }}>
-                    →
-                  </span>
-                </div>
-              </a>
 
               <details className="group">
                 <summary
@@ -1574,6 +1551,26 @@ export default function DashboardPage({
               <div className="w-full">
                 <StarterPrompt />
               </div>
+
+              <a
+                href={`/dashboard/${params.token}/skill`}
+                className="block w-full rounded-xl px-4 py-3.5 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe" }}
+              >
+                <div className="flex items-center justify-between gap-3 text-left">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold" style={{ color: "#5b21b6" }}>
+                      Optional · but I&apos;d love you to add this 🙏
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#6d28d9" }}>
+                      With one Skill, I build in parallel automatically. 60s.
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[16px]" style={{ color: "#6d28d9" }}>
+                    →
+                  </span>
+                </div>
+              </a>
 
               <a
                 href="https://claude.ai"
