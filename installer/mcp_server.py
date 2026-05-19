@@ -837,24 +837,38 @@ async def token_endpoint(request: Any) -> Any:
                 import urllib.request as _u
 
                 def _post() -> None:
-                    try:
-                        _u.urlopen(
-                            _u.Request(
-                                url, method="POST", data=b"{}",
-                                headers={"Content-Type": "application/json"},
-                            ),
-                            timeout=5,
-                        )
-                    except Exception:
-                        pass
+                    # Cloudflare's WAF in front of api.concerto.run blocks
+                    # the default Python-urllib User-Agent as a bot (-> 403),
+                    # which silently killed this notify. A normal UA gets
+                    # through. Retry a couple of times for transient WAF.
+                    for _attempt in range(3):
+                        try:
+                            _u.urlopen(
+                                _u.Request(
+                                    url, method="POST", data=b"{}",
+                                    headers={
+                                        "Content-Type": "application/json",
+                                        "User-Agent": "Concerto-MCP/1.0",
+                                        "Accept": "application/json",
+                                    },
+                                ),
+                                timeout=4,
+                            )
+                            return
+                        except Exception:
+                            import time as _t
+                            _t.sleep(1)
 
-                async def _notify() -> None:
-                    try:
-                        await anyio.to_thread.run_sync(_post)
-                    except Exception:
-                        pass
-
-                asyncio.get_event_loop().create_task(_notify())
+                # Run it NOW, off the event loop, before we return. A
+                # background create_task() here is silently GC'd because the
+                # response is returned immediately and nothing holds a strong
+                # ref to the task -> the notify never fires. A bounded (3s)
+                # threadpool call is reliable and the /token response can
+                # absorb it.
+                try:
+                    await anyio.to_thread.run_sync(_post)
+                except Exception:
+                    pass
         except Exception:
             pass
 
