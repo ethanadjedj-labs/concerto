@@ -963,10 +963,6 @@ export default function DashboardPage({
 
   const mcpUrl = dashData?.mcp_url ?? "Loading..."
 
-  // Account settings must ALWAYS be reachable — especially in trial_expired /
-  // cancelled / refunded, which is precisely when a user wants to manage or
-  // cancel their account. Never hide this link.
-  const hideAccountSettings = false
   const isWizardState =
     uiState === "step1" || uiState === "step2" || uiState === "step3"
   const wizardStep: 1 | 2 | 3 =
@@ -1012,7 +1008,11 @@ export default function DashboardPage({
         }}
       >
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-3.5">
-          <div className="flex items-center gap-2.5">
+          <a
+            href="https://concerto.run"
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-70"
+            aria-label="Concerto home"
+          >
             <LogoMark size={28} />
             <span
               className="text-[18px] font-medium leading-none tracking-tight"
@@ -1020,16 +1020,7 @@ export default function DashboardPage({
             >
               Concerto
             </span>
-          </div>
-          {!hideAccountSettings && (
-            <Link
-              href={`/dashboard/${params.token}/settings`}
-              className="text-[13px] transition-opacity hover:opacity-70"
-              style={{ color: "#8a847b" }}
-            >
-              Account settings
-            </Link>
-          )}
+          </a>
         </div>
       </header>
 
@@ -1797,16 +1788,6 @@ export default function DashboardPage({
                 >
                   support@concerto.run
                 </a>
-                <span className="mx-2" style={{ color: "#e5dfd2" }}>
-                  &middot;
-                </span>
-                <Link
-                  href={`/dashboard/${params.token}/settings`}
-                  className="transition-opacity hover:opacity-70"
-                  style={{ color: "#8a847b" }}
-                >
-                  Account settings
-                </Link>
               </p>
             </div>
           </div>
