@@ -254,6 +254,14 @@ async def _finalize_oauth(token: str, vps_ip: str, key_path: str) -> None:
             "mkdir -p /etc/systemd/system/concerto-mcp.service.d && "
             "printf '[Service]\\nEnvironmentFile=-/etc/concerto/claude.env\\n' "
             "> /etc/systemd/system/concerto-mcp.service.d/oauth.conf && "
+            # claude refuses to run with bypassed permissions as root, so the
+            # MCP server runs `claude` as the unprivileged `concerto` user.
+            # Ensure that user exists and has the Max token in its env + HOME.
+            "(id concerto >/dev/null 2>&1 || useradd -m -s /bin/bash concerto) && "
+            "mkdir -p /home/concerto/.claude && "
+            "(grep -q CLAUDE_CODE_OAUTH_TOKEN /home/concerto/.bashrc 2>/dev/null || "
+            f"echo 'export CLAUDE_CODE_OAUTH_TOKEN={safe_tok}' >> /home/concerto/.bashrc) && "
+            "chown -R concerto:concerto /home/concerto && chmod 755 /home/concerto && "
             "systemctl daemon-reload && systemctl restart concerto-mcp 2>/dev/null; "
             "echo persisted"
         )

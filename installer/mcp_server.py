@@ -272,20 +272,92 @@ async def kill_claude_session(session_id: str) -> dict[str, Any]:
     return {"session_id": session_id, "status": "killed"}
 
 
+def _claude_env() -> dict:
+    """Build the env for the claude CLI subprocess.
+
+    The MCP service may be started before the user completes Claude sign-in,
+    so relying on systemd EnvironmentFile inheritance is fragile (the token
+    file is written later, the service is not always restarted in time, and
+    stream-json + a missing token fails as a silent "Not logged in").
+    Instead we read /etc/concerto/claude.env at call time and inject
+    CLAUDE_CODE_OAUTH_TOKEN explicitly into the child env. This makes
+    `claude -p` use the customer's Max token deterministically.
+    """
+    env = dict(os.environ)
+    try:
+        for line in Path("/etc/concerto/claude.env").read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            env[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return env
+
+
+def _claude_authed() -> bool:
+    """True if a usable Max token is present (env file or ~/.claude creds)."""
+    env = _claude_env()
+    if env.get("CLAUDE_CODE_OAUTH_TOKEN", "").startswith("sk-ant-oat01-"):
+        return True
+    try:
+        return Path("~/.claude/.credentials.json").expanduser().stat().st_size > 2
+    except OSError:
+        return False
+
+
 async def _run_claude(session_id: str, prompt: str, model: str) -> None:
     s = _sessions[session_id]
-    cmd = [
+    if not _claude_authed():
+        # Fail loudly and usefully instead of producing an opaque
+        # "Not logged in" deep in stream-json output.
+        s["status"] = "failed"
+        s["error"] = (
+            "Claude is not signed in on this environment yet. Complete the "
+            "'Sign in to Claude' step in the Concerto dashboard, then retry."
+        )
+        s.pop("_task", None)
+        return
+    claude_cmd = [
         "claude", "-p", prompt,
-        "--output-format", "stream-json",
+        "--output-format", "stream-json", "--verbose",
         "--model", model,
-        "--no-update-check",
+        # Single-tenant sandbox: the background agent must run tools
+        # (Bash/Edit/Write) without interactive prompts. claude refuses to
+        # bypass permissions while running as root, so we always execute it
+        # as the unprivileged `concerto` user (created at provisioning).
+        "--permission-mode", "bypassPermissions",
     ]
+    cenv = _claude_env()
+    run_user = "concerto"
+    work_home = f"/home/{run_user}"
+    cenv["HOME"] = work_home
+    # runuser -u <user> -- preserves our --env via the inherited environment
+    # block we pass to anyio; -P keeps the env. Fall back to direct exec if
+    # the user somehow does not exist (older droplets) -- then claude is root
+    # and will error clearly, which _claude surfaces.
+    import shutil as _sh
+    if _sh.which("runuser"):
+        cmd = [
+            "runuser", "-u", run_user, "--",
+            *claude_cmd,
+        ]
+    else:
+        cmd = claude_cmd
     try:
-        result = await anyio.run_process(cmd, check=False)
+        result = await anyio.run_process(
+            cmd, check=False, env=cenv, cwd=work_home
+        )
         raw = result.stdout.decode("utf-8", errors="replace")
+        err = result.stderr.decode("utf-8", errors="replace")
         s["output_lines"] = raw.splitlines()[-500:]
         s["exit_code"] = result.returncode
-        s["status"] = "done"
+        if result.returncode != 0:
+            s["status"] = "failed"
+            s["error"] = (err or raw or "claude exited non-zero").strip()[:500]
+        else:
+            s["status"] = "done"
     except asyncio.CancelledError:
         s["status"] = "killed"
         raise
