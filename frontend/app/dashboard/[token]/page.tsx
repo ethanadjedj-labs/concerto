@@ -255,178 +255,6 @@ function ValueCard({
   )
 }
 
-function ConcertoSkillCard() {
-  const [copiedDesc, setCopiedDesc] = useState(false)
-  const [copiedInstr, setCopiedInstr] = useState(false)
-  const dt = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const it = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const DESCRIPTION =
-    "Use whenever the user asks to build, create, ship, scaffold, prototype, fix, refactor, test, or deploy software, an app, a website, a backend, a feature, or any non-trivial code project. Activates Concerto orchestration so Claude decomposes the work, announces a parallel plan, and fans out multiple autonomous Claude Code sessions on the user's machine instead of asking scoping questions or writing code inline in chat."
-
-  async function copyText(
-    t: string,
-    set: (b: boolean) => void,
-    ref: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
-  ) {
-    try {
-      await navigator.clipboard.writeText(t)
-    } catch {
-      const ta = document.createElement("textarea")
-      ta.value = t
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand("copy")
-      document.body.removeChild(ta)
-    }
-    set(true)
-    if (ref.current) clearTimeout(ref.current)
-    ref.current = setTimeout(() => set(false), 2500)
-  }
-
-  async function copyInstructions() {
-    const full = await fetch("/concerto-custom-style.txt").then((r) => r.text())
-    // Strip YAML frontmatter — the Skill UI has separate name/description fields
-    const body = full.replace(/^---[\s\S]*?---\s*/, "").trim()
-    copyText(body, setCopiedInstr, it)
-  }
-
-  return (
-    <div
-      className="rounded-xl p-4 text-left"
-      style={{ border: "1px solid #f3efe5", backgroundColor: "#fff" }}
-    >
-      <div className="mb-4">
-        <p className="text-[15px] font-semibold" style={{ color: "#191919" }}>
-          Add the Concerto Skill
-        </p>
-        <p
-          className="mt-1 text-[13px] leading-relaxed"
-          style={{ color: "#8a847b" }}
-        >
-          This is what makes Claude orchestrate builds in parallel
-          automatically — so you never have to say &ldquo;use Concerto&rdquo;.
-          One-time setup.
-        </p>
-      </div>
-      {true && (
-        <div className="space-y-4">
-          <div
-            className="rounded-xl p-4"
-            style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c" }}
-          >
-            <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
-              Fastest way — upload the ready-made file
-            </p>
-            <p
-              className="mb-3 mt-1 text-[12px] leading-relaxed"
-              style={{ color: "#8a847b" }}
-            >
-              Download the Skill, then in Claude open Skills and use
-              &ldquo;Upload skill&rdquo;. Nothing to fill in by hand.
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <a
-                href="/downloads/concerto-skill.zip"
-                download
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "#cc785c", color: "#fff", minHeight: "42px" }}
-              >
-                Download Concerto Skill
-              </a>
-              <a
-                href="https://claude.ai/customize/skills"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-opacity hover:opacity-90"
-                style={{ backgroundColor: "#fff", color: "#cc785c", border: "1px solid #cc785c", minHeight: "42px" }}
-              >
-                Open Skills <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-            <p className="mt-2 text-[12px]" style={{ color: "#8a847b" }}>
-              Make sure <strong style={{ color: "#191919" }}>Code execution</strong>{" "}
-              is on (Settings &rarr; Capabilities) first.
-            </p>
-          </div>
-
-          <details className="group">
-            <summary
-              className="cursor-pointer list-none text-[13px] font-medium transition-opacity hover:opacity-70"
-              style={{ color: "#8a847b" }}
-            >
-              Or create it manually with the three fields &rarr;
-            </summary>
-            <p className="mb-3 mt-3 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-              In Skills, click <strong style={{ color: "#191919" }}>Create skill</strong>{" "}
-              and fill these three fields:
-            </p>
-
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
-              Skill name
-            </p>
-            <div
-              className="rounded-lg px-3 py-2 font-mono text-[13px]"
-              style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
-            >
-              Concerto
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
-                Description (required — triggers it)
-              </p>
-              <button
-                type="button"
-                onClick={() => copyText(DESCRIPTION, setCopiedDesc, dt)}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all"
-                style={{ backgroundColor: copiedDesc ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
-              >
-                {copiedDesc ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copiedDesc ? "Copied" : "Copy"}
-              </button>
-            </div>
-            <p
-              className="max-h-20 overflow-y-auto rounded-lg px-3 py-2 text-[12px] leading-relaxed"
-              style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c", color: "#191919" }}
-            >
-              {DESCRIPTION}
-            </p>
-            <p className="text-[12px]" style={{ color: "#8a847b" }}>
-              If this field is empty, the Skill never auto-activates. Don&apos;t skip it.
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
-                Instructions
-              </p>
-              <button
-                type="button"
-                onClick={copyInstructions}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-all"
-                style={{ backgroundColor: copiedInstr ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.1)", color: "#cc785c" }}
-              >
-                {copiedInstr ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copiedInstr ? "Copied" : "Copy instructions"}
-              </button>
-            </div>
-            <p className="text-[12px]" style={{ color: "#8a847b" }}>
-              Paste into the Instructions field, then Create. Make sure the
-              Skill is toggled on.
-            </p>
-          </div>
-          </details>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function StarterPrompt() {
   const [copied, setCopied] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1429,20 +1257,20 @@ export default function DashboardPage({
             className="rounded-2xl"
             style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
           >
-            <div className="space-y-7 px-6 py-7 md:px-8 md:py-9">
+            <div className="space-y-5 px-6 py-6 md:px-8 md:py-7">
               <div>
                 <h1
-                  className="mb-2 text-[22px] font-semibold"
+                  className="mb-1.5 text-[21px] font-semibold"
                   style={{ color: "#191919" }}
                 >
                   Connect Concerto to Claude
                 </h1>
                 <p
-                  className="text-[15px] leading-relaxed"
+                  className="text-[14px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  The button opens Claude with everything already filled in.
-                  You just confirm — nothing to copy.
+                  The button opens Claude with everything pre-filled. Add it,
+                  Connect, Authorize — this page continues on its own.
                 </p>
               </div>
 
@@ -1454,7 +1282,7 @@ export default function DashboardPage({
                 style={{
                   backgroundColor: "#cc785c",
                   color: "#fff",
-                  minHeight: "54px",
+                  minHeight: "52px",
                   boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
                 }}
               >
@@ -1462,94 +1290,79 @@ export default function DashboardPage({
                 <ExternalLink className="h-4 w-4" />
               </a>
 
+              <div className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: "#191919" }}>
+                <span style={{ color: "#8a847b" }}>In Claude:</span>
+                <span>
+                  <strong>Add</strong> &middot; <strong>Connect</strong> &middot;{" "}
+                  <strong>Authorize</strong>
+                </span>
+              </div>
+
+              {/* Live detection — the real source of truth */}
               <div
-                className="rounded-xl p-5"
+                className="flex items-center gap-3 rounded-xl px-4 py-3.5"
                 style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
               >
-                <p
-                  className="mb-3 text-[13px] font-semibold"
-                  style={{ color: "#191919" }}
-                >
-                  In the window that opens, Claude shows the form already
-                  filled in. Just:
+                <RefreshCw
+                  className="h-4 w-4 shrink-0 animate-spin"
+                  style={{ color: "#cc785c" }}
+                />
+                <p className="text-[13px] leading-relaxed" style={{ color: "#191919" }}>
+                  Waiting for Claude to connect… this continues automatically
+                  the moment it does.
                 </p>
-                <ol className="space-y-2.5">
-                  {[
-                    "Click Add — the name and link are already there",
-                    "Click Connect on the new Concerto connector",
-                    "Click Authorize — Claude returns on its own",
-                  ].map((t, i) => (
-                    <li key={i} className="flex gap-3 text-[14px] leading-relaxed" style={{ color: "#191919" }}>
-                      <span
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
-                        style={{ backgroundColor: "rgba(204,120,92,0.12)", color: "#cc785c" }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span>{t}</span>
-                    </li>
-                  ))}
-                </ol>
               </div>
+
+              {/* Optional upgrade — distinct (violet) so it reads as not-required */}
+              <a
+                href={`/dashboard/${params.token}/skill`}
+                className="block rounded-xl px-4 py-3.5 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#f5f3ff", border: "1px solid #ddd6fe" }}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold" style={{ color: "#5b21b6" }}>
+                      Optional · Make builds run in parallel
+                    </p>
+                    <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#6d28d9" }}>
+                      Not required — Concerto already works. We recommend it.
+                      Takes a minute.
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[16px]" style={{ color: "#6d28d9" }}>
+                    →
+                  </span>
+                </div>
+              </a>
 
               <details className="group">
                 <summary
-                  className="cursor-pointer list-none text-[13px] font-medium transition-opacity hover:opacity-70"
+                  className="cursor-pointer list-none text-center text-[12px] font-medium transition-opacity hover:opacity-70"
                   style={{ color: "#8a847b" }}
                 >
-                  The form was empty? Copy the values manually →
+                  The form was empty, or already connected? →
                 </summary>
                 <div className="mt-3 space-y-3">
                   <ValueCard label="Name" value="Concerto" />
                   <ValueCard label="Remote MCP server URL" value={mcpUrl} emphasis />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUIState("step3")
+                      uiStateRef.current = "step3"
+                    }}
+                    className="w-full rounded-xl text-[13px] font-medium transition-opacity hover:opacity-80"
+                    style={{
+                      backgroundColor: "#faf9f5",
+                      color: "#8a847b",
+                      border: "1px solid #f3efe5",
+                      minHeight: "42px",
+                    }}
+                  >
+                    Skip ahead — I&apos;ve already connected
+                  </button>
                 </div>
               </details>
-
-              <div
-                className="rounded-xl"
-                style={{ border: "1px solid #f3efe5", backgroundColor: "#fdfcfa" }}
-              >
-                <details className="group">
-                  <summary
-                    className="flex cursor-pointer list-none items-center justify-between px-4 py-3.5"
-                  >
-                    <div className="min-w-0 pr-3">
-                      <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-                        Optional: supercharge it with the Concerto Skill
-                      </p>
-                      <p className="mt-0.5 text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
-                        Concerto already works. Add the Skill if you want Claude
-                        to fan out parallel builds automatically, with no
-                        prompting.
-                      </p>
-                    </div>
-                    <span
-                      className="shrink-0 text-[12px] font-medium transition-transform group-open:rotate-180"
-                      style={{ color: "#cc785c" }}
-                    >
-                      ▾
-                    </span>
-                  </summary>
-                  <div className="px-4 pb-4">
-                    <ConcertoSkillCard />
-                  </div>
-                </details>
-              </div>
-
-              <Button
-                onClick={() => {
-                  setUIState("step3")
-                  uiStateRef.current = "step3"
-                }}
-                className="w-full rounded-xl text-[15px] font-medium"
-                style={{
-                  backgroundColor: "#cc785c",
-                  color: "#fff",
-                  minHeight: "48px",
-                }}
-              >
-                I&apos;ve connected → Continue
-              </Button>
             </div>
           </div>
         )}
