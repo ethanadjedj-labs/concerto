@@ -311,26 +311,56 @@ function ConcertoSkillCard() {
       </div>
       {true && (
         <div className="space-y-4">
-          <p className="text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
-            First, make sure{" "}
-            <strong style={{ color: "#191919" }}>Code execution</strong> is on
-            (Settings &rarr; Capabilities). Then open Skills and create a new
-            one with these three fields:
-          </p>
-          <a
-            href="https://claude.ai/customize/skills"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-opacity hover:opacity-90"
-            style={{
-              backgroundColor: "#cc785c",
-              color: "#fff",
-              minHeight: "44px",
-            }}
+          <div
+            className="rounded-xl p-4"
+            style={{ backgroundColor: "#fffaf7", border: "1.5px solid #cc785c" }}
           >
-            Open Skills in Claude
-            <ExternalLink className="h-4 w-4" />
-          </a>
+            <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
+              Fastest way — upload the ready-made file
+            </p>
+            <p
+              className="mb-3 mt-1 text-[12px] leading-relaxed"
+              style={{ color: "#8a847b" }}
+            >
+              Download the Skill, then in Claude open Skills and use
+              &ldquo;Upload skill&rdquo;. Nothing to fill in by hand.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <a
+                href="/downloads/concerto-skill.zip"
+                download
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#cc785c", color: "#fff", minHeight: "42px" }}
+              >
+                Download Concerto Skill
+              </a>
+              <a
+                href="https://claude.ai/customize/skills"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg text-[13px] font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#fff", color: "#cc785c", border: "1px solid #cc785c", minHeight: "42px" }}
+              >
+                Open Skills <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+            <p className="mt-2 text-[12px]" style={{ color: "#8a847b" }}>
+              Make sure <strong style={{ color: "#191919" }}>Code execution</strong>{" "}
+              is on (Settings &rarr; Capabilities) first.
+            </p>
+          </div>
+
+          <details className="group">
+            <summary
+              className="cursor-pointer list-none text-[13px] font-medium transition-opacity hover:opacity-70"
+              style={{ color: "#8a847b" }}
+            >
+              Or create it manually with the three fields &rarr;
+            </summary>
+            <p className="mb-3 mt-3 text-[13px] leading-relaxed" style={{ color: "#8a847b" }}>
+              In Skills, click <strong style={{ color: "#191919" }}>Create skill</strong>{" "}
+              and fill these three fields:
+            </p>
 
           <div className="space-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#8a847b" }}>
@@ -390,6 +420,7 @@ function ConcertoSkillCard() {
               Skill is toggled on.
             </p>
           </div>
+          </details>
         </div>
       )}
     </div>
@@ -1407,7 +1438,7 @@ export default function DashboardPage({
             className="rounded-2xl"
             style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
           >
-            <div className="space-y-6 px-6 py-6 md:px-8 md:py-8">
+            <div className="space-y-7 px-6 py-7 md:px-8 md:py-9">
               <div>
                 <h1
                   className="mb-2 text-[22px] font-semibold"
@@ -1419,59 +1450,69 @@ export default function DashboardPage({
                   className="text-[15px] leading-relaxed"
                   style={{ color: "#8a847b" }}
                 >
-                  Three quick steps. The button opens the right screen in
-                  Claude — then you copy two things into it.
+                  The button opens Claude with everything already filled in.
+                  You just confirm — nothing to copy.
                 </p>
               </div>
 
-              {/* Step 1: open the screen */}
-              <div className="space-y-2">
-                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
-                  1. Open the connector screen in Claude
-                </p>
-                <a
-                  href="https://claude.ai/customize/connectors?modal=add-custom-connector"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
-                  style={{
-                    backgroundColor: "#cc785c",
-                    color: "#fff",
-                    minHeight: "50px",
-                  }}
+              <a
+                href={`https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Concerto&connectorUrl=${encodeURIComponent(mcpUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: "#cc785c",
+                  color: "#fff",
+                  minHeight: "54px",
+                  boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+                }}
+              >
+                Open Claude &amp; add Concerto
+                <ExternalLink className="h-4 w-4" />
+              </a>
+
+              <div
+                className="rounded-xl p-5"
+                style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
+              >
+                <p
+                  className="mb-3 text-[13px] font-semibold"
+                  style={{ color: "#191919" }}
                 >
-                  Open the connector screen
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                  In the window that opens, Claude shows the form already
+                  filled in. Just:
+                </p>
+                <ol className="space-y-2.5">
+                  {[
+                    "Click Add — the name and link are already there",
+                    "Click Connect on the new Concerto connector",
+                    "Click Authorize — Claude returns on its own",
+                  ].map((t, i) => (
+                    <li key={i} className="flex gap-3 text-[14px] leading-relaxed" style={{ color: "#191919" }}>
+                      <span
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold"
+                        style={{ backgroundColor: "rgba(204,120,92,0.12)", color: "#cc785c" }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ol>
               </div>
 
-              {/* Step 2: copy the two values */}
-              <div className="space-y-3">
-                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
-                  2. Copy these two into the form that opens
-                </p>
-                <ValueCard label="Name" value="Concerto" />
-                <ValueCard
-                  label="Remote MCP server URL"
-                  value={mcpUrl}
-                  emphasis
-                />
-              </div>
-
-              {/* Step 3: finish in Claude */}
-              <div className="space-y-2">
-                <p className="text-[13px] font-semibold" style={{ color: "#191919" }}>
-                  3. Finish in Claude
-                </p>
-                <div
-                  className="rounded-xl p-4 text-[14px] leading-relaxed"
-                  style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5", color: "#191919" }}
+              <details className="group">
+                <summary
+                  className="cursor-pointer list-none text-[13px] font-medium transition-opacity hover:opacity-70"
+                  style={{ color: "#8a847b" }}
                 >
-                  Click <strong>Add</strong>, then <strong>Connect</strong> on
-                  the new Concerto connector, then <strong>Authorize</strong>.
-                  Claude returns on its own.
+                  The form was empty? Copy the values manually →
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <ValueCard label="Name" value="Concerto" />
+                  <ValueCard label="Remote MCP server URL" value={mcpUrl} emphasis />
                 </div>
-              </div>
+              </details>
 
               <Button
                 onClick={() => {
