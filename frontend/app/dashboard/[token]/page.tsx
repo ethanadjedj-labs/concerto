@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Copy, Check, Eye, EyeOff, ExternalLink, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
+import { Copy, Check, Eye, EyeOff, ExternalLink, RefreshCw, ChevronDown, ChevronUp, Github } from "lucide-react"
 
 /* ─── Brand tokens ────────────────────────────────────────────────
    cream:   #faf9f5
@@ -1462,280 +1462,229 @@ export default function DashboardPage({
 
         {/* ── Step 3: You're ready ── */}
         {uiState === "step3" && (
-          <div className="flex flex-col items-center text-center">
-            {/* Arrival moment */}
-            <div
-              className="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
-              }}
-            >
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-full"
-                style={{ backgroundColor: "#cc785c" }}
-              >
-                <Check className="h-5 w-5" style={{ color: "#fff" }} strokeWidth={3} />
-              </div>
-            </div>
-            <h1
-              className="mb-1.5 text-[22px] font-semibold tracking-tight"
-              style={{ color: "#191919" }}
-            >
-              One last thing
-            </h1>
-            <p
-              className="mb-6 max-w-[20rem] text-[14px] leading-relaxed"
-              style={{ color: "#8a847b" }}
-            >
-              Concerto is connected. Give Claude your code and it can start
-              building straight away.
-            </p>
-
-            {/* Primary CTA */}
-            <a
-              href="https://claude.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
-              style={{
-                backgroundColor: "#cc785c",
-                color: "#fff",
-                minHeight: "48px",
-                boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
-              }}
-            >
-              Open Claude <ExternalLink className="h-4 w-4" />
-            </a>
-
-            {/* Connect your code — 3-door selector */}
-            <div className="mt-8 w-full">
-              <div
-                className="mb-4 w-full"
-                style={{ borderTop: "1px solid #efeae0" }}
-              />
-              <p
-                className="w-full text-left text-[15px] font-semibold"
+          <div className="flex flex-col items-center">
+            {/* Headline + single GitHub action */}
+            <div className="w-full">
+              <h1
+                className="text-[22px] font-semibold tracking-tight"
                 style={{ color: "#191919" }}
               >
                 Already have a project? Connect your GitHub.
-              </p>
+              </h1>
               <p
-                className="mb-3 mt-1 w-full text-left text-[13px] leading-relaxed"
+                className="mt-1.5 text-[14px] leading-relaxed"
                 style={{ color: "#8a847b" }}
               >
-                One click and Claude can build on your existing code right away.
+                One click and Claude can build on your existing code right
+                away.
               </p>
-              <div className="flex flex-col gap-2">
-                {/* Door 1: GitHub */}
-                <div
-                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
-                  style={{
-                    backgroundColor: codeSource === "github" ? "#fef8f5" : "#fff",
-                    borderColor: codeSource === "github" ? "#cc785c" : "#f3efe5",
-                  }}
-                  onClick={() =>
-                    setCodeSource(codeSource === "github" ? null : "github")
-                  }
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-[14px] font-medium"
-                      style={{ color: "#191919" }}
-                    >
-                      I have a project on GitHub
-                    </span>
-                    {codeSource === "github" ? (
-                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    )}
-                  </div>
-                  {codeSource === "github" && (
-                    <div className="mt-3">
-                      {githubNotice && !githubConnected && (
-                        <div
-                          className="mb-3 rounded-lg px-3 py-2 text-[13px] leading-relaxed"
-                          style={{
-                            backgroundColor: "#fef8f5",
-                            color: "#b3613f",
-                            border: "1px solid #f3d9cd",
-                          }}
-                        >
-                          {githubNotice}
-                        </div>
-                      )}
-                      {githubConnected ? (
-                        <div
-                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium"
-                          style={{ backgroundColor: "#f0fdf4", color: "#15803d" }}
-                        >
-                          <Check className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
-                          GitHub connected — Claude can now work directly on your repos
-                        </div>
-                      ) : githubAvailable ? (
-                        <button
-                          className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-semibold transition-opacity hover:opacity-90"
-                          style={{ backgroundColor: "#24292f", color: "#fff" }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openGithubPopup()
-                          }}
-                        >
-                          Connect your GitHub in one click
-                        </button>
-                      ) : (
-                        <div
-                          className="rounded-lg px-3 py-2.5 text-[13px] leading-relaxed"
-                          style={{
-                            backgroundColor: "#faf7f2",
-                            color: "#8a847b",
-                            border: "1px solid #f3efe5",
-                          }}
-                        >
-                          Direct GitHub connect is coming soon. For now, ask
-                          Claude to clone your repo with a{" "}
-                          <code
-                            className="rounded px-1 py-0.5 font-mono text-[12px]"
-                            style={{ backgroundColor: "#f3efe5", color: "#191919" }}
-                          >
-                            git clone
-                          </code>{" "}
-                          URL (use a token in the URL for private repos) — it
-                          works today.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                {/* Door 2: Code elsewhere */}
+              {githubNotice && !githubConnected && (
                 <div
-                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                  className="mt-4 rounded-lg px-3 py-2 text-[13px] leading-relaxed"
                   style={{
-                    backgroundColor: codeSource === "elsewhere" ? "#fef8f5" : "#fff",
-                    borderColor: codeSource === "elsewhere" ? "#cc785c" : "#f3efe5",
+                    backgroundColor: "#fef8f5",
+                    color: "#b3613f",
+                    border: "1px solid #f3d9cd",
                   }}
-                  onClick={() =>
-                    setCodeSource(codeSource === "elsewhere" ? null : "elsewhere")
-                  }
                 >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-[14px] font-medium"
-                      style={{ color: "#191919" }}
-                    >
-                      My code is elsewhere
-                    </span>
-                    {codeSource === "elsewhere" ? (
-                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    )}
-                  </div>
-                  {codeSource === "elsewhere" && (
-                    <p
-                      className="mt-2 text-[13px] leading-relaxed"
-                      style={{ color: "#8a847b" }}
-                    >
-                      Ask Claude to{" "}
-                      <code
-                        className="rounded px-1 py-0.5 text-[12px]"
-                        style={{ backgroundColor: "#f3efe5", color: "#191919" }}
-                      >
-                        git clone
-                      </code>{" "}
-                      any URL. For private repos, paste a personal access token or
-                      deploy key in the terminal — Claude will help you set it up.
-                    </p>
-                  )}
+                  {githubNotice}
                 </div>
+              )}
 
-                {/* Door 3: Starting fresh */}
+              {githubConnected ? (
                 <div
-                  className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
-                  style={{
-                    backgroundColor: codeSource === "fresh" ? "#fef8f5" : "#fff",
-                    borderColor: codeSource === "fresh" ? "#cc785c" : "#f3efe5",
-                  }}
-                  onClick={() =>
-                    setCodeSource(codeSource === "fresh" ? null : "fresh")
-                  }
+                  className="mt-5 flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[14px] font-medium"
+                  style={{ backgroundColor: "#f0fdf4", color: "#15803d" }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-[14px] font-medium"
-                      style={{ color: "#191919" }}
-                    >
-                      I&apos;m starting fresh
-                    </span>
-                    {codeSource === "fresh" ? (
-                      <ChevronUp className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: "#8a847b" }} />
-                    )}
-                  </div>
-                  {codeSource === "fresh" && (
-                    <p
-                      className="mt-2 text-[13px] leading-relaxed"
+                  <Check className="h-4 w-4 flex-shrink-0" strokeWidth={2.5} />
+                  GitHub connected — Claude can now work directly on your repos
+                </div>
+              ) : githubAvailable ? (
+                <button
+                  onClick={openGithubPopup}
+                  className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+                  style={{
+                    backgroundColor: "#24292f",
+                    color: "#fff",
+                    minHeight: "52px",
+                  }}
+                >
+                  <Github className="h-5 w-5" />
+                  Connect your GitHub in one click
+                </button>
+              ) : (
+                <div
+                  className="mt-5 rounded-xl px-4 py-3 text-[13px] leading-relaxed"
+                  style={{
+                    backgroundColor: "#faf7f2",
+                    color: "#8a847b",
+                    border: "1px solid #f3efe5",
+                  }}
+                >
+                  Direct GitHub connect is coming soon. For now, ask Claude to{" "}
+                  <code
+                    className="rounded px-1 py-0.5 font-mono text-[12px]"
+                    style={{ backgroundColor: "#f3efe5", color: "#191919" }}
+                  >
+                    git clone
+                  </code>{" "}
+                  your repo URL — it works today.
+                </div>
+              )}
+            </div>
+
+            {/* Two small secondary options */}
+            <div className="mt-4 flex w-full flex-col gap-2">
+              <div
+                className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                style={{
+                  backgroundColor:
+                    codeSource === "elsewhere" ? "#fef8f5" : "#fff",
+                  borderColor:
+                    codeSource === "elsewhere" ? "#cc785c" : "#f3efe5",
+                }}
+                onClick={() =>
+                  setCodeSource(codeSource === "elsewhere" ? null : "elsewhere")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-[14px] font-medium"
+                    style={{ color: "#191919" }}
+                  >
+                    My code is elsewhere
+                  </span>
+                  {codeSource === "elsewhere" ? (
+                    <ChevronUp
+                      className="h-4 w-4 flex-shrink-0"
                       style={{ color: "#8a847b" }}
-                    >
-                      Nothing to connect — just ask Claude to create the project.
-                      It&apos;ll scaffold, write, and iterate from scratch.
-                    </p>
+                    />
+                  ) : (
+                    <ChevronDown
+                      className="h-4 w-4 flex-shrink-0"
+                      style={{ color: "#8a847b" }}
+                    />
                   )}
                 </div>
+                {codeSource === "elsewhere" && (
+                  <p
+                    className="mt-2 text-[13px] leading-relaxed"
+                    style={{ color: "#8a847b" }}
+                  >
+                    Ask Claude to{" "}
+                    <code
+                      className="rounded px-1 py-0.5 text-[12px]"
+                      style={{ backgroundColor: "#f3efe5", color: "#191919" }}
+                    >
+                      git clone
+                    </code>{" "}
+                    any URL. For private repos, paste a personal access token
+                    when Claude asks — it&apos;ll set it up.
+                  </p>
+                )}
+              </div>
+
+              <div
+                className="w-full cursor-pointer rounded-xl border px-4 py-3 text-left transition-all"
+                style={{
+                  backgroundColor: codeSource === "fresh" ? "#fef8f5" : "#fff",
+                  borderColor: codeSource === "fresh" ? "#cc785c" : "#f3efe5",
+                }}
+                onClick={() =>
+                  setCodeSource(codeSource === "fresh" ? null : "fresh")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-[14px] font-medium"
+                    style={{ color: "#191919" }}
+                  >
+                    I&apos;m starting fresh
+                  </span>
+                  {codeSource === "fresh" ? (
+                    <ChevronUp
+                      className="h-4 w-4 flex-shrink-0"
+                      style={{ color: "#8a847b" }}
+                    />
+                  ) : (
+                    <ChevronDown
+                      className="h-4 w-4 flex-shrink-0"
+                      style={{ color: "#8a847b" }}
+                    />
+                  )}
+                </div>
+                {codeSource === "fresh" && (
+                  <p
+                    className="mt-2 text-[13px] leading-relaxed"
+                    style={{ color: "#8a847b" }}
+                  >
+                    Nothing to connect — just ask Claude to create the project.
+                    It&apos;ll scaffold, write, and iterate from scratch.
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* You're all set — reassurance after the optional code step */}
+            {/* You're all set */}
             <div
-              className="mb-5 mt-8 w-full"
-              style={{ borderTop: "1px solid #efeae0" }}
-            />
-            <p
-              className="w-full text-left text-[15px] font-semibold"
-              style={{ color: "#191919" }}
+              className="mt-9 flex w-full flex-col items-center text-center"
+              style={{ borderTop: "1px solid #efeae0", paddingTop: "2rem" }}
             >
-              You&apos;re all set.
-            </p>
-            <p
-              className="mb-1 mt-1 w-full text-left text-[13px] leading-relaxed"
-              style={{ color: "#8a847b" }}
-            >
-              Concerto is connected and ready. Everything below is optional.
-            </p>
+              <div
+                className="mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                style={{
+                  background:
+                    "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
+                }}
+              >
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "#cc785c" }}
+                >
+                  <Check
+                    className="h-5 w-5"
+                    style={{ color: "#fff" }}
+                    strokeWidth={3}
+                  />
+                </div>
+              </div>
+              <h2
+                className="text-[20px] font-semibold tracking-tight"
+                style={{ color: "#191919" }}
+              >
+                You&apos;re all set.
+              </h2>
+              <p
+                className="mb-6 mt-1.5 max-w-[20rem] text-[14px] leading-relaxed"
+                style={{ color: "#8a847b" }}
+              >
+                Concerto is connected. Open Claude and ask it to build
+                anything — it orchestrates the work for you.
+              </p>
+              <a
+                href="https://claude.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: "#cc785c",
+                  color: "#fff",
+                  minHeight: "48px",
+                  boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+                }}
+              >
+                Open Claude <ExternalLink className="h-4 w-4" />
+              </a>
 
-            {/* Go further — visually distinct, lower-priority */}
-            <div className="mt-5 w-full">
-              <ConcertoStyleCard />
-            </div>
+              <div className="mt-5 w-full">
+                <ConcertoStyleCard />
+              </div>
 
-            {/* Real, enticing example prompts */}
-            <div
-              className="mb-4 mt-8 w-full"
-              style={{ borderTop: "1px solid #efeae0" }}
-            />
-            <p
-              className="mb-3 w-full text-left text-[15px] font-semibold"
-              style={{ color: "#191919" }}
-            >
-              Things to try
-            </p>
-            <div className="grid w-full grid-cols-1 gap-2 text-left sm:grid-cols-2">
-              {[
-                "Build me a Next.js landing page for my product and deploy it live",
-                "Find and fix the failing tests in my repo, then open a PR",
-                "Add Stripe checkout to my app end to end",
-                "Take this Figma-style spec and ship a working dashboard",
-              ].map((prompt) => (
-                <PromptCard key={prompt} text={prompt} />
-              ))}
-            </div>
-
-            {/* Condensed footer */}
-            <div className="mt-7 flex flex-col items-center gap-1.5">
-              <p className="text-[13px]" style={{ color: "#8a847b" }}>
+              <p
+                className="mt-8 text-[13px]"
+                style={{ color: "#8a847b" }}
+              >
                 Need help?{" "}
                 <a
                   href="mailto:support@concerto.run"
