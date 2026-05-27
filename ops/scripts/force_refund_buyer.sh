@@ -45,9 +45,9 @@ fi
 # Destroy droplet if requested
 VPS_ID=$(sqlite3 "$DB" "SELECT vps_id FROM concerto_buyers WHERE token='$TOKEN';")
 if [ "$DESTROY_DROPLET" = "1" ] && [ -n "$VPS_ID" ] && [ "$VPS_ID" != "NULL" ]; then
-  DO_TOKEN=$(grep CONCERTO_DO_API_TOKEN /etc/cortex/env 2>/dev/null | cut -d= -f2 || echo "")
+  DO_TOKEN=$(grep CONCERTO_DO_API_TOKEN /etc/empire/env 2>/dev/null | cut -d= -f2 || echo "")
   if [ -z "$DO_TOKEN" ]; then
-    echo "ERROR: CONCERTO_DO_API_TOKEN not found in /etc/cortex/env — cannot destroy droplet" >&2
+    echo "ERROR: CONCERTO_DO_API_TOKEN not found in /etc/empire/env — cannot destroy droplet" >&2
     exit 1
   fi
   echo "Destroying droplet $VPS_ID..."

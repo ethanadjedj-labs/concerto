@@ -19,7 +19,7 @@ _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _SETUP_BASE = "https://concerto.run/setup"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
-_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
+_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
 
 _CANCEL_GRACE_SECONDS = 72 * 3600
 _PAST_DUE_SUSPEND_DAYS = 7

@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=oneshot
 User=root
-EnvironmentFile=/etc/cortex/env
+EnvironmentFile=-/etc/empire/env
 WorkingDirectory=/opt/concerto/backend
 ExecStart=/opt/concerto/.venv/bin/python -m concerto.hosted_lifecycle
 StandardOutput=journal

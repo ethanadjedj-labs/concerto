@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=oneshot
 ExecStart=/opt/concerto/backend/.venv/bin/python -m concerto.trial_reaper
-EnvironmentFile=-/etc/cortex/env
+EnvironmentFile=-/etc/empire/env
 Environment="CONCERTO_DB_PATH=/var/lib/concerto/concerto.db"
 StandardOutput=journal
 StandardError=journal
