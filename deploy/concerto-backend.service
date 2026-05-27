@@ -1,7 +1,7 @@
 [Unit]
 Description=Concerto Backend API (FastAPI/uvicorn, port 8090)
 After=network.target
-After=cortex-mcp-bridge.service
+After=mcp-bridge.service
 
 [Service]
 User=root
@@ -9,7 +9,7 @@ Restart=always
 RestartSec=5
 WorkingDirectory=/opt/concerto/backend
 Environment="CONCERTO_DB_PATH=/var/lib/concerto/concerto.db"
-EnvironmentFile=-/etc/cortex/env
+EnvironmentFile=-/etc/empire/env
 ExecStart=/opt/concerto/backend/.venv/bin/uvicorn \
     concerto.server:app \
     --host 127.0.0.1 \

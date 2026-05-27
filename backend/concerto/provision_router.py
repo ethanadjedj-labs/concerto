@@ -16,7 +16,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 _CLOUD_INIT_TIMEOUT_S = 8 * 60  # 8 minutes
-_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
+_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
 _HOSTED_SIZE = "s-2vcpu-4gb"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")

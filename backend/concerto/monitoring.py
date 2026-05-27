@@ -12,7 +12,7 @@ import httpx
 from concerto import db
 from concerto.email_utils import send_operator_alert
 
-_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
+_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
 _MCP_HEALTHCHECK_TIMEOUT = 10
 _ALERT_THRESHOLD = 3
 

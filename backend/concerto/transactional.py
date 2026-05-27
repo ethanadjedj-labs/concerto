@@ -1,6 +1,6 @@
 """Concerto transactional email client — Migadu SMTP over STARTTLS:587.
 
-Env vars required (loaded from /etc/cortex/env at service start):
+Env vars required (loaded from /etc/empire/env at service start):
     CONCERTO_SMTP_HOST, CONCERTO_SMTP_PORT, CONCERTO_SMTP_USER_NOREPLY,
     CONCERTO_SMTP_PASS_NOREPLY, CONCERTO_EMAIL_FROM, CONCERTO_EMAIL_REPLY_TO
 
