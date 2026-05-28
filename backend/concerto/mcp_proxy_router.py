@@ -1,0 +1,271 @@
+"""MCP transparent wake-up proxy.
+
+Route: ANY /mcp-proxy/{buyer_token}/{path:path}
+
+For each incoming MCP request:
+  1. Resolve buyer by URL token.  404 if unknown.
+  2. If runtime_state == 'paused': call provider.resume(), poll /healthz
+     until 200 or 30 s, then clear runtime_state.  504 on timeout.
+  3. Forward the full request (method, headers, body, query params) to the
+     NF service via httpx streaming.  SSE streams are streamed back without
+     buffering.
+  4. Update last_active_at on every successful forwarded request.
+
+Internal target URL is derived from buyer.vps_ip (the stable NF URL stored at
+provision time, e.g. https://p01--concerto-abc--ns.code.run).  The proxy path
+is appended directly: {vps_ip}/{path}.
+
+The customer-visible URL (returned by status_router) is:
+  https://api.concerto.run/mcp-proxy/{token}/mcp
+
+The direct NF URL is kept in mcp_url in DB for internal health monitoring;
+this proxy does not read mcp_url.
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+
+import httpx
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from concerto import db, provider_factory as provisioner
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+_WAKE_TIMEOUT_S = 30          # max seconds to wait for /healthz after resume
+_POLL_INTERVAL_S = 1.5        # seconds between /healthz polls
+_FORWARD_CONNECT_S = 10.0     # httpx connect timeout
+_FORWARD_READ_S = 300.0       # httpx read timeout (long for SSE streams)
+
+# Hop-by-hop headers that must not be forwarded.
+_HOP_BY_HOP = frozenset([
+    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+    "te", "trailers", "transfer-encoding", "upgrade",
+    "host", "content-length",
+])
+
+# ── Rate-limit (in-memory, per-buyer) ────────────────────────────────────────
+# Simple sliding-window counter.  Resets are best-effort (no cron); keys with
+# no recent activity are garbage-collected on next access.
+_RL_WINDOW_S = 60          # window length
+_RL_MAX_PER_WINDOW = 60    # max requests per buyer per window (1/s avg, bursty)
+_rl_buckets: dict[str, list[float]] = {}
+
+
+def _rate_limit_check(buyer_token: str) -> bool:
+    """Return True if the request is allowed, False if rate-limited.
+
+    Uses a sliding-window counter per buyer_token.  Tokens are limited
+    independently — one abusive client cannot DoS the others.
+    """
+    import time as _t
+    now = _t.monotonic()
+    cutoff = now - _RL_WINDOW_S
+    bucket = _rl_buckets.get(buyer_token, [])
+    # Drop entries older than the window
+    bucket = [t for t in bucket if t > cutoff]
+    if len(bucket) >= _RL_MAX_PER_WINDOW:
+        _rl_buckets[buyer_token] = bucket
+        return False
+    bucket.append(now)
+    _rl_buckets[buyer_token] = bucket
+    # Garbage-collect: if the dict grows huge, drop oldest unused keys
+    if len(_rl_buckets) > 10000:
+        _rl_buckets.clear()  # cheap reset; better than slow scan
+    return True
+
+
+@router.api_route(
+    "/mcp-proxy/{buyer_token}/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+)
+async def mcp_proxy(buyer_token: str, path: str, request: Request):
+    # ── 1. Rate-limit FIRST (before DB lookup, to protect against unknown-token spam)
+    # In-memory sliding window per token. Even unknown tokens get rate-limited.
+    # 60 req/min/token = 1 RPS sustained, with full-burst tolerance.
+    if not _rate_limit_check(buyer_token):
+        return JSONResponse(
+            status_code=429,
+            content={"error": "rate_limited", "detail": "Too many requests"},
+            headers={"Retry-After": "10"},
+        )
+
+    # ── 2. Resolve buyer ──────────────────────────────────────────────────────
+    buyer = await db.get_buyer(buyer_token)
+    if not buyer:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "not_found"},
+        )
+
+    vps_ip = (buyer.get("vps_ip") or "").rstrip("/")
+    if not vps_ip:
+        # Return 404 (not 503) to avoid leaking whether the token exists vs whether
+        # the buyer is mid-provisioning. Anti-enumeration: 404 = "this endpoint
+        # cannot serve you", regardless of why.
+        return JSONResponse(
+            status_code=404,
+            content={"error": "not_found"},
+        )
+
+    # ── 2. Wake up if paused ─────────────────────────────────────────────────
+    if buyer.get("runtime_state") == "paused":
+        ok = await _wake_up(buyer_token, buyer)
+        if not ok:
+            logger.error(
+                "Wake-up timeout for token %.8s (vps_ip=%s)", buyer_token, vps_ip
+            )
+            return JSONResponse(
+                status_code=504,
+                content={
+                    "error": "wake_timeout",
+                    "detail": (
+                        "Your Concerto environment is waking up. "
+                        "Please retry in a few seconds."
+                    ),
+                },
+            )
+
+    # ── 3. Forward request ───────────────────────────────────────────────────
+    internal_url = f"{vps_ip}/{path}"
+    try:
+        response = await _forward(request, internal_url)
+    except httpx.ConnectError as exc:
+        logger.warning(
+            "Proxy connect error for token %.8s path=%s: %s", buyer_token, path, exc
+        )
+        return JSONResponse(
+            status_code=502,
+            content={"error": "upstream_connect_failed", "detail": str(exc)},
+        )
+    except httpx.TimeoutException as exc:
+        logger.warning(
+            "Proxy timeout for token %.8s path=%s: %s", buyer_token, path, exc
+        )
+        return JSONResponse(
+            status_code=504,
+            content={"error": "upstream_timeout", "detail": str(exc)},
+        )
+
+    # ── 4. Update last_active_at (fire-and-forget) ───────────────────────────
+    asyncio.create_task(
+        db.update_buyer(buyer_token, last_active_at=int(time.time()))
+    )
+
+    return response
+
+
+async def _wake_up(token: str, buyer: dict) -> bool:
+    """Resume a paused NF service and wait for /healthz to return 200.
+
+    Clears runtime_state in DB on success.  Returns True if ready, False on
+    timeout.  Errors from the provider call are logged but don't abort — we
+    still poll healthz in case NF resumes anyway.
+    """
+    vps_id = buyer.get("vps_id") or ""
+    vps_ip = (buyer.get("vps_ip") or "").rstrip("/")
+    healthz_url = f"{vps_ip}/healthz" if vps_ip else None
+
+    logger.info(
+        "Waking paused environment token=%.8s vps_id=%s", token, vps_id
+    )
+    t0 = time.monotonic()
+
+    try:
+        await provisioner.resume(api_key="", vps_id=vps_id)
+    except Exception as exc:
+        logger.error(
+            "provider.resume failed token=%.8s vps_id=%s: %s — continuing poll",
+            token, vps_id, exc,
+        )
+
+    if not healthz_url:
+        logger.error("No vps_ip for token %.8s — cannot poll healthz", token)
+        return False
+
+    ready = await _poll_healthz(healthz_url, _WAKE_TIMEOUT_S)
+    elapsed = time.monotonic() - t0
+
+    if ready:
+        await db.update_buyer(token, runtime_state=None)
+        latency_ms = int(elapsed * 1000)
+        await db.log_lifecycle_event("resume", token, vps_id=vps_id, resume_latency_ms=latency_ms, source="mcp_proxy_wake")
+        logger.info(
+            "Environment ready token=%.8s elapsed=%.1fs", token, elapsed
+        )
+    else:
+        logger.error(
+            "Wake-up timeout token=%.8s elapsed=%.1fs healthz_url=%s",
+            token, elapsed, healthz_url,
+        )
+
+    return ready
+
+
+async def _poll_healthz(url: str, timeout_s: float) -> bool:
+    """Poll url until HTTP 200 or timeout.  Returns True if successful."""
+    deadline = time.monotonic() + timeout_s
+    async with httpx.AsyncClient(timeout=5) as client:
+        while time.monotonic() < deadline:
+            try:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(_POLL_INTERVAL_S)
+    return False
+
+
+async def _forward(request: Request, target_url: str) -> StreamingResponse:
+    """Stream-proxy the request to target_url and return a StreamingResponse.
+
+    The httpx client and upstream response are kept alive until the generator
+    is exhausted; aclose() is called in the finally block.
+    """
+    out_headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() not in _HOP_BY_HOP
+    }
+    body = await request.body()
+
+    client = httpx.AsyncClient(
+        timeout=httpx.Timeout(_FORWARD_READ_S, connect=_FORWARD_CONNECT_S),
+        follow_redirects=False,
+    )
+
+    upstream = await client.send(
+        client.build_request(
+            method=request.method,
+            url=target_url,
+            headers=out_headers,
+            content=body,
+            params=dict(request.query_params),
+        ),
+        stream=True,
+    )
+
+    # Filter hop-by-hop from response headers too
+    resp_headers = {
+        k: v for k, v in upstream.headers.items()
+        if k.lower() not in _HOP_BY_HOP
+    }
+
+    async def _generate():
+        try:
+            async for chunk in upstream.aiter_bytes(chunk_size=4096):
+                yield chunk
+        finally:
+            await upstream.aclose()
+            await client.aclose()
+
+    return StreamingResponse(
+        _generate(),
+        status_code=upstream.status_code,
+        headers=resp_headers,
+        media_type=upstream.headers.get("content-type"),
+    )

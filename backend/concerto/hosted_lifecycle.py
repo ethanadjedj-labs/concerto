@@ -11,36 +11,34 @@ import time
 
 import httpx
 
-from concerto import db
+from concerto import db, provider_factory as _provider
 from concerto.cf_tunnel import destroy_named_tunnel
 
-_DO_API_BASE = "https://api.digitalocean.com/v2"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
+_DO_API_BASE = "https://api.digitalocean.com/v2"
 _PROVISION_GRACE_SECONDS = 600  # ignore entries created < 10 min ago
 
 
 async def _do_delete_droplet(droplet_id: str) -> bool:
-    if not _CONCERTO_DO_API_TOKEN:
+    # Routed through provider_factory: NF deletes service; DO deletes droplet.
+    # Factory destroy_droplet never raises and handles 404 gracefully.
+    # CF tunnel cleanup is intentionally kept in the caller (reconcile() below)
+    # because the factory would also destroy it — this avoids double-destroy.
+    # Returns True (best-effort; factory swallows errors per contract).
+    if not droplet_id:
         return False
-    headers = {"Authorization": f"Bearer {_CONCERTO_DO_API_TOKEN}"}
-    async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
-        resp = await client.delete(f"/droplets/{droplet_id}")
-        return resp.status_code in (204, 404)
+    await _provider.destroy_droplet(
+        api_key=_CONCERTO_DO_API_TOKEN, vps_id=droplet_id, cf_tunnel_id="",
+    )
+    return True
 
 
 async def _do_power_off_droplet(droplet_id: str) -> bool:
-    if not _CONCERTO_DO_API_TOKEN:
+    # Routed through provider_factory: NF pauses service; DO powers off droplet.
+    if not _CONCERTO_DO_API_TOKEN or not droplet_id:
         return False
-    headers = {
-        "Authorization": f"Bearer {_CONCERTO_DO_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    async with httpx.AsyncClient(base_url=_DO_API_BASE, headers=headers, timeout=15) as client:
-        resp = await client.post(
-            f"/droplets/{droplet_id}/actions",
-            json={"type": "power_off"},
-        )
-        return resp.status_code in (200, 201)
+    await _provider.suspend(api_key=_CONCERTO_DO_API_TOKEN, vps_id=droplet_id)
+    return True
 
 
 async def _list_do_droplet_ids(api_key: str) -> set[str] | None:
@@ -170,6 +168,7 @@ async def reconcile() -> dict:
                         except Exception:
                             pass
                     destroyed += 1
+                    # Mark destroyed
                     def _mark(did=droplet_id, ts=now):
                         import sqlite3
                         conn = sqlite3.connect(
@@ -201,6 +200,22 @@ async def reconcile() -> dict:
                     suspended += 1
                     await db.update_hosted_pool_status(droplet_id, "suspended")
                     await db.update_buyer(buyer_token, status="suspended")
+                    # Notify the customer their workspace is paused (recoverable)
+                    try:
+                        buyer_row = await db.get_buyer(buyer_token)
+                        cust_email = (buyer_row or {}).get("email") or ""
+                        if cust_email:
+                            from concerto.email_templates import payment_issue_suspended
+                            from concerto.email_utils import send_email, send_operator_alert
+                            billing_url = f"https://concerto.run/dashboard/{buyer_token}"
+                            t = payment_issue_suspended(billing_url=billing_url, email=cust_email)
+                            await send_email(cust_email, t["subject"], t["html"] or t["text"])
+                            await send_operator_alert(
+                                "Workspace paused (payment failed)",
+                                f"Customer: {cust_email}\nToken: {buyer_token}\nDroplet: {droplet_id}",
+                            )
+                    except Exception as _e:
+                        errors.append(f"suspend_email_failed:{droplet_id}:{_e}")
                 else:
                     errors.append(f"poweroff_failed:{droplet_id}")
 

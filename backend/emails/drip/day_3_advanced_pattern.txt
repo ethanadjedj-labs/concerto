@@ -1,0 +1,19 @@
+Ask Concerto to parallelize
+===========================
+
+Most people give Claude one task at a time. With Concerto, Claude can spin up several Claude Code sessions in parallel — each working on a different piece of the same build.
+
+Open claude.ai and try this:
+
+  "Use Concerto to build me a Habit Tracker app. Run several sessions in parallel: one for the data layer, one for the UI, one for the calendar view."
+
+Claude announces the split, spawns the sessions in parallel, and reports back as each one lands. Real parallelism for real builds. The same pattern works for refactors, migrations, and multi-repo work.
+
+Open your dashboard: {{dashboard_url}}
+
+Reply to this email with what you're trying — we read every reply.
+
+— The Concerto team
+https://concerto.run | support@concerto.run
+
+Unsubscribe: {{unsubscribe_url}}

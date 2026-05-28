@@ -11,6 +11,7 @@ import asyncio
 import time
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 
 from concerto import db
@@ -54,6 +55,39 @@ async def _ssh_check(vps_ip: str, key_path: str) -> dict:
         return {"oauth_complete": False, "claude_version": None, "error": str(exc)}
 
 
+def _is_nf_buyer(buyer: dict) -> bool:
+    return (buyer.get("vps_ip") or "").startswith("https://")
+
+
+def _nf_base_url(buyer: dict) -> str:
+    mcp_url = (buyer.get("mcp_url") or "").strip()
+    if mcp_url.endswith("/mcp"):
+        return mcp_url[:-4]
+    return (buyer.get("vps_ip") or "").rstrip("/")
+
+
+async def _nf_status_check(buyer: dict) -> dict:
+    base_url = _nf_base_url(buyer)
+    bearer = buyer.get("bearer_token", "")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                f"{base_url}/__internal/oauth/status",
+                headers={"Authorization": f"Bearer {bearer}"},
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            return {
+                "oauth_complete": data.get("oauth_complete", False),
+                "claude_version": None,
+                "rejected": bool(data.get("rejected")),
+                "rejected_reason": data.get("rejected_reason"),
+            }
+    except Exception as exc:
+        return {"oauth_complete": False, "claude_version": None, "error": str(exc)}
+    return {"oauth_complete": False, "claude_version": None, "error": f"http_{resp.status_code}"}
+
+
 @router.get("/api/buyer/{token}/oauth-status")
 async def oauth_status(token: str):
     now = time.monotonic()
@@ -67,10 +101,24 @@ async def oauth_status(token: str):
         raise HTTPException(status_code=404, detail="Buyer not found")
 
     vps_ip = buyer.get("vps_ip")
-    key_path = buyer.get("ssh_keypair_private_path")
-
-    if not vps_ip or not key_path:
+    if not vps_ip:
         result: dict = {"oauth_complete": False, "claude_version": None, "reason": "vps_not_ready"}
+        _cache[token] = (now + _CACHE_TTL, result)
+        return result
+
+    if _is_nf_buyer(buyer):
+        result = await _nf_status_check(buyer)
+        # Don't cache a 'rejected' state — when the user clicks "Open Anthropic"
+        # again to retry, we want the very next poll to see the fresh state.
+        # Also shorten the TTL during NF flows; the polls are cheap.
+        if not result.get("rejected"):
+            _cache[token] = (now + 5, result)
+        return result
+
+    # Legacy DO path: SSH check
+    key_path = buyer.get("ssh_keypair_private_path")
+    if not key_path:
+        result = {"oauth_complete": False, "claude_version": None, "reason": "vps_not_ready"}
         _cache[token] = (now + _CACHE_TTL, result)
         return result
 

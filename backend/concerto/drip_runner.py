@@ -26,11 +26,8 @@ DRIP_SCHEDULE = [
     # (day_offset, column, subject_fn, template_name, hosted_only)
     (0,  "drip_day_0_sent_at",  lambda b: "Welcome to Concerto — complete your setup", "day_0_welcome", False),
     (1,  "drip_day_1_sent_at",  lambda b: "Have you tried your first session?", "day_1_first_session", False),
-    (3,  "drip_day_3_sent_at",  lambda b: "Try this: spawn 3 sessions in parallel", "day_3_advanced_pattern", False),
+    (3,  "drip_day_3_sent_at",  lambda b: "Ask Concerto to parallelize", "day_3_advanced_pattern", False),
     (7,  "drip_day_7_sent_at",  lambda b: "One week in — how's it going?", "day_7_check_in", False),
-    (14, "drip_day_14_sent_at", lambda b: "Your subscription renews in 16 days", "day_14_renewal_preview", False),
-    (21, "drip_day_21_sent_at", lambda b: "5 things power users do with Concerto", "day_21_use_case_inspiration", False),
-    (30, "drip_day_30_sent_at", lambda b: "30 days in — one quick question", "day_30_one_month", False),
 ]
 
 _TEMPLATE_DIR = Path(__file__).parent.parent.parent / "emails" / "drip"
@@ -98,7 +95,11 @@ def run() -> None:
     con.row_factory = sqlite3.Row
     try:
         buyers = con.execute(
-            "SELECT * FROM concerto_buyers WHERE paid_at IS NOT NULL AND email IS NOT NULL"
+            "SELECT * FROM concerto_buyers"
+            " WHERE paid_at IS NOT NULL AND email IS NOT NULL"
+            " AND plan != 'trial'"
+            " AND (subscription_status IS NULL OR subscription_status IN ('active', 'past_due'))"
+            " AND status NOT IN ('trial_expired', 'cancelled', 'refunded')"
         ).fetchall()
     except sqlite3.OperationalError as e:
         print(f"DB error (migration 006 may not be applied): {e}")
@@ -141,3 +142,87 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Immediate send (called from stripe_webhook on payment confirmation)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def send_immediate_drip(token: str, day_offset: int) -> bool:
+    """Send a specific drip email NOW for one buyer, bypassing the timer schedule.
+
+    Used to deliver J0 (welcome) the moment a payment is confirmed, instead of
+    waiting up to ~1h for the next timer tick. Returns True on success.
+
+    Idempotent: if the drip column is already set (already sent), returns True
+    without re-sending. If buyer doesn't match the eligibility filter, returns
+    False and logs a warning.
+    """
+    # Find the schedule row for this day_offset
+    schedule_row = next(
+        ((d, col, subj_fn, tpl_name, hosted_only)
+         for (d, col, subj_fn, tpl_name, hosted_only) in DRIP_SCHEDULE
+         if d == day_offset),
+        None,
+    )
+    if not schedule_row:
+        print(f"send_immediate_drip: no schedule entry for day {day_offset}")
+        return False
+    _, col, subject_fn, tpl_name, hosted_only = schedule_row
+
+    con = sqlite3.connect(DB_PATH, timeout=15)
+    con.row_factory = sqlite3.Row
+    try:
+        row = con.execute(
+            "SELECT * FROM concerto_buyers"
+            " WHERE token = ? AND paid_at IS NOT NULL AND email IS NOT NULL"
+            " AND plan != 'trial'"
+            " AND (subscription_status IS NULL OR subscription_status IN ('active', 'past_due'))"
+            " AND status NOT IN ('trial_expired', 'cancelled', 'refunded')",
+            (token,),
+        ).fetchone()
+    except sqlite3.OperationalError as e:
+        print(f"send_immediate_drip: DB error: {e}")
+        con.close()
+        return False
+
+    if not row:
+        print(f"send_immediate_drip: buyer {token[:8]}... not eligible (trial/cancelled/missing)")
+        con.close()
+        return False
+
+    buyer = dict(row)
+    email = buyer["email"]
+
+    if buyer.get(col):
+        print(f"send_immediate_drip: day_{day_offset} already sent to {email}, skipping")
+        con.close()
+        return True  # idempotent: treat as success
+
+    is_hosted = buyer.get("vps_size") and "s-" not in (buyer.get("vps_size") or "")
+    if hosted_only and not is_hosted:
+        print(f"send_immediate_drip: day_{day_offset} is hosted-only, buyer is not hosted")
+        con.close()
+        return False
+
+    subject = subject_fn(buyer)
+    html = _load_template(tpl_name, buyer)
+    if html is None:
+        print(f"send_immediate_drip: template {tpl_name} missing")
+        con.close()
+        return False
+    text = _load_text_template(tpl_name, buyer)
+
+    print(f"send_immediate_drip: → sending day_{day_offset} to {email} (immediate)")
+    sent = _send(email, subject, html, text)
+    if sent:
+        try:
+            con.execute(
+                f"UPDATE concerto_buyers SET {col} = ? WHERE token = ?",
+                (int(time.time()), buyer["token"]),
+            )
+            con.commit()
+        except Exception as e:
+            print(f"send_immediate_drip: DB mark failed: {e}")
+    con.close()
+    return sent

@@ -16,6 +16,9 @@ from concerto.customer_portal import router as customer_portal_router
 from concerto.preflight_router import router as preflight_router
 from concerto.trial_router import router as trial_router
 from concerto.github_router import router as github_router
+from concerto.nf_admin_router import router as nf_admin_router
+from concerto.activity_router import router as activity_router
+from concerto.mcp_proxy_router import router as mcp_proxy_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -32,7 +35,14 @@ _MIGRATIONS = [
     "010_email_dead_letter.sql",
     "012_plan_check_solo_pro.sql",
     "013_cf_tunnel_tracking.sql",
+    "014_stripe_customer_id_index.sql",
     "015_github_token.sql",
+    "016_pre_expiry_warned_at.sql",
+    "017_auto_pause.sql",
+    "018_callback_secret.sql",
+    "019_github_concerto_repo.sql",
+    "020_lifecycle_events.sql",
+    "021_github_login.sql",
 ]
 
 
@@ -76,3 +86,6 @@ app.include_router(customer_portal_router)
 app.include_router(preflight_router)
 app.include_router(trial_router)
 app.include_router(github_router)
+app.include_router(nf_admin_router)
+app.include_router(activity_router)
+app.include_router(mcp_proxy_router)

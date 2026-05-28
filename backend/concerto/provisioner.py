@@ -236,6 +236,12 @@ async def provision_droplet(
 
     private_key_path, public_key = await _generate_ssh_keypair(token)
     ttyd_password = secrets.token_hex(16)
+    callback_secret = secrets.token_hex(16)
+
+    # Store callback_secret before droplet creation so it is in DB when cloud-init calls
+    # back (timing is safe: cloud-init runs minutes after droplet boot, long after
+    # provision_droplet() has already returned and the caller has stored ttyd_password).
+    await db.update_buyer(token, callback_secret=callback_secret)
 
     # Create named CF tunnel before droplet so the stable Concerto-domain hostname is ready.
     # Trials now also get a named tunnel (no more trycloudflare.com URLs for customers).
@@ -299,8 +305,12 @@ async def provision_droplet(
                 concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
                 customer_email=safe_email,
                 ttyd_password=ttyd_password,
+                callback_secret=callback_secret,
                 tunnel_token=tunnel_info.get("tunnel_token", ""),
                 tunnel_hostname=tunnel_info.get("hostname", ""),
+                plan=mode,
+                max_parallel_sessions=(10 if mode == "pro" else 3),
+                ram_label=("8 GB" if mode == "pro" else "4 GB"),
             )
             cloud_init = Template(_tmpl).render(**_render_kwargs, prewarmed=_use_snapshot)
             _validate_cloud_init_yaml(cloud_init, token)

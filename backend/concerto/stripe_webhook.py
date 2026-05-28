@@ -8,7 +8,7 @@ import httpx
 import stripe
 from fastapi import APIRouter, HTTPException, Request
 
-from concerto import db, provisioner
+from concerto import db, provider_factory as provisioner
 from concerto.email_utils import send_email, send_operator_alert
 
 router = APIRouter()
@@ -19,7 +19,7 @@ _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _SETUP_BASE = "https://concerto.run/setup"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
-_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
+_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 
 _CANCEL_GRACE_SECONDS = 72 * 3600
 _PAST_DUE_SUSPEND_DAYS = 7
@@ -94,17 +94,26 @@ async def _send_resumed_email(to_email: str) -> None:
     )
 
 
+async def _send_renewal_email(to_email: str, token: str, plan: str) -> None:
+    from concerto.email_templates import renewal_success
+    dashboard_url = f"https://concerto.run/dashboard/{token}"
+    tpl = renewal_success(dashboard_url=dashboard_url, email=to_email, plan=plan)
+    await send_email(to_email, tpl["subject"], tpl["html"] or tpl["text"])
+
+
 async def _send_cancellation_email(to_email: str, token: str) -> None:
-    survey_url = f"https://concerto.run/feedback?token={token}"
+    """Cancellation email that ALSO tells the user how to rescue their work
+    before the workspace is removed (GitHub push or one-click export link)."""
+    from concerto.email_templates import pre_expiry_warning
+    buyer = await db.get_buyer(token)
+    has_gh = bool(buyer and buyer.get("github_token"))
+    dash = f"https://concerto.run/dashboard/{token}"
+    tpl = pre_expiry_warning(dashboard_url=dash, email=to_email,
+                             has_github=has_gh, context="cancel")
     await send_email(
         to=to_email,
-        subject="Your Concerto subscription has been cancelled",
-        html=(
-            "<p>Your Concerto subscription has been cancelled. "
-            "Your account will remain accessible until the end of the current billing period.</p>"
-            f'<p><a href="{survey_url}">Why did you cancel?</a> (one question, 10 seconds)</p>'
-            "<p>You can reactivate at any time at concerto.run.</p>"
-        ),
+        subject=tpl["subject"],
+        html=tpl["html"] or tpl["text"],
     )
 
 
@@ -112,33 +121,15 @@ async def _send_cancellation_email(to_email: str, token: str) -> None:
 
 
 async def _poweroff_droplet(droplet_id: str) -> None:
+    # Routed through provider_factory so NF (pause) and DO (power_off) both work.
     do_key = os.getenv("DO_PROVISIONER_API_KEY", _CONCERTO_DO_API_TOKEN)
-    if not do_key or not droplet_id:
-        return
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            await client.post(
-                f"{_DO_API_BASE}/droplets/{droplet_id}/actions",
-                headers={"Authorization": f"Bearer {do_key}"},
-                json={"type": "power_off"},
-            )
-    except Exception as exc:
-        logger.warning("poweroff_droplet failed for %s: %s", droplet_id, exc)
+    await provisioner.suspend(api_key=do_key, vps_id=droplet_id)
 
 
 async def _poweron_droplet(droplet_id: str) -> None:
+    # Routed through provider_factory so NF (resume) and DO (power_on) both work.
     do_key = os.getenv("DO_PROVISIONER_API_KEY", _CONCERTO_DO_API_TOKEN)
-    if not do_key or not droplet_id:
-        return
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            await client.post(
-                f"{_DO_API_BASE}/droplets/{droplet_id}/actions",
-                headers={"Authorization": f"Bearer {do_key}"},
-                json={"type": "power_on"},
-            )
-    except Exception as exc:
-        logger.warning("poweron_droplet failed for %s: %s", droplet_id, exc)
+    await provisioner.resume(api_key=do_key, vps_id=droplet_id)
 
 
 # ─── MANAGER_STATE helpers ────────────────────────────────────────────────────
@@ -289,7 +280,7 @@ async def stripe_webhook(request: Request):
         next_renewal_at = None
         if subscription_id:
             try:
-                sub = stripe.Subscription.retrieve(subscription_id)
+                sub = await asyncio.to_thread(stripe.Subscription.retrieve, subscription_id)
                 next_renewal_at = getattr(sub, "current_period_end", None)
             except Exception:
                 pass
@@ -333,6 +324,9 @@ async def stripe_webhook(request: Request):
                     setup_url = f"{_SETUP_BASE}/{trial_token}"
                     tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
                     await send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"])
+                    # Immediate J0 drip — don't wait for the hourly timer
+                    from concerto.drip_runner import send_immediate_drip
+                    asyncio.create_task(asyncio.to_thread(send_immediate_drip, trial_token, 0))
                 return {"ok": True, "trial_upgraded": True, "token": token}
 
         # Standard (non-trial) purchase: create fresh buyer row
@@ -351,38 +345,47 @@ async def stripe_webhook(request: Request):
             await db.update_buyer(token, stripe_customer_id=stripe_customer_id)
 
         if customer_email:
-            from concerto.email_templates import trial_converted, byoc_purchase_confirmed
+            from concerto.email_templates import trial_converted
             setup_url = f"{_SETUP_BASE}/{token}"
-            if plan in _HOSTED_PLANS:
-                tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
+            if plan not in _HOSTED_PLANS:
+                logger.warning("Unexpected non-hosted plan=%s for customer=%s", plan, customer_email)
             else:
-                tpl = byoc_purchase_confirmed(setup_url=setup_url, email=customer_email)
-            asyncio.create_task(send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"]))
+                tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
+                asyncio.create_task(send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"]))
+                # Immediate J0 drip — don't wait for the hourly timer
+                from concerto.drip_runner import send_immediate_drip
+                asyncio.create_task(asyncio.to_thread(send_immediate_drip, token, 0))
 
     # ── invoice.payment_failed ────────────────────────────────────────────
     elif event_type == "invoice.payment_failed":
         await _handle_payment_failed(obj)
 
-    # ── invoice.paid (payment succeeded — resume if suspended) ───────────
+    # ── invoice.paid (payment succeeded — resume if suspended, confirm renewal) ─
     elif event_type == "invoice.paid":
         subscription_id = obj.get("subscription")
+        billing_reason = obj.get("billing_reason", "")
         if subscription_id:
             buyer = await db.get_buyer_by_subscription(subscription_id)
-            if buyer and buyer.get("status") == "suspended":
-                vps_id = buyer.get("vps_id", "")
-                if vps_id:
-                    await _poweron_droplet(vps_id)
-                await db.update_buyer(
-                    buyer["token"],
-                    status="active",
-                    suspended_at=None,
-                    subscription_status="active",
-                    payment_failed_at=None,
-                    payment_failed_count=0,
-                )
+            if buyer:
                 email = buyer.get("email", "")
-                if email:
-                    await _send_resumed_email(email)
+                if buyer.get("status") == "suspended":
+                    vps_id = buyer.get("vps_id", "")
+                    if vps_id:
+                        await _poweron_droplet(vps_id)
+                    await db.update_buyer(
+                        buyer["token"],
+                        status="active",
+                        suspended_at=None,
+                        subscription_status="active",
+                        payment_failed_at=None,
+                        payment_failed_count=0,
+                    )
+                    if email:
+                        await _send_resumed_email(email)
+                elif billing_reason == "subscription_cycle" and email:
+                    # Normal monthly/annual renewal for an active subscriber.
+                    # checkout.session.completed already handles first payment.
+                    await _send_renewal_email(email, buyer["token"], buyer.get("plan", ""))
 
     # ── customer.subscription.deleted ────────────────────────────────────
     elif event_type == "customer.subscription.deleted":

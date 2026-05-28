@@ -1,16 +1,76 @@
+import asyncio
+import hashlib
+import hmac as _hmac
 import os
+import secrets
+import time
+from collections import defaultdict
 
 import stripe
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from concerto import db
-from concerto.email_utils import send_operator_alert
+from concerto.email_templates import cancel_link_email
+from concerto.email_utils import send_email, send_operator_alert
 
 router = APIRouter()
 
 _STRIPE_SECRET      = os.getenv("STRIPE_SECRET_KEY", "")
 _PORTAL_RETURN_BASE = "https://concerto.run/dashboard"
+_FRONTEND_BASE      = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
+_API_BASE           = "https://api.concerto.run"
+
+# ── Cancel-link HMAC ──────────────────────────────────────────────────────────
+# Secret generated once at startup if env var absent (dev fallback; prod must set it).
+_CANCEL_LINK_SECRET = os.getenv("CONCERTO_CANCEL_LINK_SECRET") or secrets.token_hex(32)
+_CANCEL_LINK_TTL    = 3600  # 1 hour
+
+
+def _sign(token: str, expires_at: int) -> str:
+    msg = f"{token}:{expires_at}".encode()
+    return _hmac.new(_CANCEL_LINK_SECRET.encode(), msg, hashlib.sha256).hexdigest()
+
+
+def _make_cancel_link(token: str) -> str:
+    expires_at = int(time.time()) + _CANCEL_LINK_TTL
+    sig = _sign(token, expires_at)
+    return f"{_API_BASE}/api/cancel-by-link?token={token}&expires={expires_at}&sig={sig}"
+
+
+def _verify_cancel_link(token: str, expires_str: str, sig: str) -> bool:
+    try:
+        expires_at = int(expires_str)
+    except (ValueError, TypeError):
+        return False
+    if time.time() > expires_at:
+        return False
+    expected = _sign(token, expires_at)
+    return _hmac.compare_digest(expected, sig)
+
+
+# ── Cancel-by-email rate limiting (in-memory, per-IP, 3/hour) ─────────────────
+_CANCEL_ATTEMPTS: dict[str, list[float]] = defaultdict(list)
+_CANCEL_RATE_WINDOW = 3600
+_CANCEL_RATE_MAX    = 3
+
+
+def _check_and_record_attempt(ip: str) -> bool:
+    now    = time.time()
+    cutoff = now - _CANCEL_RATE_WINDOW
+    prev   = [t for t in _CANCEL_ATTEMPTS[ip] if t > cutoff]
+    if len(prev) >= _CANCEL_RATE_MAX:
+        _CANCEL_ATTEMPTS[ip] = prev
+        return False
+    prev.append(now)
+    _CANCEL_ATTEMPTS[ip] = prev
+    return True
+
+
+_CANCEL_ANTI_ENUM_MSG = (
+    "If this email has an active subscription, you'll receive a confirmation link shortly."
+)
 
 
 class _PortalRequest(BaseModel):
@@ -113,3 +173,79 @@ async def cancel_subscription(req: _CancelRequest):
             "support@concerto.run"
         ),
     }
+
+
+# ── New: cancel-by-email (homepage entry point) ───────────────────────────────
+
+class _CancelByEmailRequest(BaseModel):
+    email: str
+
+
+@router.post("/api/cancel-by-email")
+async def cancel_by_email(req: _CancelByEmailRequest, request: Request):
+    """Homepage cancel flow step 1: accept an email, send a one-click link.
+
+    Always returns the same 200 response regardless of whether the email is
+    found — anti-enumeration by design."""
+    ip      = request.client.host if request.client else "unknown"
+    allowed = _check_and_record_attempt(ip)
+
+    if allowed:
+        email = req.email.strip().lower()
+        buyer = await db.get_buyer_by_email(email)
+        if buyer:
+            cancel_link = _make_cancel_link(buyer["token"])
+            tpl         = cancel_link_email(
+                cancel_link=cancel_link, email=buyer.get("email", email)
+            )
+            asyncio.create_task(
+                send_email(buyer.get("email", email), tpl["subject"], tpl["html"], tpl["text"])
+            )
+
+    return {"ok": True, "message": _CANCEL_ANTI_ENUM_MSG}
+
+
+# ── New: cancel-by-link (one-click confirm, redirects to /cancelled) ──────────
+
+@router.get("/api/cancel-by-link")
+async def cancel_by_link(token: str, expires: str, sig: str):
+    """Homepage cancel flow step 2: verify HMAC, cancel on Stripe, redirect."""
+    if not _verify_cancel_link(token, expires, sig):
+        raise HTTPException(status_code=400, detail="Invalid or expired cancellation link.")
+
+    buyer = await db.get_buyer(token)
+    if not buyer:
+        raise HTTPException(status_code=404, detail="Buyer not found.")
+
+    email              = buyer.get("email") or "unknown"
+    stripe_customer_id = buyer.get("stripe_customer_id")
+    cancelled          = False
+    cancel_note        = ""
+
+    if stripe_customer_id and _STRIPE_SECRET:
+        stripe.api_key = _STRIPE_SECRET
+        try:
+            subs = stripe.Subscription.list(
+                customer=stripe_customer_id, status="active", limit=10
+            )
+            for sub in subs.auto_paging_iter():
+                stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
+                cancelled = True
+            if not cancelled:
+                cancel_note = "no active subscription found on Stripe"
+        except stripe.StripeError as exc:
+            cancel_note = f"Stripe error: {exc}"
+    else:
+        cancel_note = "no Stripe customer on file"
+
+    await send_operator_alert(
+        "Subscription cancelled via email link",
+        (
+            f"Buyer: {email}\n"
+            f"Token: {token}\n"
+            f"Stripe cancel applied: {cancelled}"
+            + (f" ({cancel_note})" if cancel_note else "")
+        ),
+    )
+
+    return RedirectResponse(url=f"{_FRONTEND_BASE}/cancelled", status_code=303)

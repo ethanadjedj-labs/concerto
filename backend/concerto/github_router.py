@@ -13,9 +13,11 @@ Environment variables (all optional — feature disabled gracefully if absent):
   CONCERTO_API_BASE         Public base URL of this API (default: https://api.concerto.run)
   CONCERTO_FRONTEND_URL     Frontend base URL for post-auth redirect (default: https://concerto.run)
 """
+import base64
 import hmac
 import logging
 import os
+import time
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -25,6 +27,28 @@ from concerto import db
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+_README_CONTENT = """\
+# Concerto workspace
+
+This repository is your Concerto workspace.
+
+When you use Concerto, the Claude Code agent works inside a persistent environment that is connected to this repository. Anything the agent builds for you - code, scripts, notes, configs - gets committed and pushed here automatically.
+
+## Why this exists
+
+- **It's yours.** You own this repo. Concerto pushes to it; you keep it.
+- **Portable.** Clone it anywhere. Your work follows.
+- **Visible.** Every change is in git history.
+
+## Usage
+
+Talk to Concerto normally. The agent will work in this repo by default. If you want to work on a different repo of yours, just ask - the agent can switch.
+
+---
+
+Created automatically by Concerto on first GitHub connect.
+"""
 
 _GITHUB_CLIENT_ID = os.getenv("GITHUB_APP_CLIENT_ID", "")
 _GITHUB_CLIENT_SECRET = os.getenv("GITHUB_APP_CLIENT_SECRET", "")
@@ -85,12 +109,214 @@ async def github_connect(token: str):
         f"?client_id={_GITHUB_CLIENT_ID}"
         f"&redirect_uri={redirect_uri}"
         f"&state={token}"
-        # `repo` is broad; `public_repo` covers the common case (clone/push
-        # public repos). Private-repo users can still paste a PAT. Narrower
-        # scope = less scary GitHub consent screen = higher conversion.
-        "&scope=public_repo"
+        # `repo` (full) scope is required: we create a private `concerto` repo
+        # for the user on first connect, and MCP tools read/write private repos.
+        "&scope=repo"
     )
     return RedirectResponse(url=auth_url, status_code=302)
+
+
+async def _update_readme(
+    client: httpx.AsyncClient,
+    gh_headers: dict,
+    login: str,
+    repo_name: str,
+) -> None:
+    """Replace the auto-init README with the Concerto workspace README."""
+    readme_b64 = base64.b64encode(_README_CONTENT.encode("ascii")).decode("ascii")
+    sha_resp = await client.get(
+        f"https://api.github.com/repos/{login}/{repo_name}/contents/README.md",
+        headers=gh_headers,
+    )
+    put_body: dict = {
+        "message": "Initialize Concerto workspace",
+        "content": readme_b64,
+    }
+    if sha_resp.status_code == 200:
+        sha = sha_resp.json().get("sha")
+        if sha:
+            put_body["sha"] = sha
+    put_resp = await client.put(
+        f"https://api.github.com/repos/{login}/{repo_name}/contents/README.md",
+        headers=gh_headers,
+        json=put_body,
+    )
+    if put_resp.status_code in (200, 201):
+        logger.info("README updated for %s/%s", login, repo_name)
+    else:
+        logger.warning(
+            "README update returned %s for %s/%s",
+            put_resp.status_code, login, repo_name,
+        )
+
+
+async def _ensure_concerto_repo(github_token: str, buyer_token: str) -> dict:
+    """Create the user's concerto home-base repo on GitHub if it does not exist.
+
+    Idempotent: returns already_exists if the repo already belongs to the user.
+    Never raises; always returns a dict with status, full_name, and login.
+    """
+    gh_headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Resolve the authenticated user's login.
+            user_resp = await client.get(
+                "https://api.github.com/user", headers=gh_headers
+            )
+            if user_resp.status_code != 200:
+                logger.warning(
+                    "GitHub /user returned %s for buyer %.8s",
+                    user_resp.status_code, buyer_token,
+                )
+                return {"status": "error", "full_name": None, "login": None}
+            login = user_resp.json().get("login")
+            if not login:
+                logger.warning(
+                    "GitHub /user missing login for buyer %.8s", buyer_token
+                )
+                return {"status": "error", "full_name": None, "login": None}
+            logger.info("GitHub user login=%s for buyer %.8s", login, buyer_token)
+
+            _REPO_BODY = {
+                "description": (
+                    "Your Concerto workspace - work done with Claude Code lives here."
+                ),
+                "private": True,
+                "auto_init": True,
+                "license_template": None,
+            }
+
+            # Check if the primary 'concerto' repo already exists.
+            primary = "concerto"
+            check_resp = await client.get(
+                f"https://api.github.com/repos/{login}/{primary}",
+                headers=gh_headers,
+            )
+            if check_resp.status_code == 200:
+                repo_data = check_resp.json()
+                owner_login = (repo_data.get("owner") or {}).get("login", "")
+                if owner_login == login:
+                    full_name = repo_data.get("full_name", f"{login}/{primary}")
+                    logger.info(
+                        "Repo %s already exists for buyer %.8s",
+                        full_name, buyer_token,
+                    )
+                    return {
+                        "status": "already_exists",
+                        "full_name": full_name,
+                        "login": login,
+                    }
+                # Owned by someone else (e.g. a fork) - fall through to fallbacks.
+                logger.info(
+                    "Repo %s/%s exists with owner=%s, using fallback names",
+                    login, primary, owner_login,
+                )
+            elif check_resp.status_code == 404:
+                create_resp = await client.post(
+                    "https://api.github.com/user/repos",
+                    headers=gh_headers,
+                    json=dict(_REPO_BODY, name=primary),
+                )
+                if create_resp.status_code == 201:
+                    full_name = create_resp.json().get(
+                        "full_name", f"{login}/{primary}"
+                    )
+                    logger.info(
+                        "Created repo %s for buyer %.8s", full_name, buyer_token
+                    )
+                    await _update_readme(client, gh_headers, login, primary)
+                    return {
+                        "status": "created",
+                        "full_name": full_name,
+                        "login": login,
+                    }
+                elif create_resp.status_code == 422:
+                    logger.warning(
+                        "Create %s/%s returned 422 (conflict), using fallbacks",
+                        login, primary,
+                    )
+                    # Fall through to fallback chain.
+                else:
+                    logger.warning(
+                        "Create %s/%s returned %s",
+                        login, primary, create_resp.status_code,
+                    )
+                    return {"status": "error", "full_name": None, "login": login}
+            else:
+                logger.warning(
+                    "Check %s/%s returned %s",
+                    login, primary, check_resp.status_code,
+                )
+                return {"status": "error", "full_name": None, "login": login}
+
+            # Fallback chain: try workspace and then a timestamp-based name.
+            fallback_names = [
+                "concerto-workspace",
+                f"concerto-{int(time.time())}",
+            ]
+            for fallback in fallback_names:
+                fb_check = await client.get(
+                    f"https://api.github.com/repos/{login}/{fallback}",
+                    headers=gh_headers,
+                )
+                if fb_check.status_code == 200:
+                    logger.info(
+                        "Fallback %s/%s already exists, trying next",
+                        login, fallback,
+                    )
+                    continue
+                if fb_check.status_code != 404:
+                    logger.warning(
+                        "Fallback check %s/%s returned %s",
+                        login, fallback, fb_check.status_code,
+                    )
+                    return {"status": "error", "full_name": None, "login": login}
+                fb_create = await client.post(
+                    "https://api.github.com/user/repos",
+                    headers=gh_headers,
+                    json=dict(_REPO_BODY, name=fallback),
+                )
+                if fb_create.status_code == 201:
+                    full_name = fb_create.json().get(
+                        "full_name", f"{login}/{fallback}"
+                    )
+                    logger.info(
+                        "Created fallback repo %s for buyer %.8s",
+                        full_name, buyer_token,
+                    )
+                    await _update_readme(client, gh_headers, login, fallback)
+                    return {
+                        "status": "fallback_used",
+                        "full_name": full_name,
+                        "login": login,
+                    }
+                if fb_create.status_code == 422:
+                    logger.warning(
+                        "Create fallback %s/%s returned 422, trying next",
+                        login, fallback,
+                    )
+                    continue
+                logger.warning(
+                    "Create fallback %s/%s returned %s",
+                    login, fallback, fb_create.status_code,
+                )
+                return {"status": "error", "full_name": None, "login": login}
+
+            logger.warning(
+                "All candidate repo names exhausted for buyer %.8s (login=%s)",
+                buyer_token, login,
+            )
+            return {"status": "fallback_failed", "full_name": None, "login": login}
+
+    except httpx.RequestError:
+        logger.exception(
+            "Network error in _ensure_concerto_repo for buyer %.8s", buyer_token
+        )
+        return {"status": "error", "full_name": None, "login": None}
 
 
 async def _exchange_and_store(token: str, code: str) -> str:
@@ -131,6 +357,31 @@ async def _exchange_and_store(token: str, code: str) -> str:
 
     await db.update_buyer(token, github_token=access_token)
     logger.info("GitHub token stored for buyer %.8s", token)
+
+    # Auto-create the user's home-base repo. Must never fail the OAuth flow.
+    try:
+        repo_result = await _ensure_concerto_repo(access_token, token)
+        repo_status = repo_result.get("status")
+        full_name = repo_result.get("full_name")
+        login = repo_result.get("login")
+        logger.info(
+            "Concerto repo for buyer %.8s: status=%s full_name=%s login=%s",
+            token, repo_status, full_name, login,
+        )
+        if full_name:
+            await db.update_buyer(token, github_concerto_repo=full_name)
+        elif repo_status in ("fallback_failed", "error"):
+            logger.warning(
+                "Concerto repo creation did not succeed for buyer %.8s: status=%s",
+                token, repo_status,
+            )
+        if login:
+            await db.update_buyer(token, github_login=login)
+    except Exception:
+        logger.exception(
+            "Unexpected error during repo creation for buyer %.8s", token
+        )
+
     return "connected"
 
 
@@ -207,10 +458,16 @@ async def git_credentials(token: str, request: Request):
     if not buyer:
         raise HTTPException(status_code=404, detail="Buyer not found")
 
-    stored_secret = buyer.get("ttyd_password") or ""
+    # Prefer the dedicated callback_secret (new rows); fall back to ttyd_password
+    # for legacy rows where callback_secret is NULL (same fallback as provision_router).
+    stored_secret = buyer.get("callback_secret") or buyer.get("ttyd_password") or ""
     incoming_secret = request.headers.get("X-Callback-Secret", "")
 
     if not stored_secret or not hmac.compare_digest(stored_secret, incoming_secret):
         raise HTTPException(status_code=403, detail="Invalid callback secret")
 
-    return {"github_token": buyer.get("github_token") or ""}
+    return {
+        "github_token": buyer.get("github_token") or "",
+        "concerto_repo": buyer.get("github_concerto_repo") or "",
+        "github_login": buyer.get("github_login") or "",
+    }

@@ -1,6 +1,9 @@
 import asyncio
+import logging
 import os
 import sqlite3
+
+logger = logging.getLogger(__name__)
 
 DB_PATH = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 
@@ -80,6 +83,24 @@ async def get_buyer(token: str) -> dict | None:
         try:
             row = conn.execute(
                 "SELECT * FROM concerto_buyers WHERE token = ?", (token,)
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    return await asyncio.to_thread(_run)
+
+
+async def get_buyer_by_email(email: str) -> dict | None:
+    """Return the most recent paid buyer row for this email address."""
+    def _run():
+        conn = _conn()
+        try:
+            row = conn.execute(
+                """SELECT * FROM concerto_buyers
+                   WHERE email = ? AND paid_at IS NOT NULL
+                   ORDER BY paid_at DESC LIMIT 1""",
+                (email,),
             ).fetchone()
             return dict(row) if row else None
         finally:
@@ -182,3 +203,31 @@ async def get_hosted_pool_entries(status_prefix: str | None = None) -> list[dict
             conn.close()
 
     return await asyncio.to_thread(_run)
+
+
+async def log_lifecycle_event(
+    event_type: str,
+    buyer_token: str,
+    vps_id: str | None = None,
+    idle_seconds: int | None = None,
+    resume_latency_ms: int | None = None,
+    source: str | None = None,
+    detail: str | None = None,
+) -> None:
+    """Record a pause/resume event. Fire-and-forget; errors are logged, never raised."""
+    import time
+    try:
+        conn = _conn()
+        try:
+            conn.execute(
+                """INSERT INTO concerto_lifecycle_events
+                   (ts, event_type, buyer_token, vps_id, idle_seconds, resume_latency_ms, source, detail)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (int(time.time()), event_type, buyer_token, vps_id,
+                 idle_seconds, resume_latency_ms, source, detail),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as exc:
+        logger.error("log_lifecycle_event failed: %s", exc)

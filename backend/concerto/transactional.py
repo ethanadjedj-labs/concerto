@@ -1,6 +1,6 @@
 """Concerto transactional email client — Migadu SMTP over STARTTLS:587.
 
-Env vars required (loaded from /etc/empire/env at service start):
+Env vars required (loaded from /etc/cortex/env at service start):
     CONCERTO_SMTP_HOST, CONCERTO_SMTP_PORT, CONCERTO_SMTP_USER_NOREPLY,
     CONCERTO_SMTP_PASS_NOREPLY, CONCERTO_EMAIL_FROM, CONCERTO_EMAIL_REPLY_TO
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import smtplib
 import sqlite3
 import ssl
@@ -19,6 +20,10 @@ import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, make_msgid
+
+
+_SUPPRESS_PATTERN = os.getenv("CONCERTO_SUPPRESS_EMAILS_TO", "").strip()
+_SUPPRESS_RE = re.compile(_SUPPRESS_PATTERN, re.IGNORECASE) if _SUPPRESS_PATTERN else None
 
 
 class MigaduSMTPClient:
@@ -30,12 +35,19 @@ class MigaduSMTPClient:
         self.from_addr = os.environ["CONCERTO_EMAIL_FROM"]
         self.reply_to = os.environ["CONCERTO_EMAIL_REPLY_TO"]
 
-    def send(self, to: str, subject: str, html: str, text: str | None = None) -> str:
+    def send(self, to: str, subject: str, html: str, text: str | None = None, *, _bypass_suppress: bool = False) -> str:
         """Send email synchronously. Retries 3× (1s/2s/4s backoff). Writes DLQ on failure.
 
         Returns the Message-ID string.
         Raises smtplib.SMTPException if all retries exhausted (after DLQ write).
         """
+        # Defense-in-depth: respect CONCERTO_SUPPRESS_EMAILS_TO at the SMTP
+        # layer. send_email() in email_utils.py also enforces this, but any
+        # call site that directly uses get_client().send(...) (e.g. drip_runner,
+        # trial_reaper) would otherwise bypass the filter and spam the operator.
+        if not _bypass_suppress and _SUPPRESS_RE and _SUPPRESS_RE.match(to.strip().lower()):
+            print(f"[email-suppress] dropped email to {to} (subject={subject!r})", flush=True)
+            return "<suppressed>"
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = f"Concerto <{self.from_addr}>"
@@ -65,9 +77,9 @@ class MigaduSMTPClient:
         self._write_dlq(to, subject, html, text, str(last_exc), retries=3)
         raise last_exc  # type: ignore[misc]
 
-    async def send_async(self, to: str, subject: str, html: str, text: str | None = None) -> str:
+    async def send_async(self, to: str, subject: str, html: str, text: str | None = None, *, _bypass_suppress: bool = False) -> str:
         """Async wrapper around send() — runs in a thread pool."""
-        return await asyncio.to_thread(self.send, to, subject, html, text)
+        return await asyncio.to_thread(self.send, to, subject, html, text, _bypass_suppress=_bypass_suppress)
 
     def _write_dlq(
         self,
