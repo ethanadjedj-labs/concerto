@@ -36,6 +36,21 @@ async def _persist(token: str, ts: int) -> None:
         await db.update_buyer(token, first_call_at=ts)
     except Exception:
         pass
+    # Notify the operator the moment a customer starts their first work
+    # (first successful tool call / build). Fires exactly once per token
+    # because record_first_call() de-dupes before scheduling _persist.
+    try:
+        buyer = await db.get_buyer(token)
+        email = (buyer or {}).get("email") or "unknown"
+        plan = (buyer or {}).get("plan") or "unknown"
+        from concerto.email_utils import send_operator_alert
+        await send_operator_alert(
+            "First build started",
+            f"Customer: {email}\nPlan: {plan}\nToken: {token}\n"
+            f"They just launched their first Concerto work.",
+        )
+    except Exception:
+        pass
 
 
 @router.get("/api/buyer/{token}/first-call-detected")

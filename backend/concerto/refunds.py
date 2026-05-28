@@ -22,7 +22,7 @@ from concerto.email_utils import send_email, send_operator_alert
 _STRIPE_SECRET = os.getenv("STRIPE_SECRET_KEY", "")
 _DO_API_BASE = "https://api.digitalocean.com/v2"
 _REFUND_WINDOW_DAYS = 14
-_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
+_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 
 _FAILED_STATUSES = frozenset(
     {

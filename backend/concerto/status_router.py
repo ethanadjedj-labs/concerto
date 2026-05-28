@@ -3,13 +3,15 @@ import time
 
 import stripe
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from concerto import db
-from concerto.refunds import RefundError, RefundNotEligible, is_eligible_auto
+from concerto.email_utils import send_email, send_operator_alert
 
 router = APIRouter()
 
 _STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+_CONCERTO_API_BASE = os.getenv("CONCERTO_API_BASE", "https://api.concerto.run")
 
 
 @router.get("/api/buyer/{token}/status")
@@ -24,6 +26,10 @@ async def buyer_status(token: str):
     if buyer.get("vps_ip"):
         resp["vps_ip"] = buyer["vps_ip"]
     if buyer.get("mcp_url"):
+        # Always expose the buyer's mcp_url directly. For NF the container
+        # runs a cloudflared quick tunnel and writes the trycloudflare URL
+        # here, so Claude.ai talks to the same hostname end-to-end (Host
+        # header pass-through is required for OAuth issuer consistency).
         resp["mcp_url"] = buyer["mcp_url"]
     if buyer.get("bearer_token"):
         resp["bearer_token"] = buyer["bearer_token"]
@@ -39,15 +45,13 @@ async def buyer_status(token: str):
     if buyer.get("plan") == "trial":
         resp["expires_at"] = buyer.get("expires_at")
 
+    # Auto-pause runtime state (absent when running, 'paused' when idle-paused)
+    if buyer.get("runtime_state"):
+        resp["runtime_state"] = buyer["runtime_state"]
+
     # Extra fields for error UX
     if buyer.get("failure_reason"):
         resp["failure_reason"] = buyer["failure_reason"]
-
-    # Refund eligibility (visible for 14 days)
-    paid_at = buyer.get("paid_at") or 0
-    age_days = (time.time() - paid_at) / 86400
-    resp["refund_eligible"] = is_eligible_auto(buyer)
-    resp["refund_window_open"] = age_days <= 14
 
     # Dashboard opened tracking
     if status in ("awaiting_oauth", "active"):
@@ -83,20 +87,47 @@ async def cancel_subscription(token: str):
     return {"cancelled": True}
 
 
-@router.post("/api/buyer/{token}/refund")
-async def request_refund(token: str):
-    buyer = await db.get_buyer(token)
-    if not buyer:
-        raise HTTPException(status_code=404, detail="Buyer not found")
+class RefundRequest(BaseModel):
+    email: str
+    message: str = ""
 
-    from concerto.refunds import refund
-    try:
-        result = await refund(token, reason="Customer requested via dashboard")
-        return result
-    except RefundNotEligible as exc:
-        raise HTTPException(
-            status_code=422,
-            detail={"error": "refund_not_eligible", "message": str(exc)},
-        )
-    except RefundError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+
+@router.post("/api/refund-request")
+async def refund_request(req: RefundRequest):
+    """Public refund request form (homepage). No automatic refund: this
+    only notifies the operator and confirms receipt to the customer. All
+    refunds are then handled manually. The automatic safety-net refund on
+    failed provisioning lives in provision_router and is unaffected."""
+    email = (req.email or "").strip()
+    message = (req.message or "").strip()[:2000]
+    if "@" not in email or "." not in email.split("@")[-1] or len(email) > 254:
+        raise HTTPException(status_code=400, detail="A valid email is required")
+
+    # Notify the operator so a refund can be processed by hand.
+    await send_operator_alert(
+        "Refund request",
+        f"From: {email}\n\nMessage:\n{message or '(no message provided)'}",
+    )
+
+    # Confirm receipt to the customer (best-effort; never fails the request).
+    await send_email(
+        to=email,
+        subject="We received your Concerto refund request",
+        html=(
+            "<p>Hi,</p>"
+            "<p>We've received your refund request and a human will "
+            "review it shortly. We typically reply within 24 hours.</p>"
+            "<p>If you need to add anything, just reply to this email or "
+            "contact <a href='mailto:support@concerto.run'>"
+            "support@concerto.run</a>.</p>"
+            "<p>Thank you,<br/>The Concerto team</p>"
+        ),
+        text=(
+            "Hi,\n\nWe've received your refund request and a human will "
+            "review it shortly. We typically reply within 24 hours.\n\n"
+            "If you need to add anything, reply to this email or contact "
+            "support@concerto.run.\n\nThank you,\nThe Concerto team"
+        ),
+    )
+
+    return {"ok": True, "received": True}

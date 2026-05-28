@@ -56,3 +56,33 @@ def test_002_is_idempotent():
         _apply_migration_idempotent(conn, "002_ttyd_credentials.sql")
         _apply_migration_idempotent(conn, "002_ttyd_credentials.sql")  # second run must not raise
         conn.close()
+
+
+def test_014_stripe_customer_id_index():
+    """Migration 014 must create idx_concerto_buyers_stripe_customer_id."""
+    with tempfile.NamedTemporaryFile(suffix=".db") as tmp:
+        conn = sqlite3.connect(tmp.name)
+        _apply_migration_idempotent(conn, "001_init.sql")
+        _apply_migration_idempotent(conn, "005_stripe_customer_id.sql")
+        _apply_migration_idempotent(conn, "014_stripe_customer_id_index.sql")
+        indexes = {
+            row[1]
+            for row in conn.execute(
+                "SELECT * FROM sqlite_master WHERE type='index'"
+            ).fetchall()
+        }
+        assert "idx_concerto_buyers_stripe_customer_id" in indexes, (
+            "stripe_customer_id index not created by 014_stripe_customer_id_index.sql"
+        )
+        conn.close()
+
+
+def test_014_is_idempotent():
+    """Migration 014 (CREATE INDEX IF NOT EXISTS) must be safe to run twice."""
+    with tempfile.NamedTemporaryFile(suffix=".db") as tmp:
+        conn = sqlite3.connect(tmp.name)
+        _apply_migration_idempotent(conn, "001_init.sql")
+        _apply_migration_idempotent(conn, "005_stripe_customer_id.sql")
+        _apply_migration_idempotent(conn, "014_stripe_customer_id_index.sql")
+        _apply_migration_idempotent(conn, "014_stripe_customer_id_index.sql")
+        conn.close()

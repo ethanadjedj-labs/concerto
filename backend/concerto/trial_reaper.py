@@ -16,15 +16,12 @@ import os
 import sqlite3
 import time
 
-import httpx
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 DB_PATH       = os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")
 DO_API_TOKEN  = os.getenv("CONCERTO_DO_API_TOKEN", "")
 FRONTEND_URL  = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
-DO_API_BASE   = "https://api.digitalocean.com/v2"
 
 
 # ─── DB ──────────────────────────────────────────────────────────────────────
@@ -54,6 +51,69 @@ def _find_expired_trials() -> list[dict]:
         conn.close()
 
 
+# Trials longer than ~31 min are the 48h trials (the 30min trial gets no
+# pre-warning, per product decision). Window: <= 2h10 left and not yet warned.
+_PRE_WARN_WINDOW_S = 2 * 60 * 60 + 600  # 2h10 (cushion over the 60s timer)
+_MIN_LONG_TRIAL_S  = 31 * 60
+
+
+def _find_pre_expiry_warnings() -> list[dict]:
+    now = int(time.time())
+    conn = _conn()
+    try:
+        rows = conn.execute(
+            """SELECT token, email, expires_at, paid_at
+               FROM concerto_buyers
+               WHERE plan = 'trial'
+                 AND status NOT IN ('trial_expired', 'trial_upgraded')
+                 AND pre_expiry_warned_at IS NULL
+                 AND expires_at > ?
+                 AND expires_at - paid_at > ?
+                 AND expires_at - ? <= ?""",
+            (now, _MIN_LONG_TRIAL_S, now, _PRE_WARN_WINDOW_S),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def _mark_pre_warned(token: str) -> None:
+    conn = _conn()
+    try:
+        conn.execute(
+            "UPDATE concerto_buyers SET pre_expiry_warned_at = ? WHERE token = ?",
+            (int(time.time()), token),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+async def _send_pre_expiry_email(email: str, token: str) -> None:
+    if not email:
+        return
+    try:
+        from concerto.email_templates import pre_expiry_warning
+        from concerto.transactional import get_client
+        # has_github: check the buyer row
+        conn = _conn()
+        try:
+            row = conn.execute(
+                "SELECT github_token FROM concerto_buyers WHERE token = ?",
+                (token,),
+            ).fetchone()
+        finally:
+            conn.close()
+        has_gh = bool(row and row["github_token"])
+        dash = f"{FRONTEND_URL}/dashboard/{token}"
+        tpl = pre_expiry_warning(dashboard_url=dash, email=email,
+                                 has_github=has_gh, context="trial")
+        html = tpl.get("html") or tpl["text"].replace("\n", "<br>")
+        await get_client().send_async(email, tpl["subject"], html, tpl.get("text"))
+    except Exception as exc:
+        logger.warning("Pre-expiry email to %s failed: %s", email, exc)
+
+
 def _mark_expired(token: str) -> None:
     conn = _conn()
     try:
@@ -66,33 +126,34 @@ def _mark_expired(token: str) -> None:
         conn.close()
 
 
-# ─── DO droplet + CF tunnel destroy ──────────────────────────────────────────
+# ─── Droplet + CF tunnel destroy — routed through provider_factory ────────────
 
 
 async def _destroy_droplet(droplet_id: str, cf_tunnel_id: str = "") -> None:
-    if not DO_API_TOKEN or not droplet_id:
-        return
-    headers = {
-        "Authorization": f"Bearer {DO_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-    try:
-        async with httpx.AsyncClient(base_url=DO_API_BASE, headers=headers, timeout=15) as client:
-            resp = await client.delete(f"/droplets/{droplet_id}")
-            if resp.status_code not in (204, 404):
-                logger.warning("DO destroy %s returned %s", droplet_id, resp.status_code)
-    except Exception as exc:
-        logger.warning("DO destroy %s failed: %s", droplet_id, exc)
-
-    if cf_tunnel_id:
-        from concerto.cf_tunnel import destroy_named_tunnel
-        await destroy_named_tunnel(cf_tunnel_id)
+    # provider_factory selects DO or NF based on CONCERTO_PROVISIONER env var.
+    # Factory destroy_droplet: never raises, handles CF tunnel cleanup internally.
+    from concerto.provider_factory import destroy_droplet as _factory_destroy
+    await _factory_destroy(
+        api_key=DO_API_TOKEN,
+        vps_id=droplet_id,
+        cf_tunnel_id=cf_tunnel_id,
+    )
 
 
 # ─── Email ────────────────────────────────────────────────────────────────────
 
 
-async def _send_expired_email(email: str, token: str) -> None:
+def _trial_duration_label(expires_at: int, paid_at: int) -> str:
+    """Return a human-readable duration label for the trial_expired email."""
+    secs = max(0, expires_at - paid_at)
+    if secs <= 31 * 60:
+        return "30-minute"
+    if secs >= 40 * 3600:
+        return "48-hour"
+    return f"{round(secs / 3600)}-hour"
+
+
+async def _send_expired_email(email: str, token: str, expires_at: int = 0, paid_at: int = 0) -> None:
     if not email:
         return
     try:
@@ -101,7 +162,8 @@ async def _send_expired_email(email: str, token: str) -> None:
         from concerto.transactional import get_client
 
         upgrade_url = f"{FRONTEND_URL}/upgrade/{token}"
-        tpl = trial_expired(upgrade_url=upgrade_url, email=email)
+        duration_label = _trial_duration_label(expires_at, paid_at)
+        tpl = trial_expired(upgrade_url=upgrade_url, email=email, duration_label=duration_label)
         html = tpl.get("html") or tpl["text"].replace("\n", "<br>")
         await get_client().send_async(email, tpl["subject"], html, tpl.get("text"))
     except Exception as exc:
@@ -112,9 +174,20 @@ async def _send_expired_email(email: str, token: str) -> None:
 
 
 async def _reap_once() -> int:
+    # Pre-expiry warnings for 48h trials (~2h before end) -- send once each.
+    warn = _find_pre_expiry_warnings()
+    if warn:
+        logger.info("Pre-expiry warning for %d trial(s)", len(warn))
+        for b in warn:
+            _mark_pre_warned(b["token"])
+        await asyncio.gather(
+            *[_send_pre_expiry_email(b.get("email") or "", b["token"]) for b in warn],
+            return_exceptions=True,
+        )
+
     expired = _find_expired_trials()
     if not expired:
-        return 0
+        return len(warn) if warn else 0
 
     logger.info("Reaping %d expired trial(s)", len(expired))
     tasks = []
@@ -131,7 +204,11 @@ async def _reap_once() -> int:
         _mark_expired(token)
 
         tasks.append(_destroy_droplet(droplet_id, cf_tunnel))
-        tasks.append(_send_expired_email(email, token))
+        tasks.append(_send_expired_email(
+            email, token,
+            expires_at=buyer.get("expires_at") or 0,
+            paid_at=buyer.get("paid_at") or 0,
+        ))
 
     await asyncio.gather(*tasks, return_exceptions=True)
     return len(expired)

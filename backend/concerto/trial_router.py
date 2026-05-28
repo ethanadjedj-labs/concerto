@@ -24,13 +24,20 @@ from pydantic import BaseModel
 
 from concerto import db
 from concerto.email_utils import send_email
-from concerto.provisioner import provision_droplet, DOAuthError, DOCreditError
+from concerto.provider_factory import provision_droplet, DOAuthError, DOCreditError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 _TRIAL_DURATION_S = 30 * 60       # 30 minutes (public)
 _OPERATOR_TRIAL_DURATION_S = 2 * 60 * 60   # 2 hours for whitelisted operators (filming/E2E)
+_TRIAL_48H_DURATION_S = 48 * 60 * 60       # 48 hours (extended public trial)
+# Whitelisted public trial durations only -- never a free-form value
+# (a client must not be able to request an arbitrarily long trial).
+_PUBLIC_TRIAL_DURATIONS = {
+    "30min": _TRIAL_DURATION_S,
+    "48h": _TRIAL_48H_DURATION_S,
+}
 _HOSTED_REGION    = os.getenv("CONCERTO_TRIAL_REGION", "nyc1")
 _HOSTED_SIZE      = "s-2vcpu-4gb"
 _DO_API_TOKEN     = os.getenv("CONCERTO_DO_API_TOKEN", "")
@@ -126,13 +133,21 @@ async def _provision_trial(token: str, email: str) -> None:
         )
         return
 
+    # Always update infra fields (vps_id, vps_ip, etc.) so status_router can serve them.
+    # Only advance status to "installing" if the container hasn't already called back
+    # and advanced it to "awaiting_oauth". NF containers can call back during
+    # _poll_until_running, before this line runs.
+    current = await db.get_buyer(token)
+    current_status = (current or {}).get("status", "")
+    _CALLBACK_ALREADY_ADVANCED = {"awaiting_oauth", "active", "trial_expired"}
+    new_status = current_status if current_status in _CALLBACK_ALREADY_ADVANCED else "installing"
     await db.update_buyer(
         token,
         vps_id=droplet_id,
         vps_ip=vps_ip,
         ssh_keypair_private_path=ssh_key_path,
         ttyd_password=ttyd_password,
-        status="installing",
+        status=new_status,
         provisioned_at=int(time.time()),
     )
 
@@ -144,6 +159,7 @@ async def _provision_trial(token: str, email: str) -> None:
 class TrialStartRequest(BaseModel):
     email: str
     honeypot: str = ""   # must be blank
+    plan: str = "30min"  # "30min" (default) or "48h"; validated server-side
 
 
 @router.post("/api/trial/start", status_code=201)
@@ -174,7 +190,9 @@ async def trial_start(req: TrialStartRequest, request: Request):
 
     token     = secrets.token_urlsafe(32)
     _is_op = bool(_OPERATOR_EMAIL_RE.match(email))
-    _dur = _OPERATOR_TRIAL_DURATION_S if _is_op else _TRIAL_DURATION_S
+    # Public trial duration is whitelisted; unknown value -> 30min.
+    _requested = _PUBLIC_TRIAL_DURATIONS.get(req.plan, _TRIAL_DURATION_S)
+    _dur = max(_OPERATOR_TRIAL_DURATION_S, _requested) if _is_op else _requested
     expires_at = int(time.time()) + _dur
 
     await _insert_trial_buyer(token, email, client_ip, expires_at)

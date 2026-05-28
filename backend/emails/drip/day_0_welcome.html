@@ -1,31 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Welcome to Concerto</title></head>
-<body style="margin:0;padding:0;background:#faf9f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#191919;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;">
-<tr><td align="center" style="padding:40px 20px;">
-<table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
-<tr><td style="padding-bottom:24px;font-size:16px;font-weight:700;letter-spacing:.04em;color:#191919;">Concerto</td></tr>
-<tr><td style="background:#ffffff;border:1px solid #f3efe5;border-radius:8px;padding:32px;">
-  <p style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#cc785c;margin:0 0 16px;">Payment confirmed</p>
-  <h1 style="font-size:22px;font-weight:700;color:#191919;margin:0 0 16px;line-height:1.3;">Your Concerto account is confirmed.</h1>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 24px;">Your payment is confirmed and your Concerto environment is being prepared. You'll be ready in a few minutes. Here's what happens next.</p>
-  <table cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;border:1px solid #f3efe5;border-radius:6px;padding:16px 20px;margin:0 0 24px;width:100%;box-sizing:border-box;">
-  <tr><td style="font-size:14px;color:#4a4540;line-height:2.4;">
-    <strong style="color:#191919;">1.</strong> Open your dashboard using the link below<br>
-    <strong style="color:#191919;">2.</strong> Sign in to Claude from the embedded terminal (one quick OAuth step)<br>
-    <strong style="color:#191919;">3.</strong> Copy the connector config into claude.ai &rarr; Settings &rarr; Connectors<br>
-    <strong style="color:#191919;">4.</strong> Start any claude.ai conversation &mdash; Claude Code is now live
-  </td></tr>
-  </table>
-  <a href="{{setup_url}}" style="display:inline-block;background:#cc785c;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 28px;border-radius:6px;letter-spacing:.01em;">Complete setup &rarr;</a>
-  <p style="font-size:13px;color:#8a847b;margin:20px 0 0;line-height:1.5;">Reply to this email if you have questions &mdash; a human will respond within 24 hours.</p>
-</td></tr>
-<tr><td style="padding-top:24px;font-size:12px;color:#8a847b;text-align:center;">
-  Concerto &middot; <a href="https://concerto.run" style="color:#8a847b;text-decoration:none;">concerto.run</a> &middot; <a href="mailto:support@concerto.run" style="color:#8a847b;text-decoration:none;">support@concerto.run</a>
-</td></tr>
-</table>
-</td></tr>
-</table>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to Concerto</title>
+<style>
+  body{margin:0;padding:0;background:#0d0d14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0}
+  .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+  .logo-icon{width:36px;height:36px;background:transparent;display:flex;align-items:center;justify-content:center}
+  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#fff}
+  p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0 0 16px}
+  .step{display:flex;gap:12px;margin-bottom:16px;padding:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px}
+  .step-num{flex-shrink:0;width:28px;height:28px;background:#d9775722;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#d97757}
+  .step-body{font-size:14px;color:#94a3b8;line-height:1.6}
+  .step-body strong{color:#e2e8f0;display:block;margin-bottom:2px}
+  .btn{display:inline-block;padding:12px 24px;background:#d97757;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;margin:8px 0 24px}
+  .footer{font-size:12px;color:#475569;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
+  a{color:#d97757}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon" style="background:transparent;padding:0"><svg width="36" height="36" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" stroke-width="12" stroke-linecap="round"/><path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90" fill="none" stroke="#b483ff" stroke-width="12" stroke-linecap="round"/><path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" stroke-width="12" stroke-linecap="round"/><circle cx="115.56" cy="115.56" r="15" fill="#d97757"/><circle cx="61.36" cy="89.65" r="15" fill="#b483ff"/><circle cx="150.23" cy="71.00" r="15" fill="#8b7fff"/><circle cx="100" cy="100" r="20" fill="#f5f0e9"/></svg></div>
+    <span style="font-weight:700;font-size:18px;color:#fff">Concerto</span>
+  </div>
+
+  <h1>Your remote workshop is ready.</h1>
+  <p>Thanks for getting Concerto. Your order is confirmed and your VPS is being provisioned — here's what happens next.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><strong>Enter your DigitalOcean API key</strong>This lets Concerto spin up a Droplet in your own DO account. Your key stays encrypted; you own the Droplet.</div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><strong>Run <code>claude auth login</code> in the terminal</strong>The embedded terminal on your dashboard opens straight to your Droplet. One OAuth flow and Claude is live.</div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><strong>Paste the connector config into claude.ai</strong>Settings → Connectors. From any claude.ai conversation you can now run Claude Code on your Droplet.</div>
+  </div>
+
+  <a href="{{setup_url}}" class="btn">Complete setup →</a>
+
+  <p>Reply to this email if you have questions — a human will respond within 24 hours.</p>
+  <div class="footer">
+    Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a><br>
+    You're receiving this because you purchased Concerto. Reply to this email to talk to a human.
+  </div>
+</div>
 </body>
 </html>

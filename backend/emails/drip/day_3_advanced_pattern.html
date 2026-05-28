@@ -1,38 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Spawn 3 sessions in parallel</title></head>
-<body style="margin:0;padding:0;background:#faf9f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#191919;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;">
-<tr><td align="center" style="padding:40px 20px;">
-<table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
-<tr><td style="padding-bottom:24px;font-size:16px;font-weight:700;letter-spacing:.04em;color:#191919;">Concerto</td></tr>
-<tr><td style="background:#ffffff;border:1px solid #f3efe5;border-radius:8px;padding:32px;">
-  <h1 style="font-size:22px;font-weight:700;color:#191919;margin:0 0 16px;line-height:1.3;">Try this: 3 sessions in parallel.</h1>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">Most people run Claude Code one task at a time. With Concerto, your environment handles multiple concurrent sessions &mdash; each in its own tmux window, sharing the same filesystem and tools.</p>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">Here's a prompt pattern that spawns three independent workstreams and waits for all three before reporting results:</p>
-  <table cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;border:1px solid #f3efe5;border-radius:6px;padding:18px 20px;margin:0 0 20px;width:100%;box-sizing:border-box;">
-  <tr><td style="font-family:'Courier New',Courier,monospace;font-size:13px;color:#4a4540;line-height:1.7;white-space:pre-wrap;">Start 3 background Claude Code sessions:
-1. Session A: scan /tmp for files larger than 1MB, write results to /tmp/scan_a.txt
-2. Session B: run `uptime &amp;&amp; date` and write to /tmp/scan_b.txt
-3. Session C: count lines in every .log file under /var/log (non-recursive), write to /tmp/scan_c.txt
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ask Concerto to parallelize</title>
+<style>
+  body{margin:0;padding:0;background:#0d0d14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0}
+  .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+  .logo-icon{width:36px;height:36px;background:transparent;display:flex;align-items:center;justify-content:center}
+  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#fff}
+  p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0 0 16px}
+  .prompt-box{background:rgba(255,255,255,.03);border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#c4b5fd;line-height:1.7;margin:0 0 24px;white-space:pre-wrap}
+  .btn{display:inline-block;padding:12px 24px;background:#d97757;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;margin:8px 0 24px}
+  .footer{font-size:12px;color:#475569;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
+  a{color:#d97757}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon" style="background:transparent;padding:0"><svg width="36" height="36" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" stroke-width="12" stroke-linecap="round"/><path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90" fill="none" stroke="#b483ff" stroke-width="12" stroke-linecap="round"/><path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" stroke-width="12" stroke-linecap="round"/><circle cx="115.56" cy="115.56" r="15" fill="#d97757"/><circle cx="61.36" cy="89.65" r="15" fill="#b483ff"/><circle cx="150.23" cy="71.00" r="15" fill="#8b7fff"/><circle cx="100" cy="100" r="20" fill="#f5f0e9"/></svg></div>
+    <span style="font-weight:700;font-size:18px;color:#fff">Concerto</span>
+  </div>
 
-Run all three in parallel via tmux or background subshells.
-When all three finish, read and summarize all three output files.</td></tr>
-  </table>
-  <table cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;border:1px solid #f3efe5;border-radius:6px;padding:14px 16px;margin:0 0 20px;width:100%;box-sizing:border-box;">
-  <tr><td style="font-size:14px;color:#4a4540;line-height:1.6;">
-    <strong style="color:#191919;">Power tip:</strong> use <code style="background:#f3efe5;padding:1px 5px;border-radius:3px;">tmux new-session -d -s &lt;name&gt;</code> to keep each session independent. Concerto manages the orchestration; Claude Code handles the execution.
-  </td></tr>
-  </table>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 24px;">This pattern scales to real workloads: parallel test runs, multi-repo refactors, concurrent API migrations. Sessions share the filesystem so intermediate outputs flow naturally between them.</p>
-  <a href="{{dashboard_url}}" style="display:inline-block;background:#cc785c;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 28px;border-radius:6px;letter-spacing:.01em;">Open dashboard &rarr;</a>
-</td></tr>
-<tr><td style="padding-top:24px;font-size:12px;color:#8a847b;text-align:center;">
-  Concerto &middot; <a href="https://concerto.run" style="color:#8a847b;text-decoration:none;">concerto.run</a> &middot; <a href="mailto:support@concerto.run" style="color:#8a847b;text-decoration:none;">support@concerto.run</a><br>
-  <a href="{{unsubscribe_url}}" style="color:#8a847b;text-decoration:none;">Unsubscribe</a> from onboarding emails
-</td></tr>
-</table>
-</td></tr>
-</table>
+  <h1>Try this: ask Concerto to parallelize.</h1>
+
+  <p>Most people give Claude one task at a time. With Concerto, Claude can spin up several Claude Code sessions in parallel — each working on a different piece of the same build.</p>
+
+  <div class="prompt-box">Open claude.ai and try this:
+"Use Concerto to build me a Habit Tracker app. Run several sessions in parallel: one for the data layer, one for the UI, one for the calendar view."</div>
+
+  <p>Claude announces the split, spawns the sessions in parallel, and reports back as each one lands. Real parallelism for real builds. The same pattern works for refactors, migrations, and multi-repo work.</p>
+
+  <a href="{{dashboard_url}}" class="btn">Open your dashboard →</a>
+
+  <p>Reply to this email with what you're trying — we read every reply.</p>
+
+  <div class="footer">
+    Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a><br>
+    <a href="{{unsubscribe_url}}" style="color:#475569;">Unsubscribe</a> from onboarding emails
+  </div>
+</div>
 </body>
 </html>

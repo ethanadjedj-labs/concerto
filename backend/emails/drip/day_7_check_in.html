@@ -1,31 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>How's it going?</title></head>
-<body style="margin:0;padding:0;background:#faf9f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#191919;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf9f5;">
-<tr><td align="center" style="padding:40px 20px;">
-<table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
-<tr><td style="padding-bottom:24px;font-size:16px;font-weight:700;letter-spacing:.04em;color:#191919;">Concerto</td></tr>
-<tr><td style="background:#ffffff;border:1px solid #f3efe5;border-radius:8px;padding:32px;">
-  <h1 style="font-size:22px;font-weight:700;color:#191919;margin:0 0 16px;line-height:1.3;">One week in &mdash; how's it going?</h1>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">You've had Concerto for a week. We'd love to know: what's working, what's friction, what would make it twice as useful?</p>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">Reply to this email with one thing &mdash; one improvement, one bug, one workflow that almost works but needs a tweak. We read every reply and the best ones become the next sprint.</p>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 16px;">If you haven't had a chance to explore yet, here are the top three things operators use Concerto for in their first two weeks:</p>
-  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;width:100%;">
-  <tr><td style="font-size:15px;color:#4a4540;line-height:1.9;padding-left:16px;">
-    &bull;&nbsp; Automated code reviews across multiple repos simultaneously<br>
-    &bull;&nbsp; Long-running pipelines that used to hit claude.ai's session timeout<br>
-    &bull;&nbsp; Overnight research and data jobs that finish by morning
-  </td></tr>
-  </table>
-  <p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 0;">If you're stuck on anything &mdash; connector config, OAuth flow, tmux sessions &mdash; just reply. A human responds within 24 hours.</p>
-</td></tr>
-<tr><td style="padding-top:24px;font-size:12px;color:#8a847b;text-align:center;">
-  Concerto &middot; <a href="https://concerto.run" style="color:#8a847b;text-decoration:none;">concerto.run</a> &middot; <a href="mailto:support@concerto.run" style="color:#8a847b;text-decoration:none;">support@concerto.run</a><br>
-  <a href="{{unsubscribe_url}}" style="color:#8a847b;text-decoration:none;">Unsubscribe</a> from onboarding emails
-</td></tr>
-</table>
-</td></tr>
-</table>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>How's it going?</title>
+<style>
+  body{margin:0;padding:0;background:#0d0d14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e2e8f0}
+  .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+  .logo-icon{width:36px;height:36px;background:transparent;display:flex;align-items:center;justify-content:center}
+  h1{font-size:22px;font-weight:700;margin:0 0 12px;color:#fff}
+  p{font-size:15px;line-height:1.7;color:#94a3b8;margin:0 0 16px}
+  .btn{display:inline-block;padding:12px 24px;background:#d97757;color:#fff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;margin:8px 0 24px}
+  .footer{font-size:12px;color:#475569;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
+  a{color:#d97757}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-icon" style="background:transparent;padding:0"><svg width="36" height="36" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 105.69 121.25 A 22 22 0 1 1 121.25 105.69" fill="none" stroke="#d97757" stroke-width="12" stroke-linecap="round"/><path d="M 77.06 67.23 A 40 40 0 1 1 63.75 116.90" fill="none" stroke="#b483ff" stroke-width="12" stroke-linecap="round"/><path d="M 157.12 110.07 A 58 58 0 1 1 119.84 45.50" fill="none" stroke="#8b7fff" stroke-width="12" stroke-linecap="round"/><circle cx="115.56" cy="115.56" r="15" fill="#d97757"/><circle cx="61.36" cy="89.65" r="15" fill="#b483ff"/><circle cx="150.23" cy="71.00" r="15" fill="#8b7fff"/><circle cx="100" cy="100" r="20" fill="#f5f0e9"/></svg></div>
+    <span style="font-weight:700;font-size:18px;color:#fff">Concerto</span>
+  </div>
+
+  <h1>One week in — how's it going?</h1>
+  <p>You've had Concerto for a week. We'd love to know: what's working, what's friction, what would make it twice as useful?</p>
+
+  <p>Reply to this email with one thing — one improvement, one bug, one workflow that almost works but needs a tweak. We read every reply and the best ones become the next sprint.</p>
+
+  <p>If you haven't had a chance to explore yet, here are the top three things users use Concerto for in their first two weeks:</p>
+
+  <ul style="color:#94a3b8;font-size:15px;line-height:1.9;padding-left:20px;margin:0 0 20px">
+    <li>Automated code reviews across multiple repos simultaneously</li>
+    <li>Long-running data pipelines that used to hit claude.ai's session timeout</li>
+    <li>Overnight research jobs that finish by morning</li>
+  </ul>
+
+  <p>And if you're stuck on anything — connector config, OAuth flow, Claude Code sessions — just reply to this email. A human responds within 24 hours.</p>
+
+  <div class="footer">
+    Concerto · <a href="https://concerto.run">concerto.run</a> · <a href="mailto:support@concerto.run">support@concerto.run</a><br>
+    <a href="{{unsubscribe_url}}">Unsubscribe</a> from onboarding emails
+  </div>
+</div>
 </body>
 </html>

@@ -29,6 +29,8 @@ import asyncio
 import re
 import time
 
+import httpx
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -134,20 +136,73 @@ async def _ssh(vps_ip: str, key_path: str, remote_cmd: str, timeout: int = 25) -
     )
 
 
+def _is_nf_buyer(buyer: dict) -> bool:
+    """NF buyers store the container HTTPS URL in vps_ip (not a bare IP)."""
+    return (buyer.get("vps_ip") or "").startswith("https://")
+
+
 async def _buyer_or_404(token: str) -> dict:
     buyer = await db.get_buyer(token)
     if not buyer:
         raise HTTPException(status_code=404, detail="Buyer not found")
     vps_ip = buyer.get("vps_ip")
-    key_path = buyer.get("ssh_keypair_private_path")
-    if not vps_ip or not key_path:
+    if not vps_ip:
         raise HTTPException(status_code=409, detail="Environment is not ready yet")
+    # DO buyers need the SSH key; NF buyers use HTTP bearer auth
+    if not _is_nf_buyer(buyer):
+        key_path = buyer.get("ssh_keypair_private_path")
+        if not key_path:
+            raise HTTPException(status_code=409, detail="Environment is not ready yet")
     return buyer
+
+
+def _nf_base_url(buyer: dict) -> str:
+    """Strip /mcp suffix from mcp_url to get the container base URL."""
+    mcp_url = (buyer.get("mcp_url") or "").strip()
+    if mcp_url.endswith("/mcp"):
+        return mcp_url[:-4]
+    # Fall back: use vps_ip directly (it IS the base URL for NF)
+    return (buyer.get("vps_ip") or "").rstrip("/")
 
 
 @router.post("/api/buyer/{token}/oauth/start")
 async def oauth_start(token: str):
     buyer = await _buyer_or_404(token)
+    # Invalidate any cached oauth-status so the frontend sees fresh state
+    # right after kicking off a new OAuth flow (esp. after a rejection).
+    try:
+        from concerto.oauth_status_router import _cache as _oauth_status_cache
+        _oauth_status_cache.pop(token, None)
+    except Exception:
+        pass
+
+    if _is_nf_buyer(buyer):
+        # NF path: call the container's internal OAuth endpoint via HTTP
+        base_url = _nf_base_url(buyer)
+        bearer = buyer.get("bearer_token", "")
+        try:
+            async with httpx.AsyncClient(timeout=25) as client:
+                resp = await client.post(
+                    f"{base_url}/__internal/oauth/start",
+                    headers={"Authorization": f"Bearer {bearer}"},
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not reach NF container: {exc}",
+            )
+        if resp.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"NF container oauth/start failed ({resp.status_code}): {resp.text[:200]}",
+            )
+        data = resp.json()
+        auth_url = data.get("auth_url", "")
+        if not auth_url:
+            raise HTTPException(status_code=502, detail="NF container returned no auth_url")
+        return {"auth_url": auth_url}
+
+    # Legacy DO path: SSH + tmux
     vps_ip = buyer["vps_ip"]
     key_path = buyer["ssh_keypair_private_path"]
 
@@ -157,9 +212,6 @@ async def oauth_start(token: str):
     _start_locks[token] = now
 
     if fresh_launch:
-        # Kill any stale session, then launch claude setup-token fresh.
-        # `script` gives setup-token a PTY so it prints the URL and waits for
-        # the code on stdin (it refuses to run fully non-interactively).
         launch = (
             f"tmux kill-session -t {_TMUX_SESSION} 2>/dev/null; "
             f"tmux new-session -d -s {_TMUX_SESSION} "
@@ -173,7 +225,6 @@ async def oauth_start(token: str):
                 detail=f"Could not start sign-in on the environment ({err.strip() or rc})",
             )
 
-    # Poll the pane for the authorization URL (setup-token prints it within a few s).
     auth_url = None
     for _ in range(12):
         rc, out, _ = await _ssh(
@@ -275,25 +326,107 @@ async def _finalize_oauth(token: str, vps_ip: str, key_path: str) -> None:
     await db.update_buyer(token, status="oauth_complete")
 
 
+async def _nf_finalize_oauth(token: str, base_url: str, bearer: str) -> None:
+    """Background: poll the NF container's /__internal/oauth/status until the
+    OAuth flow completes (credentials.json written) or is explicitly rejected
+    by Anthropic (tmux pane shows rejection markers), then update the buyer.
+
+    Runs detached from the HTTP request so submit-code can return instantly.
+    The frontend observes completion via the existing /status poll (which
+    sees status flip to "oauth_complete").
+    """
+    deadline = time.monotonic() + 240  # 4 minutes; frontend itself gives up at 150s
+    poll_interval = 2.0
+    completed = False
+    async with httpx.AsyncClient(timeout=8) as client:
+        while time.monotonic() < deadline:
+            await asyncio.sleep(poll_interval)
+            try:
+                r = await client.post(
+                    f"{base_url}/__internal/oauth/status",
+                    headers={"Authorization": f"Bearer {bearer}"},
+                )
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+            except Exception:
+                continue
+            if data.get("oauth_complete"):
+                completed = True
+                break
+            if data.get("rejected"):
+                break
+    if completed:
+        try:
+            await db.update_buyer(token, status="oauth_complete")
+        except Exception:
+            pass
+    # On rejection or timeout we leave status as awaiting_oauth so the user
+    # can retry from the UI.
+
+
 @router.post("/api/buyer/{token}/oauth/submit-code")
 async def oauth_submit_code(token: str, body: _CodeIn):
     buyer = await _buyer_or_404(token)
+
+    if _is_nf_buyer(buyer):
+        # NF path: forward code to container's internal endpoint.
+        # The container returns 200 immediately after sending keys to tmux —
+        # we do NOT block waiting for the OAuth outcome (Cloudflare 30s edge
+        # timeout would 502). The actual outcome (success or rejection) is
+        # observed by a background task polling /__internal/oauth/status.
+        base_url = _nf_base_url(buyer)
+        bearer = buyer.get("bearer_token", "")
+        code = body.code.strip()
+        if "code=" in code:
+            m = re.search(r"code=([^&\s#]+).*?state=([^&\s]+)", code)
+            if m:
+                code = f"{m.group(1)}#{m.group(2)}"
+            else:
+                code = re.split(r"[&\s]", re.sub(r".*code=", "", code))[0]
+        code = code.strip()
+        if not code or len(code) < 8:
+            raise HTTPException(status_code=400, detail="That doesn't look like a valid code.")
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.post(
+                    f"{base_url}/__internal/oauth/submit-code",
+                    headers={"Authorization": f"Bearer {bearer}"},
+                    json={"code": code},
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(status_code=502, detail=f"Could not reach NF container: {exc}")
+        if resp.status_code == 400:
+            try:
+                err = resp.json().get("error", "Invalid code")
+            except Exception:
+                err = "Invalid code"
+            raise HTTPException(status_code=400, detail=err)
+        if resp.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"NF container submit-code failed ({resp.status_code}): {resp.text[:200]}",
+            )
+        # Container accepted the keys. Now observe the OAuth outcome async.
+        asyncio.create_task(_nf_finalize_oauth(token, base_url, bearer))
+        return {"accepted": True}
+
+    # Legacy DO path: SSH + tmux
     vps_ip = buyer["vps_ip"]
     key_path = buyer["ssh_keypair_private_path"]
 
     code = body.code.strip()
-    # Users sometimes paste the whole redirect URL or "code#state"; take the code.
     if "code=" in code:
-        code = re.sub(r".*code=", "", code)
-        code = re.split(r"[&\s]", code)[0]
+        m = re.search(r"code=([^&\s#]+).*?state=([^&\s]+)", code)
+        if m:
+            code = f"{m.group(1)}#{m.group(2)}"
+        else:
+            code = re.split(r"[&\s]", re.sub(r".*code=", "", code))[0]
     code = code.strip()
     if not code or len(code) < 8:
         raise HTTPException(status_code=400, detail="That doesn't look like a valid code.")
 
     safe = code.replace("'", "'\\''")
-    # The setup-token prompt is an Ink TUI: tmux "Enter" is NOT honoured and
-    # the code never submits. Send the literal text, settle, then C-m
-    # (real carriage return), which the TUI does accept.
     send = (
         f"tmux send-keys -t {_TMUX_SESSION} -l '{safe}' 2>/dev/null "
         f"&& sleep 0.4 "
@@ -307,7 +440,5 @@ async def oauth_submit_code(token: str, body: _CodeIn):
             detail="Sign-in session expired. Click \"Sign in with Claude\" again.",
         )
 
-    # Finalize in the background; respond immediately so the browser request
-    # never sits long enough to hit the tunnel timeout.
     asyncio.create_task(_finalize_oauth(token, vps_ip, key_path))
     return {"accepted": True}

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import math
 import os
 import time
 
@@ -9,14 +8,14 @@ import hmac
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from concerto import db, provisioner
+from concerto import db, provider_factory as provisioner
 from concerto.email_utils import send_operator_alert
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 _CLOUD_INIT_TIMEOUT_S = 8 * 60  # 8 minutes
-_MANAGER_STATE_PATH = "/var/lib/concerto/manager_state.md"
+_MANAGER_STATE_PATH = "/opt/cortex/OPS/MANAGER_STATE.md"
 _HOSTED_SIZE = "s-2vcpu-4gb"
 _CONCERTO_DO_API_TOKEN = os.getenv("CONCERTO_DO_API_TOKEN", "")
 _FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
@@ -242,9 +241,11 @@ async def droplet_ready(payload: DropletReadyPayload, request: Request):
     if not buyer:
         raise HTTPException(status_code=404, detail="Token not found")
 
-    # Verify caller-supplied secret equals ttyd_password (known only to the droplet).
-    # Gracefully skip if ttyd_password not yet stored (race at very start of install).
-    stored_secret = buyer.get("ttyd_password") or ""
+    # Verify X-Callback-Secret. Prefer the dedicated callback_secret field (new rows);
+    # fall back to ttyd_password for legacy rows where callback_secret is NULL.
+    # Skip the check entirely when neither field is populated yet (race at the very
+    # start of install — same graceful behaviour as before).
+    stored_secret = buyer.get("callback_secret") or buyer.get("ttyd_password") or ""
     incoming_secret = request.headers.get("X-Callback-Secret", "")
     if stored_secret and not hmac.compare_digest(stored_secret, incoming_secret):
         raise HTTPException(status_code=403, detail="Invalid callback secret")
@@ -257,6 +258,21 @@ async def droplet_ready(payload: DropletReadyPayload, request: Request):
         "cancelled", "refunded", "suspended",
     }
     if current_status in _PAST_INSTALLING:
+        # Container is restarting with possibly-fresh tunnel URL AND bearer token.
+        # Steady-state restart: bearer is unchanged (NF persists env) → no-op update.
+        # Re-provision restart: bearer is fresh → DB must learn it or every /mcp
+        # call hits 401 because the proxy + dashboard would still use the stale
+        # value. Update mcp_url, ttyd_public_url, AND bearer_token. Don't touch
+        # status or other plan-state fields.
+        if payload.mcp_url and payload.mcp_url != "tunnel_failed":
+            updates: dict = {"mcp_url": payload.mcp_url}
+            if payload.ttyd_url:
+                updates["ttyd_public_url"] = payload.ttyd_url
+            if payload.bearer_token:
+                updates["bearer_token"] = payload.bearer_token
+            updates["installed_at"] = int(time.time())
+            await db.update_buyer(payload.token, **updates)
+            return {"ok": True, "noop": True, "mcp_url_refreshed": True}
         return {"ok": True, "noop": True}
 
     # Reject if not in a provisioning-in-progress state
@@ -298,8 +314,8 @@ async def droplet_ready(payload: DropletReadyPayload, request: Request):
             email = buyer.get("email", "")
             dashboard_url = f"{_FRONTEND_URL}/dashboard/{payload.token}"
             expires_at = buyer.get("expires_at", 0)
-            minutes_left = max(1, math.ceil((expires_at - time.time()) / 60)) if expires_at else 25
-            tpl = trial_ready(dashboard_url=dashboard_url, email=email, minutes=minutes_left)
+            duration_seconds = max(60, int(expires_at - time.time())) if expires_at else 1800
+            tpl = trial_ready(dashboard_url=dashboard_url, email=email, duration_seconds=duration_seconds)
             await send_email(email, tpl["subject"], tpl.get("html") or tpl["text"])
         except Exception:
             logger.exception("trial_ready email failed for token %.8s", payload.token)
