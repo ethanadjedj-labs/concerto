@@ -255,6 +255,27 @@ async def provision_droplet(
     # Sanitize email to safe chars before rendering into shell-sourced env file (Bug #24)
     safe_email = re.sub(r"[^a-zA-Z0-9.+\-_@]", "", customer_email or "")
 
+    # Pre-deploy YAML guard: fail fast before touching DO API (cloudinit-yaml-fix)
+    _pre_ci = Template(_load_cloud_init_template()).render(
+        token=token,
+        ssh_public_key=public_key,
+        ssh_authorized_key=public_key,
+        concerto_api_base=_CONCERTO_API_BASE,
+        concerto_token=token,
+        concerto_token_prefix=token[:8].replace("_", "-"),
+        concerto_callback_url=f"{_CONCERTO_API_BASE}/api/internal/droplet-ready",
+        customer_email=safe_email,
+        ttyd_password=ttyd_password,
+        callback_secret=callback_secret,
+        tunnel_token=tunnel_info.get("tunnel_token", ""),
+        tunnel_hostname=tunnel_info.get("hostname", ""),
+        plan=mode,
+        max_parallel_sessions=(10 if mode == "pro" else 3),
+        ram_label=("8 GB" if mode == "pro" else "4 GB"),
+        prewarmed=False,
+    )
+    _validate_cloud_init_yaml(_pre_ci, token)
+
     tag = f"concerto-{mode}-{token[:8].replace('_', '-')}"
 
     # For platform-hosted plans use PLAN_TO_SIZE (trial keeps its caller-supplied size)
