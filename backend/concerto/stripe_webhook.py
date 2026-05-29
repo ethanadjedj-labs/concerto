@@ -425,16 +425,17 @@ async def _dispatch_event(
             await db.update_buyer(token, **buyer_updates)
 
         if customer_email:
-            from concerto.email_templates import trial_converted
+            from concerto.email_templates import trial_converted, byoc_purchase_confirmed
             setup_url = f"{_SETUP_BASE}/{token}"
-            if plan not in _HOSTED_PLANS:
-                logger.warning("Unexpected non-hosted plan=%s for customer=%s", plan, customer_email)
-            else:
+            if plan in _HOSTED_PLANS:
                 tpl = trial_converted(setup_url=setup_url, email=customer_email, plan=plan)
                 asyncio.create_task(send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"]))
                 # Immediate J0 drip — don't wait for the hourly timer
                 from concerto.drip_runner import send_immediate_drip
                 asyncio.create_task(asyncio.to_thread(send_immediate_drip, token, 0))
+            else:
+                tpl = byoc_purchase_confirmed(setup_url=setup_url, email=customer_email)
+                asyncio.create_task(send_email(customer_email, tpl["subject"], tpl["html"] or tpl["text"]))
 
     # ── invoice.payment_failed ────────────────────────────────────────────
     elif event_type == "invoice.payment_failed":

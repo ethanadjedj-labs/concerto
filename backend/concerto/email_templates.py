@@ -314,3 +314,27 @@ def cancel_link_email(*, cancel_link: str, email: str) -> dict:
     return {"subject": subject, "html": _html_page(subject, body_html), "text": text}
 
 
+
+
+def byoc_purchase_confirmed(*, setup_url: str, email: str) -> dict:
+    """Sent when a BYOC customer pays (no trial). Cream/peach, no infra vocabulary."""
+    subject = "Welcome to Concerto — your account is ready"
+    body_html = (
+        '<p style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;'
+        'color:#cc785c;margin:0 0 16px;">Payment confirmed</p>'
+        '<h1 style="font-size:22px;font-weight:700;color:#191919;margin:0 0 16px;line-height:1.3;">'
+        "Welcome to Concerto.</h1>"
+        '<p style="font-size:15px;line-height:1.6;color:#4a4540;margin:0 0 20px;">'
+        "Your payment is confirmed. Open the link below to complete your setup.</p>"
+        + _cta(setup_url, "Complete setup →")
+        + '<p style="font-size:13px;color:#8a847b;margin:20px 0 0;line-height:1.5;">'
+        "Questions? Reply to this email — a human responds within 24 hours.</p>"
+    )
+    text = (
+        "Welcome to Concerto.\n\n"
+        "Your payment is confirmed. Open the link below to complete your setup.\n\n"
+        f"Setup link: {setup_url}\n\n"
+        "Questions? Reply to this email — a human responds within 24 hours.\n\n"
+        "— The Concerto team\nhttps://concerto.run | support@concerto.run\n"
+    )
+    return {"subject": subject, "html": _html_page(subject, body_html), "text": text}
