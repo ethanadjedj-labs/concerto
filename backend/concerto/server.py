@@ -43,6 +43,7 @@ _MIGRATIONS = [
     "019_github_concerto_repo.sql",
     "020_lifecycle_events.sql",
     "021_github_login.sql",
+    "022_stripe_event_amounts.sql",
 ]
 
 

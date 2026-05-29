@@ -30,20 +30,109 @@ _HOSTED_PLANS = {"solo", "pro"}
 stripe.api_key = _STRIPE_SECRET
 
 
-# ─── Idempotency ──────────────────────────────────────────────────────────────
+# ─── Idempotency (commit-after-success) ─────────────────────────────────────────
+#
+# Stripe retries any non-2xx response. We must only dedupe an event AFTER its
+# side effects (buyer creation, provisioning, emails) have committed — otherwise
+# a crash mid-handler permanently loses the side effect on the deduped retry.
+#
+# State machine on stripe_processed_events.status:
+#   'processing' -> a handler has claimed the event but not finished
+#   'done'       -> side effects committed; safe to dedupe future retries
+#
+# Concurrency: a duplicate delivery that arrives while the first is still
+# 'processing' is told to retry later (HTTP 409). A 'processing' row older than
+# _STALE_PROCESSING_SECONDS is assumed abandoned (process killed mid-flight) and
+# is reclaimed via compare-and-swap so the event is never stuck forever.
+
+# Outcomes of an attempt to claim an event for processing.
+_CLAIM_NEW = "claimed"          # we own it; process now
+_CLAIM_DONE = "duplicate"       # already fully processed; dedupe
+_CLAIM_BUSY = "in_progress"     # another worker holds a fresh claim; retry later
+
+_STALE_PROCESSING_SECONDS = 300
 
 
-def _mark_processed(event_id: str, event_type: str) -> bool:
-    """Insert event_id; return True if new (first time), False if duplicate."""
+def _claim_event(event_id: str, event_type: str) -> str:
+    """Atomically claim an event for processing.
+
+    Returns _CLAIM_NEW (caller must process then call _mark_done),
+    _CLAIM_DONE (already processed — dedupe), or _CLAIM_BUSY (concurrent
+    in-flight attempt — caller should signal Stripe to retry later).
+    """
+    conn = db._conn()
+    try:
+        now = int(time.time())
+        # processed_at is NOT NULL (legacy schema) — placeholder 0 until done.
+        conn.execute(
+            "INSERT INTO stripe_processed_events "
+            "(event_id, event_type, status, processed_at, received_at, claimed_at) "
+            "VALUES (?, ?, 'processing', 0, ?, ?) "
+            "ON CONFLICT(event_id) DO NOTHING",
+            (event_id, event_type, now, now),
+        )
+        conn.commit()
+        if conn.execute("SELECT changes()").fetchone()[0] > 0:
+            return _CLAIM_NEW
+
+        row = conn.execute(
+            "SELECT status, claimed_at FROM stripe_processed_events WHERE event_id = ?",
+            (event_id,),
+        ).fetchone()
+        if row is None:
+            # Vanished between insert and select (shouldn't happen) — retry later.
+            return _CLAIM_BUSY
+        if row["status"] == "done":
+            return _CLAIM_DONE
+
+        # status == 'processing'. Reclaim only if the prior claim looks abandoned.
+        claimed_at = row["claimed_at"] or 0
+        if now - claimed_at < _STALE_PROCESSING_SECONDS:
+            return _CLAIM_BUSY
+        conn.execute(
+            "UPDATE stripe_processed_events SET claimed_at = ? "
+            "WHERE event_id = ? AND status = 'processing' AND claimed_at = ?",
+            (now, event_id, row["claimed_at"]),
+        )
+        conn.commit()
+        if conn.execute("SELECT changes()").fetchone()[0] > 0:
+            return _CLAIM_NEW
+        # Lost the compare-and-swap race to another reclaimer.
+        return _CLAIM_BUSY
+    finally:
+        conn.close()
+
+
+def _mark_done(
+    event_id: str, amount: int | None = None, currency: str | None = None
+) -> None:
+    """Commit the event as fully processed, recording paid amount/currency."""
     conn = db._conn()
     try:
         conn.execute(
-            "INSERT OR IGNORE INTO stripe_processed_events "
-            "(event_id, event_type, processed_at) VALUES (?, ?, ?)",
-            (event_id, event_type, int(time.time())),
+            "UPDATE stripe_processed_events "
+            "SET status = 'done', processed_at = ?, amount = ?, currency = ? "
+            "WHERE event_id = ?",
+            (int(time.time()), amount, currency, event_id),
         )
         conn.commit()
-        return conn.execute("SELECT changes()").fetchone()[0] > 0
+    finally:
+        conn.close()
+
+
+def _release_event(event_id: str) -> None:
+    """Drop a failed claim so Stripe's retry can reprocess it cleanly.
+
+    Only removes rows that never reached 'done' — never undoes a completed event.
+    """
+    conn = db._conn()
+    try:
+        conn.execute(
+            "DELETE FROM stripe_processed_events "
+            "WHERE event_id = ? AND status != 'done'",
+            (event_id,),
+        )
+        conn.commit()
     finally:
         conn.close()
 
@@ -228,44 +317,25 @@ async def _provision_hosted_async(token: str, region: str, customer_email: str, 
         await db.update_buyer(token, status=err_msg)
 
 
-# ─── Webhook endpoint ─────────────────────────────────────────────────────────
+# ─── Event dispatch ─────────────────────────────────────────────────────────
+#
+# Performs the actual side effects for an event. Returns
+# (response, amount, currency) where amount/currency (smallest currency unit +
+# ISO code) are non-None only for revenue-bearing events, so the caller can
+# record them once the work has committed. Any exception here propagates so the
+# caller leaves the event un-acked and Stripe retries.
 
 
-@router.post("/webhooks/stripe-concerto")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature", "")
-
-    if not sig_header or not _WEBHOOK_SECRET:
-        raise HTTPException(status_code=401, detail="Missing or unconfigured signature")
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, _WEBHOOK_SECRET)
-    except stripe.SignatureVerificationError:
-        raise HTTPException(status_code=401, detail="Invalid Stripe signature")
-    except (AttributeError, KeyError, ValueError) as exc:
-        # Stripe SDK ≥15 raises AttributeError on malformed payloads missing top-level 'object'
-        raise HTTPException(status_code=400, detail=f"Malformed webhook payload: {exc}")
-
-    event_id = event["id"]
-    event_type = event["type"]
-
-    # Idempotency guard — Stripe retries on 5xx
-    if not _mark_processed(event_id, event_type):
-        return {"ignored": True, "reason": "duplicate event"}
-
-    obj_raw = event["data"]["object"]
-    # Stripe SDK returns StripeObject. Use proper recursive dict conversion.
-    if hasattr(obj_raw, "to_dict"):
-        obj = obj_raw.to_dict()
-    else:
-        obj = dict(obj_raw) if hasattr(obj_raw, "keys") else obj_raw
-    metadata = obj.get("metadata") or {}
+async def _dispatch_event(
+    event_type: str, obj: dict, metadata: dict
+) -> tuple[dict, int | None, str | None]:
+    amount: int | None = None
+    currency: str | None = None
 
     # ── checkout.session.completed ────────────────────────────────────────
     if event_type == "checkout.session.completed":
         if metadata.get("product") != "concerto":
-            return {"ignored": True, "reason": "product mismatch"}
+            return {"ignored": True, "reason": "product mismatch"}, None, None
 
         plan = metadata.get("plan", "byoc")
         trial_token = metadata.get("trial_token", "")
@@ -275,6 +345,8 @@ async def stripe_webhook(request: Request):
         stripe_session_id = obj.get("id", "")
         stripe_customer_id = obj.get("customer") or ""
         paid_at = int(time.time())
+        amount = obj.get("amount_total")
+        currency = obj.get("currency")
 
         subscription_id = obj.get("subscription")
         next_renewal_at = None
@@ -304,6 +376,8 @@ async def stripe_webhook(request: Request):
                     stripe_session_id=stripe_session_id,
                     stripe_customer_id=stripe_customer_id or None,
                     paid_at=paid_at,
+                    paid_amount=amount,
+                    paid_currency=currency,
                     subscription_id=subscription_id,
                     subscription_status="active" if subscription_id else None,
                     next_renewal_at=next_renewal_at,
@@ -327,7 +401,7 @@ async def stripe_webhook(request: Request):
                     # Immediate J0 drip — don't wait for the hourly timer
                     from concerto.drip_runner import send_immediate_drip
                     asyncio.create_task(asyncio.to_thread(send_immediate_drip, trial_token, 0))
-                return {"ok": True, "trial_upgraded": True, "token": token}
+                return {"ok": True, "trial_upgraded": True, "token": token}, amount, currency
 
         # Standard (non-trial) purchase: create fresh buyer row
         token = str(uuid.uuid4())
@@ -341,8 +415,14 @@ async def stripe_webhook(request: Request):
             subscription_status="active" if subscription_id else None,
             next_renewal_at=next_renewal_at,
         )
+        buyer_updates: dict = {}
         if stripe_customer_id:
-            await db.update_buyer(token, stripe_customer_id=stripe_customer_id)
+            buyer_updates["stripe_customer_id"] = stripe_customer_id
+        if amount is not None:
+            buyer_updates["paid_amount"] = amount
+            buyer_updates["paid_currency"] = currency
+        if buyer_updates:
+            await db.update_buyer(token, **buyer_updates)
 
         if customer_email:
             from concerto.email_templates import trial_converted
@@ -364,10 +444,16 @@ async def stripe_webhook(request: Request):
     elif event_type == "invoice.paid":
         subscription_id = obj.get("subscription")
         billing_reason = obj.get("billing_reason", "")
+        amount = obj.get("amount_paid")
+        currency = obj.get("currency")
         if subscription_id:
             buyer = await db.get_buyer_by_subscription(subscription_id)
             if buyer:
                 email = buyer.get("email", "")
+                if amount is not None:
+                    await db.update_buyer(
+                        buyer["token"], paid_amount=amount, paid_currency=currency
+                    )
                 if buyer.get("status") == "suspended":
                     vps_id = buyer.get("vps_id", "")
                     if vps_id:
@@ -449,4 +535,55 @@ async def stripe_webhook(request: Request):
         )
         logger.warning("Chargeback filed: charge=%s dispute=%s", charge_id, obj.get("id"))
 
-    return {"received": True, "event_type": event_type}
+    return {"received": True, "event_type": event_type}, amount, currency
+
+
+# ─── Webhook endpoint ─────────────────────────────────────────────────────────
+
+
+@router.post("/webhooks/stripe-concerto")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    if not sig_header or not _WEBHOOK_SECRET:
+        raise HTTPException(status_code=401, detail="Missing or unconfigured signature")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, _WEBHOOK_SECRET)
+    except stripe.SignatureVerificationError:
+        raise HTTPException(status_code=401, detail="Invalid Stripe signature")
+    except (AttributeError, KeyError, ValueError) as exc:
+        # Stripe SDK ≥15 raises AttributeError on malformed payloads missing top-level 'object'
+        raise HTTPException(status_code=400, detail=f"Malformed webhook payload: {exc}")
+
+    event_id = event["id"]
+    event_type = event["type"]
+
+    # Commit-after-success idempotency: claim the event, run side effects, and
+    # mark it done ONLY once they commit. On failure we release the claim and
+    # return non-2xx so Stripe retries (no side effect is ever silently lost).
+    claim = _claim_event(event_id, event_type)
+    if claim == _CLAIM_DONE:
+        return {"ignored": True, "reason": "duplicate event"}
+    if claim == _CLAIM_BUSY:
+        # A concurrent delivery holds a fresh claim. Ask Stripe to retry later;
+        # by then the other attempt is either done (deduped) or released.
+        raise HTTPException(status_code=409, detail="Event processing in progress")
+
+    obj_raw = event["data"]["object"]
+    # Stripe SDK returns StripeObject. Use proper recursive dict conversion.
+    if hasattr(obj_raw, "to_dict"):
+        obj = obj_raw.to_dict()
+    else:
+        obj = dict(obj_raw) if hasattr(obj_raw, "keys") else obj_raw
+    metadata = obj.get("metadata") or {}
+
+    try:
+        response, amount, currency = await _dispatch_event(event_type, obj, metadata)
+    except Exception:
+        _release_event(event_id)
+        raise
+
+    _mark_done(event_id, amount, currency)
+    return response
