@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import math
 import os
 import time
 
@@ -274,6 +273,49 @@ async def droplet_ready(payload: DropletReadyPayload, request: Request):
             updates["installed_at"] = int(time.time())
             await db.update_buyer(payload.token, **updates)
             return {"ok": True, "noop": True, "mcp_url_refreshed": True}
+        return {"ok": True, "noop": True}
+
+    # Reject if not in a provisioning-in-progress state
+    if current_status not in ("installing", "provisioning", "provisioning_failed"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unexpected buyer status for droplet-ready callback: {current_status}",
+        )
+
+    # Cloudflared tunnel failed after retries — escalate to operator
+    if payload.mcp_url == "tunnel_failed":
+        _queue_tunnel_escalation(payload.token)
+        await send_operator_alert(
+            f"Cloudflared tunnel failed — token {payload.token[:8]}",
+            f"Droplet provisioned but tunnel URL capture failed after 3 retries.\n"
+            "Token: " + str(payload.token) + "\nDroplet IP: " + str(buyer.get("vps_ip", "unknown")),
+        )
+        await db.update_buyer(
+            payload.token,
+            status="provisioning_failed",
+            failure_reason="Cloudflared tunnel URL capture failed — operator notified",
+        )
+        return {"ok": True, "escalated": True}
+
+    await db.update_buyer(
+        payload.token,
+        mcp_url=payload.mcp_url,
+        bearer_token=payload.bearer_token,
+        ttyd_public_url=payload.ttyd_url,
+        status="awaiting_oauth",
+        installed_at=int(time.time()),
+    )
+
+    # For trial buyers: send ready email at awaiting_oauth (moved from trial_router.py)
+    if buyer.get("plan") == "trial":
+        try:
+            from concerto.email_templates import trial_ready
+            from concerto.email_utils import send_email
+            email = buyer.get("email", "")
+            dashboard_url = f"{_FRONTEND_URL}/dashboard/{payload.token}"
+            expires_at = buyer.get("expires_at", 0)
+            duration_seconds = max(60, int(expires_at - time.time())) if expires_at else 1800
+            tpl = trial_ready(dashboard_url=dashboard_url, email=email, duration_seconds=duration_seconds)
             await send_email(email, tpl["subject"], tpl.get("html") or tpl["text"])
         except Exception:
             logger.exception("trial_ready email failed for token %.8s", payload.token)
