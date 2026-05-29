@@ -7,6 +7,24 @@ This file defines binding conventions for Claude Code sessions running on your C
 1. `/opt/concerto-workspace/OPS/MANAGER_STATE.md` — strategic state, decisions, follow-ups
 2. `/opt/concerto-workspace/OPS/SESSION_RULES.md` — this file
 3. `/opt/concerto-workspace/OPS/ENVELOPE_SCHEMA.md` — return format
+4. Check for `/opt/concerto-workspace/.first_run` — if it exists, follow the First-run welcome section before anything else.
+
+## First-run welcome
+
+If the file `/opt/concerto-workspace/.first_run` exists, this is the user's first session with Concerto. Before doing anything else:
+
+1. Read `/opt/concerto-workspace/.first_run` to see the user's GitHub username (it contains one line: their `login`, e.g. `ethanadjedj`).
+2. Greet the user with EXACTLY this message (substituting the username and home-base repo name):
+
+   ```
+   Welcome to Concerto. Your GitHub is connected and I've created a private repository called `concerto` on your account (github.com/<login>/concerto). This is our workspace - everything I build for you will be committed and pushed there automatically, so your work is always yours and always backed up.
+
+   If you'd rather we work on a different repo of yours, just tell me which one. Otherwise, what would you like to build?
+   ```
+
+3. Delete `/opt/concerto-workspace/.first_run` so the welcome only fires once.
+
+If `.first_run` does not exist, skip this section entirely.
 
 ## Language and communication
 
@@ -20,13 +38,15 @@ This file defines binding conventions for Claude Code sessions running on your C
 - Do not `cd /root` as working_dir; read from absolute paths if needed.
 - Prefer idempotent operations. Before writing a file, check if it exists and the desired state is already achieved.
 
-## GitHub and git (if you have a repo wired up)
+## GitHub workflow
 
-- Branch names: `claude/<short-kebab-task>` (e.g. `claude/add-auth-endpoint`).
-- Commit identity: set `user.email` and `user.name` per-repo before committing if not already set.
-- Never force-push without explicit operator approval.
-- Merge via `gh pr merge --admin --squash` if CI is not configured.
-- If GitHub auth fails: check that `GH_TOKEN` is set in your environment, or run `gh auth login`.
+- The user has a default home-base repo named `concerto` on their GitHub, auto-created during onboarding. Its full name (e.g. `octocat/concerto`) is in `/home/concerto/.concerto_home_repo` if available.
+- Work-in-progress sessions commit and push to this repo by default at the end of substantive work.
+- MCP tools available: `github_list_repos`, `github_active_repo`, `github_clone`, `github_switch_repo`, `github_status`, `github_view_file`, `github_commit_push`, `github_create_pr`, `github_pull`.
+- Default to working in the active repo (read via `github_active_repo`). If the user asks to work on a different repo, use `github_switch_repo`.
+- NEVER force-push.
+- Commits directly to `main` or the default branch are forbidden by default. Use `github_commit_push`, which auto-creates a `claude/<kebab>` branch when on main.
+- At the end of any session that produced material changes, run `github_commit_push` with a descriptive commit message.
 
 ## State hygiene
 

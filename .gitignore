@@ -1,16 +1,39 @@
-node_modules/
+# Python / backend
 .venv/
-.env
-.env.local
-.env.*.local
-.next/
-dist/
+**/.venv/
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+
+# Database
 *.db
+*.db-wal
+*.db-shm
 *.db.backup
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Secrets / credentials
+.env
+.env.local
+.env.*.local
+*.pem
+*.pub
+*.key
+
+# Frontend / Node
+node_modules/
+.next/
+dist/
+build/
+.DS_Store
+
+# Logs
+*.log
+
+# Stale backups
+emails.bak_drip_rebrand/

@@ -1,0 +1,105 @@
+# Concerto runtime image for Northflank
+# Based on the proven prototype in /tmp/nf-eval/Concerto.Dockerfile
+# (result-dockerfile.md: claude --version, MCP /healthz, persistent volume all PASS)
+#
+# CONFIG TODOs before pushing to a registry and using in production:
+#   - Set CONCERTO_NF_IMAGE in /etc/cortex/env to this image's registry ref.
+#   - For private registry: push to a private registry, create credentials in
+#     the Northflank console, and set CONCERTO_NF_IMAGE_CRED_ID.
+#   - Set ANTHROPIC_API_KEY via the Northflank project secret group
+#     (safer than per-service injection — prevents per-customer leakage).
+#   - Verify GIT_CREDS_POLL_URL endpoint path with the backend team.
+#
+# Build from repo root:
+#   docker build -f installer/Dockerfile.northflank -t concerto-nf:latest .
+#
+# Or build from installer/ directory:
+#   cd installer && docker build -f Dockerfile.northflank -t concerto-nf:latest .
+
+FROM node:20-bookworm
+
+# System packages — matches cloud_init.yaml.j2 runtime dependencies
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        python3-venv python3 python3-pip \
+        curl nginx git tmux procps \
+        --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Claude Code CLI (node:20-bookworm already has npm)
+RUN npm install -g @anthropic-ai/claude-code \
+    && claude --version
+
+# cloudflared: ephemeral tunnel that exposes 127.0.0.1:8080 at a public
+# *.trycloudflare.com URL. Required so Claude.ai (and any MCP client) sees
+# the SAME hostname end-to-end — no host-rewriting proxy in between, no
+# OAuth issuer mismatch. Mirrors DO cloud_init's cloudflared setup.
+RUN curl -fsSL -o /tmp/cloudflared.deb \
+        https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+    && dpkg -i /tmp/cloudflared.deb \
+    && rm /tmp/cloudflared.deb \
+    && cloudflared --version
+
+# GitHub CLI (gh) -- required by github_* MCP tools
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y gh --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && gh --version
+
+# Python venv for MCP server (matches cloud_init step 5)
+RUN python3 -m venv /opt/concerto/.venv \
+    && /opt/concerto/.venv/bin/pip install --quiet --upgrade pip \
+    && /opt/concerto/.venv/bin/pip install --quiet \
+        'mcp[cli]>=1.2' anyio fastapi 'uvicorn[standard]' httpx
+
+# Create unprivileged concerto user (mirrors cloud_init step 0b)
+RUN useradd -m -s /bin/bash concerto \
+    && mkdir -p /home/concerto/.claude \
+    && chown -R concerto:concerto /home/concerto
+
+# Runtime directories (mirrors cloud_init directory structure)
+RUN mkdir -p \
+        /etc/concerto \
+        /var/lib/concerto/sessions \
+        /var/concerto-exports \
+        /opt/concerto-workspace/OPS/queue/pending \
+        /opt/concerto-workspace/OPS/queue/done \
+        /opt/concerto-workspace/OPS/queue/failed \
+        /data
+
+# Nginx config: single server on port 8080 (the only Northflank public port).
+#   /healthz → MCP server healthz (no auth)
+#   /mcp/*   → MCP server on 127.0.0.1:9876 (WebSocket + HTTP)
+#   /        → 404 (ttyd removed; customers access via MCP through the proxy)
+# No Cloudflare tunnel needed — Northflank provides stable HTTPS routing.
+#
+# NOTE: The config was previously inline Python in the Dockerfile (incompatible
+# with Docker legacy builder — "unknown instruction: config"). Moved to a
+# separate file that is COPYed in and installed with shell commands.
+COPY installer/nginx-concerto.conf /etc/nginx/sites-available/concerto
+RUN ln -s /etc/nginx/sites-available/concerto /etc/nginx/sites-enabled/concerto \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && nginx -t \
+    && echo "nginx config OK"
+
+# Copy MCP server from installer/ directory
+# (When building from repo root: path is installer/mcp_server.py)
+COPY installer/mcp_server.py /opt/concerto/mcp_server.py
+RUN chmod 0755 /opt/concerto/mcp_server.py \
+    && /opt/concerto/.venv/bin/python -c \
+       "import py_compile, sys; py_compile.compile('/opt/concerto/mcp_server.py', doraise=True); print('mcp_server.py syntax OK')"
+
+# Copy entrypoint script
+COPY installer/entrypoint.northflank.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Port 8080: nginx reverse proxy (ttyd + MCP)
+# Northflank only routes traffic to port declared in ports[] at service create.
+# Port name "p01" drives the stable URL: p01--{service}--{namespace}.code.run
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]

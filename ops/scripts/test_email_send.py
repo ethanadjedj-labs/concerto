@@ -37,7 +37,7 @@ def _check_env() -> bool:
     missing = [v for v in REQUIRED_VARS if not os.getenv(v)]
     if missing:
         print(f"ERROR: missing env vars: {', '.join(missing)}")
-        print("Load /etc/empire/env first:  source /etc/empire/env")
+        print("Load /etc/cortex/env first:  source /etc/cortex/env")
         return False
     return True
 
@@ -129,7 +129,7 @@ def main() -> int:
             print("  Domain is inactive — Migadu hasn't validated DNS yet.")
             print("  Wait 5–60 min and retry. Check: app.migadu.com → Domains → concerto.run")
         else:
-            print("  Check CONCERTO_SMTP_USER_NOREPLY / CONCERTO_SMTP_PASS_NOREPLY in /etc/empire/env")
+            print("  Check CONCERTO_SMTP_USER_NOREPLY / CONCERTO_SMTP_PASS_NOREPLY in /etc/cortex/env")
         print(f"  Domain state: {domain_state}")
         return 1
     except smtplib.SMTPException as exc:

@@ -1,52 +1,23 @@
-<!-- layer: PRODUCT -->
-# CLAUDE.md — concerto
+# Cortex Ecosystem Session
 
-**Layer:** PRODUCT | **Job:** MCP tool that orchestrates parallel Claude Code sessions (concerto.run); owns its own buyers, payments, and subscription lifecycle.
+## You are on the Cortex VPS
+You're a spawned Claude Code session. The MCP `cortex-vps-bridge` (URL-bound) is NOT
+for you — you have direct Bash/Read/Write access locally. Use those.
 
-> Portfolio context: /opt/infra/docs/PORTFOLIO_GUIDE.md — read §1 (layer model) and §2 (hard rules) first.
-> Fallback copy: /var/lib/empire/audits/ONBOARDING.md
+## Memory layer (READ FIRST)
+Query unacked inbox events for this project:
+  sqlite3 /var/lib/cortex/cortex.db "SELECT id,kind,payload_json FROM claude_inbox WHERE project='concerto' AND acked_at IS NULL ORDER BY created_at;"
 
----
+Read project state:
+  sqlite3 /var/lib/cortex/cortex.db "SELECT manager_state_md FROM project_states WHERE project='concerto';"
 
-# PART A — Universal rules (do not modify)
+## When you finish
+- Append a session_done (or session_failed) event to claude_inbox:
+  sqlite3 /var/lib/cortex/cortex.db "INSERT INTO claude_inbox(created_at,actor,project,kind,payload_json) VALUES(strftime('%s','now'),'system','concerto','session_done',json_object('session_id','sess_20260523T110234Z_5bddb8','summary','<summary>'));"
+- If you changed consequential project state, run: /opt/cortex/ops/state_write.sh concerto "<one-line change summary>"
+- Print the JSON envelope per /opt/cortex/OPS/ENVELOPE_SCHEMA.md as the final stdout line.
 
-## A.1 ANTI-FREEZE (NON-NEGOCIABLE)
-
-1. **No parallel subagents.** One agent / sub-agent at a time. Sequential only.
-2. **Split large writes.** A single `Write` call > ~150 lines can freeze the harness.
-3. **Commit after each step.** One logical change = one commit.
-4. **Reports: synthesis > dump.** Actionable synthesis, not verbatim copy.
-5. **`git push` regularly.** Every 3–4 steps minimum.
-6. **Slow down ⇒ commit + push, then continue.**
-
-## A.2 GIT
-
-Branch: `claude/<slug>-<token>`. Conventional-commit prefix. No `push --force` to `main`.
-
----
-
-# PART B — concerto-specific
-
-## B.1 Identity
-
-- **DB:** `/var/lib/concerto/concerto.db` — tables: `buyers`, `subscriptions`, `sessions`.
-- **HTTP:** FastAPI backend; port in `/etc/empire/concerto.env`.
-- Independently sellable/killable product. Has its own Stripe product and buyer table.
-- Surfaces as an MCP server that end-users install; the backend manages session orchestration.
-
-## B.2 Install + test
-
-```bash
-cd /opt/concerto
-pip install -e .
-python -m pytest -q
-python -c "import backend; print('ok')"
-```
-
-## B.3 Hard constraints
-
-- **This is NOT a VPS session template.** Don't use CLAUDE.md instructions here to write session-startup sqlite queries — that was the old wrong content.
-- Uses `runtime` (via HTTP only) for session state and MCP bridge; never imports runtime internals.
-- Payment logic stays in concerto's own `buyers` table + arsenal Stripe primitives. No cross-product buyer sharing.
-- Email sends go through mailroom `POST /send` with `product=concerto`.
-- Signal reads go through `arsenal.lake_client`, never direct `signals.db` file access.
+## Project context
+- Project: concerto
+- Spawn parent: none
+- Actor: 45157e50a1df
