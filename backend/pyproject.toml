@@ -1,0 +1,46 @@
+[project]
+name = "concerto"
+version = "0.1.0"
+description = "Concerto – managed Claude Code hosting backend (concerto.run)"
+readme = "../README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Zhanggir" }]
+
+dependencies = [
+    "arsenal @ file:///opt/arsenal",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.29.0",
+    "stripe>=9.0.0",
+    "httpx>=0.27.0",
+    "anyio>=4.0.0",
+    "websockets>=12.0",
+    "jinja2>=3.1.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling>=1.18.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["concerto"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
