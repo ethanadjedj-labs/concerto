@@ -809,11 +809,13 @@ async def authorize(request: Any) -> Any:
         "expires_at": time.time() + 600,
     }
 
-    # Build redirect
+    # Build redirect — RFC 9207 requires `iss` to prevent mix-up attacks.
+    base = _base_url(request)
     separator = "&" if "?" in redirect_uri else "?"
     location = f"{redirect_uri}{separator}code={code}"
     if state:
         location = f"{location}&state={state}"
+    location = f"{location}&iss={base}"
 
     return RedirectResponse(url=location, status_code=302)
 
