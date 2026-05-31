@@ -366,14 +366,41 @@ async def run_billing_check():
 
     services, volumes, invoices = results
 
+    degraded_flags: list[str] = []
+
     if isinstance(services, Exception):
-        logger.warning("[NF-BILLING] services fetch failed: %s", services)
+        # Services fetch failing means cost estimate will be $0 — this MUST be visible.
+        logger.error("[NF-BILLING] services fetch FAILED: %s", services)
+        print(f"[NF-BILLING] DEGRADED [services_fetch_failed]: {services}")
+        degraded_flags.append("services_fetch_failed")
         services = []
     if isinstance(volumes, Exception):
-        logger.warning("[NF-BILLING] volumes fetch failed: %s", volumes)
+        logger.error("[NF-BILLING] volumes fetch FAILED: %s", volumes)
+        print(f"[NF-BILLING] DEGRADED [volumes_fetch_failed]: {volumes}")
+        degraded_flags.append("volumes_fetch_failed")
         volumes = []
     if isinstance(invoices, Exception):
-        logger.warning("[NF-BILLING] invoices fetch failed: %s", invoices)
+        _is_403 = (
+            hasattr(invoices, "response")
+            and getattr(invoices.response, "status_code", 0) == 403
+        )
+        if _is_403:
+            logger.warning(
+                "[NF-BILLING] DEGRADED: invoices endpoint returned 403 Forbidden"
+                " — NF API token lacks billing scope. True invoice amount unknown."
+                " Cost below is an ESTIMATE from listed resources only."
+            )
+            print(
+                "[NF-BILLING] DEGRADED [invoices_403_forbidden]: "
+                "NF token lacks billing scope — true invoice amount unknown; "
+                "cost shown is estimate from listed resources only. "
+                "ACTION: add billing scope to CONCERTO_NF_API_TOKEN."
+            )
+            degraded_flags.append("invoices_403")
+        else:
+            logger.warning("[NF-BILLING] invoices fetch failed: %s", invoices)
+            print(f"[NF-BILLING] DEGRADED [invoices_fetch_failed]: {invoices}")
+            degraded_flags.append("invoices_fetch_failed")
         invoices = []
 
     costs = compute_costs(services, volumes)
@@ -453,9 +480,14 @@ async def run_billing_check():
     _save_state(state)
 
     mode = "DRY-RUN " if _DRY_RUN else ""
+    degraded_suffix = f" degraded={degraded_flags}" if degraded_flags else ""
     print(
-        "[NF-BILLING] %scheck complete: mtd=$%.2f rate=$%.2f/day services=%d volumes=%d alerts=%s"
-        % (mode, mtd, rate, svc_count, len(volumes) if isinstance(volumes, list) else 0, alerts_fired)
+        "[NF-BILLING] %scheck complete: mtd=$%.2f rate=$%.2f/day services=%d volumes=%d alerts=%s%s"
+        % (
+            mode, mtd, rate, svc_count,
+            len(volumes) if isinstance(volumes, list) else 0,
+            alerts_fired, degraded_suffix,
+        )
     )
 
     return {
@@ -464,6 +496,7 @@ async def run_billing_check():
         "active_services": svc_count,
         "active_volumes": len(volumes) if isinstance(volumes, list) else 0,
         "alerts_fired": alerts_fired,
+        "degraded": degraded_flags,
         "dry_run": _DRY_RUN,
     }
 

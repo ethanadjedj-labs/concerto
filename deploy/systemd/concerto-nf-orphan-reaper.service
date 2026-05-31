@@ -1,0 +1,13 @@
+[Unit]
+Description=Concerto — Northflank orphan reaper (reconciles NF vs DB)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/concerto/backend/.venv/bin/python -m concerto.nf_orphan_reaper
+WorkingDirectory=/opt/concerto/backend
+EnvironmentFile=-/etc/empire/env
+Environment="CONCERTO_DB_PATH=/var/lib/concerto/concerto.db"
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=concerto-nf-orphan-reaper

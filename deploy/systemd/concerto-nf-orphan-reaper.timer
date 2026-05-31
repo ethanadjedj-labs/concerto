@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Concerto NF orphan reaper every 30 minutes
+Requires=concerto-nf-orphan-reaper.service
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=30min
+AccuracySec=60s
+Persistent=true
+Unit=concerto-nf-orphan-reaper.service
+
+[Install]
+WantedBy=timers.target
