@@ -38,6 +38,25 @@ structurally. Run the gate against `backend/` instead.
 2. Add a top-level umbrella `pyproject.toml` (or document that the gate must be run against `backend/`) so the python conformance gate has a defined target.
 3. Expand `README.md` to describe the product (managed Claude Code hosting, concerto.run) rather than the workspace concept only.
 
+## WS3 Stripe multi-brand (2026-05-31)
+
+Shipped on this branch: `backend/concerto/brand_stripe.py` +
+`backend/concerto/brands.toml` add a brand-aware Stripe Connect
+routing layer. **Concerto stays on the platform account
+unchanged** — for `brands.concerto.connected_account_id = ""` the
+helper returns `{}` kwargs and every existing call site behaves
+byte-for-byte identically to today. Regression guarded by
+`backend/tests/test_stripe_concerto_regression.py` (Stripe brand
+suite: 17 tests pass; existing `test_stripe_idempotency.py` 9 tests
+still green; full backend pytest baseline noise on
+`test_continuity.py` / `test_mcp_proxy.py` is unrelated to WS3 and
+pre-existed on `origin/main`).
+
+ClickCure consumer side ships on
+`clickcure/claude/stripe-multibrand-clickcure`. Operator runbook
+for the manual Stripe-dashboard steps that finish the migration:
+`docs/stripe_multibrand_runbook.md`.
+
 ## Re-running the bar
 
 ```bash
