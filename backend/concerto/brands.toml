@@ -1,0 +1,30 @@
+# Concerto-side brand registry — see docs/stripe_topology.md
+#
+# `connected_account_id` empty -> calls use the platform account directly
+# (today's Concerto behaviour). Filling it routes the hosted Stripe
+# Checkout / payouts / statement_descriptor through the connected
+# account, isolating brand identity. KYC must be completed in the
+# Stripe dashboard first; see docs/stripe_multibrand_runbook.md.
+
+[brands.concerto]
+display_name = "Concerto"
+domain = "concerto.run"
+support_email = "support@concerto.run"
+statement_descriptor = "CONCERTO.RUN"
+currency = "usd"
+# Empty by design: Concerto stays on the platform account. Do NOT fill
+# this in without a separate migration plan — flipping it changes which
+# Stripe entity receives payouts for every live subscription.
+connected_account_id = ""
+
+[brands.clickcure]
+display_name = "ClickCure"
+domain = "clickcure.co"
+support_email = "contact@clickcure.co"
+statement_descriptor = "CLICKCURE.CO"
+currency = "gbp"
+# TODO(operator): paste acct_xxx after Stripe Connect onboarding.
+connected_account_id = ""
+# TODO(operator): create one-time price for £300 inside the ClickCure
+# connected account and paste price_xxx here.
+express_price_id = ""
