@@ -1,55 +1,87 @@
 # Product Hunt — Listing Draft
 
+> **Where Ethan posts this:** https://www.producthunt.com/posts/new — schedule for
+> 12:01am PT on launch day (Tue or Wed best). Maker comment ready to post within
+> 30 minutes of launch. Coordinate 10–15 genuine supporters to upvote and comment
+> honestly — no incentivized upvotes (PH bans this). Monitor comments every 2h
+> through noon PT.
+
 ---
+
+## Name
+
+> Concerto
 
 ## Tagline (60 chars max)
 
-> Your Claude Code agent, always on, from any browser
+> Run multiple Claude Code sessions in parallel, from one chat
 
-*[53 chars] ✓*
+*[58 chars ✓]*
 
 ---
 
 ## Description (260 chars max)
 
-> Concerto provisions a persistent Claude Code workspace in minutes. Browser terminal, MCP connector for claude.ai, persistent sessions across devices. Hosted ($39/mo) or deploy to your own DigitalOcean account ($99 one-time). No SSH. No reconfiguration.
+> Concerto is an MCP server that lets a single Claude conversation orchestrate
+> parallel Claude Code sessions on a managed VPS — spawn, monitor, kill from chat.
+> Five tools, one URL into Claude Desktop or Code. Solo $49/mo, Pro $99/mo.
 
-*[255 chars] ✓*
+*[254 chars ✓]*
 
 ---
 
-## First Comment — From the Maker (~100 words)
+## First Comment — From the Maker (~110 words)
 
 Hey Product Hunt 👋
 
-I built Concerto because I kept losing Claude Code context every time I switched machines or closed my laptop. The agent would die. The session was gone. I'd spend 20 minutes setting it up again.
+I built Concerto for a problem I kept hitting with Claude Code: it's great at one
+focused task and painful at three. The moment I wanted parallel work — refactor
+here, bisect there, prototype on a branch — I was juggling terminals instead of
+shipping.
 
-Concerto solves this with a simple idea: provision a server once, keep your agent running permanently, access it from any browser tab.
+Concerto exposes five MCP tools — start, list, get, kill, build — to any Claude
+chat. Sessions run on a managed VPS so they survive your laptop sleeping. Your
+chat becomes the orchestrator; you stop being the human MCP between three
+terminals.
 
-Two plans: Hosted at $39/mo (we manage everything) or BYOC at $99 one-time (deploys to your own DigitalOcean account — you own the VPS).
+Solo $49/mo, Pro $99/mo. Bring your Claude Pro/Max. Would love feedback —
+especially from people who already run Claude Code seriously.
 
-Would love your feedback — especially on the Hosted vs BYOC tradeoff and what you'd want in v2. Ask me anything.
-
-*[~105 words — trim to taste]*
+*[~115 words — trim to taste]*
 
 ---
 
-## Additional fields
+## Topics
 
-**Topics**: Developer Tools, Artificial Intelligence, Productivity
+> Developer Tools · Artificial Intelligence · Productivity · Open Source
 
-**Links**:
+## Links
+
 - Website: https://concerto.run
-- Demo video: [PLACEHOLDER — link to 90-sec screen recording]
+- GitHub: https://github.com/ethanadjedj-labs/concerto
+- MCP Registry: https://registry.modelcontextprotocol.io (search "concerto")
+- Demo video: **[TO RECORD — 60-sec screen capture, see `docs/distribution/demo_script_90sec.md`]**
 
-**Thumbnail**: [PLACEHOLDER — 240×240px logo or product screenshot]
+## Thumbnail
 
-**Gallery images** (min 3):
-1. Landing page / plan selector
-2. Provisioning progress screen
-3. Browser terminal in action (Claude Code running a task)
-4. claude.ai with MCP connector active
+> **[NEEDED — 240×240 PNG, Concerto logo on cream background. Source files in
+> `frontend/public/brand/`]**
+
+## Gallery images (3 minimum)
+
+1. Hero: "Run multiple Claude Code sessions from one Claude chat" — landing page screenshot.
+2. The 5 MCP tools in Claude Desktop's connector pane.
+3. A real chat where Claude calls `start_claude_session` twice and reports back when both finish.
+4. Architecture diagram (optional 4th) from `docs/ARCHITECTURE.md`.
 
 ---
 
-*Launch day notes: schedule for 12:01am PT on launch day. Have maker comment ready to post within 30 minutes of launch. Ask 10–15 genuine supporters to upvote and leave honest reviews — no incentivized upvotes. Monitor comments every 2h through noon PT.*
+## Launch-day notes
+
+- Schedule the post itself for 12:01am PT (PH treats your local time zone as your
+  launch day; PT maximizes US daytime exposure).
+- Maker comment must be posted within ~30 min of go-live or PH's algorithm
+  deprioritizes the listing.
+- Reply to every substantive comment same-day. The thread quality is itself a
+  ranking signal.
+- Do NOT incentivize upvotes (PH bans this and shadow-removes products that do it).

@@ -1,27 +1,50 @@
 # Show HN: Concerto
 
-**Titre** : Show HN: Concerto – one-click Claude Code workspace, hosted ($39/mo) or BYOC in your own cloud ($99 one-time)
+> **Where Ethan posts this:** https://news.ycombinator.com/submit — title in the
+> "title" field, body below in the "text" field. URL field stays empty (Show HN
+> with text body, not a link post). Post Tue–Thu 8:30am ET.
 
 ---
 
-**Body** :
+**Title** (HN limit: 80 chars):
 
-I built Concerto to solve a specific problem I kept running into: I wanted Claude Code running persistently on a cloud server — not tied to my laptop — and accessible from any browser without managing SSH configs. Setting it up manually every time is tedious. I wanted a single purchase that handled everything.
+> Show HN: Concerto – run multiple Claude Code sessions in parallel over MCP
 
-**Two plans**: Hosted ($39/mo, Concerto manages the infrastructure) or BYOC ($99 one-time, deploys into your own DigitalOcean account). Both give you the same browser terminal + MCP connector. The BYOC path: enter your DigitalOcean API key and Concerto provisions an Ubuntu 24.04 Droplet (2 vCPU / 4 GB RAM) in your own account. A cloud-init script installs Claude Code via npm, starts a ttyd terminal server behind a cloudflared tunnel, and pings back when ready. The browser opens an xterm.js terminal where you run `claude auth login` (standard OAuth flow, Concerto never sees your Anthropic credentials). You then paste an MCP connector snippet into claude.ai and your agent is live.
+*[75 chars ✓]*
 
-**Tech stack**:
-- Provisioner: FastAPI + DigitalOcean API, cloud-init for Droplet bootstrap
-- Terminal: ttyd listening on loopback, exposed via cloudflared quick tunnel, proxied through the backend as a single `wss://api.concerto.run/terminal/<token>` endpoint — browser connects there, no CORS complexity
-- MCP: standard MCP server running on the Droplet alongside Claude Code
-- Auth: Claude OAuth — Concerto's backend only stores the session token and ttyd credential; Anthropic auth happens entirely in your browser against Anthropic's servers
+---
 
-**What works today**: end-to-end provisioning, cloud-init bootstrap, browser terminal (WebSocket with the `tty` subprotocol that ttyd requires — silent failure if you forget it), MCP connector generation, Stripe payment flow.
+**Body**:
 
-**What doesn't work yet**: multi-Droplet support (parallel agents), SSH key rotation UI, automatic Droplet resizing. The provisioner installs Claude Code but you still need a Claude Max plan — Concerto doesn't bundle or proxy Anthropic API credits.
+I built Concerto because Claude Code is great at one task at a time and bad at
+three. The moment I wanted to refactor in one repo, bisect a regression in another,
+and prototype a feature on a third branch, I was back to juggling tmux panes,
+copy-pasting logs into chat, and re-priming context every time I switched.
 
-**Why these prices**: Hosted ($39/mo) is all-in — Concerto handles compute, maintenance, uptime. BYOC ($99 one-time) covers the provisioning automation only; ongoing compute is ~$24/mo billed directly by DigitalOcean to your account. No Concerto subscription on BYOC, no markup on compute.
+Concerto is an MCP server that exposes five tools to a Claude conversation:
 
-**One thing I'm genuinely unsure about**: whether the BYOC "runs in your cloud, not ours" angle is a meaningful differentiator to most users, or whether the fully managed Hosted plan is what people actually want — they just didn't have it as an option before. Curious what this community thinks, especially people who've run Claude Code on remote servers before.
+- `start_claude_session(prompt, model)` – spawn a Claude Code agent
+- `list_claude_sessions()` – what's running, what's done
+- `get_claude_session(id)` – tail output, check progress
+- `kill_claude_session(id)` – stop cleanly
+- `concerto_build(request)` – high-level "plan + spawn" intent
+
+Sessions run on a managed VPS, persist across laptop sleeps, and stream back
+through tool returns. Your Claude chat becomes the orchestrator.
+
+**Stack**: streamable-HTTP MCP, OAuth 2.1 + PKCE per-customer auth, sessions
+live under tmux, FastAPI control plane, cloud-init bootstrap for the per-tenant
+VPS. Code: ~1k LOC of MCP server + ~3k LOC of control plane. Connection is one
+URL into Claude Desktop / Claude Code CLI / any MCP client.
+
+**Pricing**: Solo $49/month (one managed VPS, parallel sessions). Pro $99/month
+(bigger VPS, more concurrent sessions, priority email support). Bring your own
+Claude Pro or Max subscription — Concerto provides the orchestration, Anthropic
+does the inference.
+
+**What I'm uncertain about**: how many people actually need three Claude Code
+sessions running at once. My own use went from "occasionally" to "every day"
+within a week of having the tool available, but I might be an outlier. Curious
+how others think about the threshold where orchestration starts to matter.
 
 concerto.run — feedback welcome, including the harsh kind.

@@ -1,64 +1,129 @@
-# Twitter/X — Launch Thread
+# X/Twitter — Launch Thread (variant A)
 
-6 tweets. Each ≤280 chars. Copy-paste ready.
+> **Where Ethan posts this:** from @ConcertoRun (the brand handle). Tweet 1 first,
+> wait 15–30 min for early engagement, then reply with 2–7 in quick succession.
+> Best windows: Tue–Thu 9–11am ET or 6–9pm ET. Pin the thread. Quote-tweet from
+> Ethan's personal handle within the first hour.
+
+7 tweets. Each ≤280 chars. Copy-paste ready.
 
 ---
 
 **Tweet 1 — Hook**
 
-> Most developers using Claude Code still run it on their laptop. That means it stops when you close the tab. Concerto fixes this. Thread 🧵
+> Claude Code is great at one task at a time.
+>
+> It's brutal at three.
+>
+> So I built an MCP server that lets one Claude chat orchestrate parallel Claude
+> Code sessions on a managed VPS.
+>
+> Thread 🧵
 
-*[118 chars]*
+*[207 chars]*
 
 ---
 
-**Tweet 2 — Problem**
+**Tweet 2 — The pain**
 
-> The gap: Claude Code is powerful but ephemeral. Every new machine = reinstall + re-auth + reconfigure. Every closed laptop = dead agent. Long-running tasks fail silently. Nobody has time for this setup tax.
+> If you've tried running 2–3 Claude Code sessions at once, you know the drill:
+>
+> – tmux pane #1, pane #2, pane #3
+> – tail -f each one
+> – copy logs into chat
+> – re-prime context every switch
+>
+> You're the orchestrator. Claude is the worker. That's backwards.
 
-*[206 chars]*
+*[267 chars]*
 
 ---
 
-**Tweet 3 — Solution**
+**Tweet 3 — The fix**
 
-> Concerto provisions a Claude Code server in your cloud in ~5 minutes. Browser terminal, MCP connector, persistent context. Close your laptop. Your agent keeps going. Open any tab — it's still there.
+> Concerto exposes 5 MCP tools to your Claude chat:
+>
+> • start_claude_session(prompt, model)
+> • list_claude_sessions()
+> • get_claude_session(id)
+> • kill_claude_session(id)
+> • concerto_build(request)
+>
+> Claude does the orchestration. You stay in chat.
 
-*[200 chars]*
+*[252 chars]*
 
 ---
 
 **Tweet 4 — Demo**
 
-> [GIF/VIDEO PLACEHOLDER: screen recording showing concerto.run → plan selection → provisioning progress bar → browser terminal opens → claude auth login → agent live in claude.ai]
-
-*Shoot in 1080p. Keep under 60 seconds. No music, no cuts.*
+> [VIDEO PLACEHOLDER — 45–60 sec screen recording: one prompt to Claude → it calls
+> start_claude_session twice → list_claude_sessions shows both running → 2 min
+> later reports back with both results.]
+>
+> *Record with QuickTime, 1080p, no music, no cuts. Script in
+> docs/distribution/demo_script_90sec.md.*
 
 ---
 
-**Tweet 5 — Pricing**
+**Tweet 5 — Persistence**
+
+> Sessions live on a managed VPS, not your laptop.
+>
+> Close the lid. Get on a plane. Open Claude from a different machine.
+>
+> Your work is still running. You can resume from any MCP client.
+
+*[212 chars]*
+
+---
+
+**Tweet 6 — Pricing**
 
 > Two plans:
 >
-> • Hosted — $39/mo. Concerto manages everything. Zero infrastructure.
-> • BYOC — $99 one-time. Deploys to your own DigitalOcean account. You own the VPS.
+> • Solo — $49/mo. One managed VPS, parallel sessions, 5-min setup.
+> • Pro — $99/mo. Bigger VPS, more concurrency, priority email support.
 >
-> Both include browser terminal + MCP connector + persistent sessions.
+> Bring your Claude Pro or Max. We do the orchestration; Anthropic does the
+> inference.
 
-*[245 chars]*
+*[260 chars]*
 
 ---
 
-**Tweet 6 — CTA**
+**Tweet 7 — CTA**
 
-> Concerto is live today. 10 beta seats available — free in exchange for feedback at day 3 and day 14.
+> Concerto is live today.
 >
-> If you run Claude Code seriously, this is worth a look.
+> If you run Claude Code seriously — refactors, audits, anything multi-step —
+> this is built for you.
+>
+> 🎼 concerto.run
+> 🔗 GitHub + MCP Registry entry in replies.
+
+*[206 chars]*
+
+---
+
+## Variant B — single-shot tweet (for quote-tweets / replies)
+
+> One chat. Multiple Claude Code sessions running in parallel on a managed VPS.
+> Claude orchestrates. You stop juggling terminals.
+>
+> 5 MCP tools, one URL.
+>
+> Solo $49/mo · Pro $99/mo.
 >
 > concerto.run
 
-*[175 chars]*
+*[240 chars]*
 
 ---
 
-*Posting notes: publish tweet 1 first, wait for engagement before replying with 2–6. Best time: Tuesday–Thursday, 9–11am ET or 6–9pm ET. Pin the thread after posting.*
+## Posting notes
+
+- Don't include the URL in tweet 1 (X downranks link-first hook tweets).
+- Reply to early engagement within the first 90 min — replies amplify reach.
+- Have a follow-up thread queued for ~48h later quoting any interesting feedback
+  from comments.
