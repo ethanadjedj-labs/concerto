@@ -35,16 +35,17 @@ backend/concerto/demand/
 ├── storage.py           SQLite store at backend/demand.db
 ├── scoring.py           Three-axis relevance scorer (core / intent / freshness)
 ├── drafts.py            Template-based authentic-reply generator
-├── cli.py               `python -m concerto.demand.cli <scan|top|package>`
+├── cli.py               `python -m concerto.demand.cli <scan|top|package|rescore>`
 └── sources/
     ├── __init__.py        Shared User-Agent
     ├── hackernews.py      HN Algolia API (no auth, public, programmatic)
     ├── reddit.py          Reddit public RSS (UA-identified, polite cadence)
     └── stackexchange.py   Stack Exchange 2.3 REST API (stackoverflow + ai.stackexchange)
 
-backend/tests/demand/    Unit tests (19 tests, no network)
-backend/demand.db        Findings store (separate from concerto.db)
-docs/demand/             Reports + operator hand-off artifacts
+backend/concerto/demand_router.py   HTTP API mounted on the Concerto FastAPI server (OUTCOME 4)
+backend/tests/demand/               Unit tests (47 tests, no network)
+backend/demand.db                   Findings store (separate from concerto.db)
+docs/demand/                        Reports + operator hand-off artifacts
 ```
 
 The store schema lives in `storage.py`. The two tables are:
@@ -111,7 +112,7 @@ console / chat surface can later read this directly.
 | **1 — Demand radar** | `cli.py scan`. Fetches HN + Reddit, scores against Concerto's pain space, persists with live URLs, author context, timestamps, and a rationale per hit. First real scan: 189 HN + 25 Reddit, 98 with score ≥ 0.3 — see [`top_opportunities_2026-06-01.md`](./top_opportunities_2026-06-01.md). |
 | **2 — Opportunity surfacing + drafted replies** | `cli.py package` + `drafts.py`. Produces a maker-disclosed, value-first, ranked-by-fit/freshness package the operator can edit and post. Real output: [`operator_packages_2026-06-01.md`](./operator_packages_2026-06-01.md). |
 | **3 — Concerto's own authentic presence** | The brand voice already lives in `docs/distribution/` (HN post, Reddit post, Twitter threads, StrandedGrid case study, newsletters shortlist). The radar feeds *which threads* to engage on; the distribution assets supply the brand-account content cadence. The reply drafter explicitly *discloses the maker* in every output, so reuse-as-brand-account requires only one substitution. |
-| **4 — Operator hand-off via Claude / console** | Findings live in `backend/demand.db`, a queryable SQLite store with a documented schema. The chat / console surface can read `opportunities WHERE status='new' ORDER BY score DESC` to feed the operator. We deliberately do **not** build a separate dashboard — the next step is to expose the same query as an MCP tool, which lets Claude in the console surface opportunities on demand. See [Future: MCP surface](#future-mcp-surface). |
+| **4 — Operator hand-off via Claude / console** | Findings live in `backend/demand.db`, a queryable SQLite store. The store is exposed over HTTP by `concerto.demand_router` (mounted at `/api/demand/*` on the existing Concerto FastAPI server), which the console / chat surface can hit directly. See [HTTP surface](#http-surface). |
 
 ---
 
@@ -139,29 +140,51 @@ console / chat surface can later read this directly.
 
 ---
 
-## Future: MCP surface
+## HTTP surface
 
-The natural follow-up is to expose the demand store via the same MCP that
-Concerto already uses. A skeleton:
+The radar findings are exposed over HTTP by
+`backend/concerto/demand_router.py`, mounted on the existing Concerto
+FastAPI server. Any console or chat client that can reach
+`api.concerto.run` can drive the operator hand-off without touching
+SQLite directly.
 
-```python
-# proposed backend/concerto/demand/mcp_router.py
-@mcp_tool("list_demand_opportunities")
-def list_demand_opportunities(min_score: float = 0.5, status: str = "new", n: int = 10):
-    with storage.connect() as c:
-        return [drafts.package(opp) for opp in storage.top_opportunities(c, n, min_score, status)]
+Auth: same pattern as `nf_admin_router` — `CONCERTO_OPS_TOKEN` bearer
+token, or `?token=<OPS_TOKEN>` query param. Fail-closed: if the env var
+is unset, every endpoint returns 503.
 
-@mcp_tool("mark_demand_opportunity")
-def mark_demand_opportunity(dedup_key: str, status: str, note: str = ""):
-    with storage.connect() as c:
-        c.execute("UPDATE opportunities SET status=?, operator_note=? WHERE dedup_key=?", (status, note, dedup_key))
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/demand/stats` | counts by source + status, score-bucket histogram, latest scan times. Health-check the radar. |
+| GET | `/api/demand/top?n=10&min_score=0.5&status=new&source=hn` | ranked opportunity list (metadata only, no draft body). |
+| GET | `/api/demand/opportunity/{dedup_key}` | full operator package: metadata + body + draft reply. Uses the operator's saved draft if present, else generates one on the fly. |
+| POST | `/api/demand/opportunity/{dedup_key}/status` | body `{"status": "posted", "note": "..."}` — mark operator action. Valid statuses: `new | reviewed | drafted | posted | skipped`. |
+| GET | `/api/demand/runs?n=20` | recent `scan_runs` rows (audit trail). |
+
+Example operator workflow from a Claude session with `WebFetch` /
+`curl` available:
+
+```
+# How many fresh opportunities are waiting?
+curl -H "Authorization: Bearer $CONCERTO_OPS_TOKEN" \
+     https://api.concerto.run/api/demand/stats
+
+# Top 5 unposted, high-confidence HN hits
+curl -H "Authorization: Bearer $CONCERTO_OPS_TOKEN" \
+     "https://api.concerto.run/api/demand/top?n=5&min_score=0.6&status=new&source=hn"
+
+# Pull a full package + draft
+curl -H "Authorization: Bearer $CONCERTO_OPS_TOKEN" \
+     https://api.concerto.run/api/demand/opportunity/hn:48124057
+
+# After posting it manually, mark it
+curl -X POST -H "Authorization: Bearer $CONCERTO_OPS_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"status":"posted","note":"posted as @ethanadjedj 2026-06-01"}' \
+     https://api.concerto.run/api/demand/opportunity/hn:48124057/status
 ```
 
-With those two tools wired to the existing Concerto MCP server, the
-operator can — *from inside any Claude chat* — say "show me today's top 5
-demand opportunities" and "mark the HN one as posted." That is OUTCOME 4
-in its strongest form. It is deliberately left for a separate turn so
-this turn's diff stays reviewable.
+There is intentionally no "post this draft" endpoint — the system never
+posts. Only the operator does, manually, from their own account.
 
 ---
 
