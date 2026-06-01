@@ -1,4 +1,4 @@
-# Concerto Demand Radar — operator packages (top 6)
+# Concerto Demand Radar — operator packages (top 5)
 
 Each package is **a draft for the operator to review**. The system never auto-posts. Edit the disclosure, personalize the hook, then post AS yourself.
 
@@ -128,33 +128,6 @@ refactor branch, one on the bug, one on the perf spike." It reports
 back, and the sessions survive disconnects.
 
 [Personalize: reference "We were both genuinely impressed by Claude Code after it helped each of us fix nasty CI problems overnight. Doing those fixes manually would…" and offer to share the specific
-config / a free trial if it fits.]
-```
-
-## 6. [hn] Ask HN: What Are You Working On? (April 2026)
-- **url:** https://news.ycombinator.com/item?id=47753149
-- **author:** nlowell  (comment)
-- **score:** 0.79  — angle: `parallel`
-- **why relevant:** core: multiple-claude-code, claude-code-parallel | intent: explicit-question, pain-statement | freshness: 0.10
-- **signals:** multiple-claude-code, claude-code-parallel, explicit-question, pain-statement
-
-**Draft reply** (edit before posting):
-
-```
-Hey — disclosure first: I'm the maker of Concerto (concerto.run), so take this with that grain of salt.
-
-The thing that actually breaks at N>1 Claude Code sessions is not
-running them — `claude` can run N times — it's:
-  - re-priming context every time you restart
-  - tail/-f-ing N terminals to see which one needs your input
-  - losing state when your laptop sleeps mid-refactor
-
-Concerto is the hosted MCP server I built for exactly this — you talk to Claude (Desktop / Code / any MCP client), and Claude spawns, monitors, and kills N Claude Code sessions on a managed VPS. Sessions persist between chats and devices. $49/mo Solo, $99/mo Pro.
-You talk to one Claude and ask it to "spawn 3 sessions: one on the
-refactor branch, one on the bug, one on the perf spike." It reports
-back, and the sessions survive disconnects.
-
-[Personalize: reference "I'm working on Prompter Hawk, which is a dashboard for managing your local coding agents like Claude Code, OpenAI Codex, and Gemini's cli. I…" and offer to share the specific
 config / a free trial if it fits.]
 ```
 

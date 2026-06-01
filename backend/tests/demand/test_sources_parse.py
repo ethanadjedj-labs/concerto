@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 
-from concerto.demand.sources import hackernews, reddit
+from concerto.demand.sources import hackernews, reddit, stackexchange
 
 
 _HN_HIT = {
@@ -83,3 +83,51 @@ def test_reddit_atom_parse():
     assert opp.author_context == "r/ClaudeAI"
     assert "juggling tmux panes" in opp.body
     assert opp.created_ts > 0
+
+
+_SE_ITEM = {
+    "question_id": 7890123,
+    "title": "How to run multiple Claude Code sessions in parallel?",
+    "body": "<p>I'm trying to run several <code>claude</code> sessions...</p>",
+    "link": "https://stackoverflow.com/questions/7890123/foo",
+    "owner": {"display_name": "asker42", "user_id": 99},
+    "tags": ["claude", "llm", "anthropic"],
+    "creation_date": 1740000000,
+    "score": 5,
+    "answer_count": 0,
+    "is_answered": False,
+}
+
+
+def test_se_item_to_opp_stackoverflow():
+    opp = stackexchange._item_to_opp(_SE_ITEM, "stackoverflow", int(time.time()))
+    assert opp is not None
+    assert opp.source == "stackexchange"
+    assert opp.source_id == "so:7890123"
+    assert opp.url.startswith("https://stackoverflow.com/")
+    assert opp.author == "asker42"
+    assert "stackoverflow" in opp.author_context
+    assert "5 score" in opp.author_context
+    assert "unanswered" in opp.author_context
+    assert "tags: claude,llm,anthropic" in opp.author_context
+    assert "<p>" not in opp.body
+    assert "several claude sessions" in opp.body
+    assert opp.created_ts == 1740000000
+
+
+def test_se_item_to_opp_aise_site():
+    item = dict(_SE_ITEM, question_id=11, link="https://ai.stackexchange.com/q/11")
+    opp = stackexchange._item_to_opp(item, "ai", int(time.time()))
+    assert opp is not None
+    assert opp.source_id == "se-ai:11"
+    assert "ai.stackexchange" in opp.author_context
+
+
+def test_se_item_missing_qid_returns_none():
+    bad = dict(_SE_ITEM)
+    bad.pop("question_id")
+    assert stackexchange._item_to_opp(bad, "stackoverflow", int(time.time())) is None
+
+
+def test_se_strip_html_unescapes_entities():
+    assert stackexchange._strip_html("<p>a &amp; b</p>") == "a & b"

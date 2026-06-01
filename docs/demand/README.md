@@ -37,9 +37,10 @@ backend/concerto/demand/
 ├── drafts.py            Template-based authentic-reply generator
 ├── cli.py               `python -m concerto.demand.cli <scan|top|package>`
 └── sources/
-    ├── __init__.py      Shared User-Agent
-    ├── hackernews.py    HN Algolia API (no auth, public, programmatic)
-    └── reddit.py        Reddit public RSS (UA-identified, polite cadence)
+    ├── __init__.py        Shared User-Agent
+    ├── hackernews.py      HN Algolia API (no auth, public, programmatic)
+    ├── reddit.py          Reddit public RSS (UA-identified, polite cadence)
+    └── stackexchange.py   Stack Exchange 2.3 REST API (stackoverflow + ai.stackexchange)
 
 backend/tests/demand/    Unit tests (19 tests, no network)
 backend/demand.db        Findings store (separate from concerto.db)
@@ -120,7 +121,7 @@ console / chat surface can later read this directly.
 | --- | --- | --- |
 | Hacker News | Algolia API (`hn.algolia.com/api/v1/search`) | Working — 189 hits/scan across 10 queries |
 | Reddit (r/ClaudeAI, r/mcp, …) | Public Atom RSS, UA-identified | Partial — Reddit IP-blocks data-center IPs on many endpoints (returns 403). r/ClaudeAI works from this VPS; r/mcp, r/cursor, r/LocalLLaMA, r/SaaS, r/ChatGPTCoding return 403. **Operator can fix** by setting `CONCERTO_REDDIT_CLIENT_ID` / `CONCERTO_REDDIT_CLIENT_SECRET` and switching to OAuth — see "Adding OAuth Reddit" below |
-| Stack Overflow / Stack Exchange | Public REST API | Not yet implemented — next turn |
+| Stack Exchange (stackoverflow.com + ai.stackexchange.com) | Public REST API 2.3 (`api.stackexchange.com/2.3/search/advanced`) | Working — first scan returned 9 hits / 8 queries / 2 sites. Top hit `so:79827749` (multi-agent bearer-token, score 0.54), one Claude-Code specific question (`so:79927051`). Set `CONCERTO_STACKEXCHANGE_KEY` to raise quota from 300→10,000 req/day. |
 | X / Twitter | Official API requires paid tier | Deliberately deferred — paid-only API access is too constrained for the score-everything model. Operator monitors X manually from the [creator shortlist](../outreach/creators_top10.md). |
 
 ### Adding OAuth Reddit (operator action)

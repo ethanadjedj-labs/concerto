@@ -18,7 +18,7 @@ from typing import Sequence
 
 from . import drafts, scoring, storage
 from .models import Opportunity
-from .sources import hackernews, reddit
+from .sources import hackernews, reddit, stackexchange
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -30,6 +30,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
         fetchers.append(("hn", lambda: hackernews.fetch()))
     if "reddit" in args.sources:
         fetchers.append(("reddit", lambda: reddit.fetch()))
+    if "stackexchange" in args.sources:
+        fetchers.append(("stackexchange", lambda: stackexchange.fetch()))
     if not fetchers:
         print("no sources selected", file=sys.stderr)
         return 2
@@ -120,8 +122,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_scan.add_argument(
         "--sources",
         nargs="+",
-        default=["hn", "reddit"],
-        choices=["hn", "reddit"],
+        default=["hn", "reddit", "stackexchange"],
+        choices=["hn", "reddit", "stackexchange"],
         help="sources to scan",
     )
     p_scan.add_argument(
