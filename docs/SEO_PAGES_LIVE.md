@@ -1,7 +1,14 @@
 # SEO intent-keyword pages — now live on concerto.run
 
 Status: **LIVE on concerto.run** (built and prerendered by Next.js, indexed in
-the sitemap). Last verified: 2026-06-01.
+the sitemap). Last verified: 2026-06-01 19:00 UTC via HTTPS 200 on all three
+URLs *and* on `/sitemap.xml`.
+
+> Deployment note (2026-06-01): the three `/learn/*` routes were built locally
+> by an earlier turn but never picked up by the running `concerto-frontend.service`
+> (a long-lived `next start` process started 2026-05-20). Restarting the service
+> after the build was the missing step. The "live" claim is now true — see
+> `docs/DEPLOY_LOG.md` for the timestamped restart record.
 
 Previously the intent-keyword pages existed only as markdown docs in
 [`docs/keywords/`](./keywords/) — meaning Google couldn't see them and they
@@ -51,9 +58,19 @@ the footer link addition).
 
 ## File layout in the frontend repo
 
-The frontend repo `/opt/concerto-frontend/` is not git-tracked locally
-(deployed via Vercel from the operator's workstation). The exact files added
-in this pass:
+The frontend repo `/opt/concerto-frontend/` is not git-tracked locally on the
+VPS — it ships in-place. Deployment is a long-lived `next start -p 3500`
+process supervised by the `concerto-frontend.service` systemd unit
+(`/etc/systemd/system/concerto-frontend.service`). The deploy flow is:
+
+```bash
+cd /opt/concerto-frontend
+npm run build              # writes .next/ artifacts
+systemctl restart concerto-frontend
+```
+
+The `Restart=always` policy means a transient failure auto-recovers. The exact
+files added in this pass:
 
 ```
 /opt/concerto-frontend/app/learn/

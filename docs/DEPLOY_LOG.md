@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-06-01 — frontend restart picks up /learn/* SEO pages
+
+**Service:** `concerto-frontend.service` (systemd, `next start -p 3500`)
+**Build:** `.next/BUILD_ID = WkQ8PyKudBI2F0unPbo4A` (built 2026-06-01 18:50 UTC)
+**Trigger:** `systemctl restart concerto-frontend`
+
+### Why this was needed
+
+Three SEO intent-keyword pages had been added to the source tree and a fresh
+`npm run build` had completed, but the long-lived frontend process (started
+2026-05-20) was still serving the stale bundle (`page-131c5843...js`). All
+three `/learn/*` URLs returned HTTP 404 in production even though the static
+HTML existed at `/opt/concerto-frontend/.next/server/app/learn/`.
+
+### Verification (HTTP 200 from outside the box)
+
+| URL | Status |
+|-----|--------|
+| `https://concerto.run/` | 200 |
+| `https://concerto.run/learn/orchestrate-parallel-claude-code` | 200 |
+| `https://concerto.run/learn/mcp-orchestration` | 200 |
+| `https://concerto.run/learn/run-multiple-claude-code-sessions` | 200 |
+| `https://concerto.run/sitemap.xml` | 200 (all 3 new URLs present, priority 0.8) |
+
+### Risk
+
+Zero new code, just picking up an already-tested build. Service has
+`Restart=always`, so transient startup hiccups self-heal.
+
+---
+
 ## 2026-05-23 — nf-prod-20260523-133129
 
 **Tag:** `ghcr.io/ethanadjedj/concerto-runtime:nf-prod-20260523-133129`  
