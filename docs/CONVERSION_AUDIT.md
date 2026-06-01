@@ -41,10 +41,11 @@ conversion criteria for a low-touch, high-intent dev-tools landing:
 | Pricing (L256–L351) | Both plans side by side, Pro featured | ✅ | Solo $49 / Pro $99, "Most popular" badge on Pro, separate Stripe Checkout forms |
 | FAQ (L354–L400) | 6 buyer questions answered | ✅ | What, code-required?, Pro vs Max, where Claude Code runs, what to build, cancel |
 | Refunds (L403–L422) | Trust signal | ✅ | "Real human reviews every request, 24h reply" + form |
+| How (wire-up snippet) | Show the actual one-line MCP install command | ✅ | Dark-tile `claude mcp add --transport http concerto ...` snippet at the end of the "How Concerto works" section. Added 2026-06-01. |
 | Mobile sticky CTA (L458) | Mobile-first CTA | ✅ | `<MobileStickyCTA />` triggered after `#hero-section-end` IntersectionObserver |
 | Footer (L425–L455) | Legal / Help / Support / Cancel | ✅ | Terms, Help, support@concerto.run, CancelSubscriptionFlow |
 
-**Score: 14 / 14 conversion criteria present.**
+**Score: 15 / 15 conversion criteria present.**
 
 ---
 
@@ -74,7 +75,30 @@ conversion criteria for a low-touch, high-intent dev-tools landing:
 |---|---|---|
 | Add a social-proof strip ("Built by X who shipped Y") above pricing | **Not now** | Currently a solo operator without nameable users on record. Adding fake logos would tank trust on the exact dev-segment we sell to. Wait for real testimonials post-launch. |
 | Embed the StrandedGrid case study tile in the use-cases section | **Deferred** | The case study (`docs/CASE_STUDY_STRANDEDGRID.md`) is real but strandedgrid.com is currently 502 — a tile that links to a 502 hurts trust. Add the tile when the demo site is restored. |
-| Add a "Quick install" code block (the Claude Code CLI command) above pricing | **Worth considering next pass** | Lowers perceived friction. Currently in the README, not the landing. Adding it would shift the "I get it, but do I have to figure out the wiring?" objection. Not blocking conversion today. |
+| Add a "Quick install" code block (the Claude Code CLI command) above pricing | **DONE 2026-06-01** | Added a dark-tile `claude mcp add --transport http concerto ...` snippet to the end of the "How Concerto works" section in [`/opt/concerto-frontend/app/page.tsx`](file:///opt/concerto-frontend/app/page.tsx) (after the 4-step list, before the pricing section). Proves the "5 minutes to wire it up" claim and answers the "do I have to figure out the wiring?" objection before pricing. Build verified passing (`npm run build` exit 0, 87.2 kB First Load JS unchanged). Snippet source preserved below for reproducibility. |
+
+### Wire-up snippet (verbatim, for reproducibility)
+
+If the frontend repo is ever rebuilt from scratch, re-apply this JSX to
+`/opt/concerto-frontend/app/page.tsx`, immediately after the closing tag of the
+4-step `<div className="reveal space-y-4">` block inside the `#how` section
+(and before that section's closing `</div></section>`):
+
+```tsx
+{/* Wire-up snippet — proves "5 minutes" claim is real */}
+<div className="reveal mt-10">
+  <div className="rounded-xl border border-[rgba(25,25,25,0.08)] bg-[#191919] p-5 shadow-[0_1px_2px_rgba(25,25,25,0.04)]">
+    <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#cc785c]">
+      Wire it into Claude Code — one command
+    </p>
+    <pre className="overflow-x-auto text-xs leading-relaxed text-[#faf9f5]"><code>{`claude mcp add --transport http concerto \\
+  https://api.concerto.run/mcp-proxy/<your-token>/mcp`}</code></pre>
+    <p className="mt-3 text-xs leading-relaxed text-[#8a847b]">
+      Your token appears in your dashboard right after checkout. Works the same for Claude Desktop and any other MCP client.
+    </p>
+  </div>
+</div>
+```
 | 7-day free trial badge | **Not adding** | Current model is paid-first with refund-on-request. Trial copy would conflict with the refund-trust pitch in the Refunds section. |
 
 ---
