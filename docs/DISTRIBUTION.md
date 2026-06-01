@@ -18,7 +18,7 @@ Canonical metadata for every listing is `server.json` at the repo root, conformi
 | 4 | Smithery (`smithery.ai`) | READY-FOR-ETHAN | URL-hosted submission via the Smithery dashboard or CLI. Payload below. |
 | 5 | Glama (`glama.ai/mcp/servers`) | READY-FOR-ETHAN | Submit repo URL via Add Server. Payload below. |
 | 6 | mcp.so (`mcp.so`) | READY-FOR-ETHAN | Open a submission issue on `chatmcp/mcp-directory`. Payload below. |
-| 7 | `punkpeye/awesome-mcp-servers` | READY-FOR-ETHAN (after #5) | One-line PR. README entry below. Glama listing strengthens it but is not a hard gate. |
+| 7 | `punkpeye/awesome-mcp-servers` | **PR-OPEN** | [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242) opened 2026-06-01 with the agent fast-track marker (`🤖🤖🤖` per CONTRIBUTING.md). One-line entry added in the 🤖 Coding Agents section between `elhamid/llm-council` and `freema/openclaw-mcp`. |
 
 CI workflow `.github/workflows/mcp-publish.yml` re-publishes to the Official MCP Registry on every GitHub release tag, so listings cannot go stale.
 
@@ -136,17 +136,24 @@ Listings appear after the maintainer batches and merges them (typically days, no
 
 **Source:** https://github.com/punkpeye/awesome-mcp-servers, https://github.com/punkpeye/awesome-mcp-servers/blob/main/CONTRIBUTING.md.
 
-**Status:** READY-FOR-ETHAN — single-line PR.
+**Status:** **PR-OPEN** — [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242), filed 2026-06-01.
 
-**Important correction:** Earlier guidance circulating online claimed that a Glama listing is a hard prerequisite for PRs to this awesome list. **The CONTRIBUTING.md does NOT enforce that.** The README is "synced with" Glama, so a parallel Glama listing helps discoverability, but it's not a gate.
+**Submission details (for the record):**
 
-**Entry to add** (paste into the appropriate category — "🤖 Coding Agents" or "🛠️ Developer Tools"):
+- Fork: https://github.com/ethanadjedj/awesome-mcp-servers (branch `add-concerto`)
+- PR title: `Add Concerto — parallel Claude Code orchestration over MCP 🤖🤖🤖`
+- PR head: `ethanadjedj:add-concerto` → `punkpeye:main`
+- One-line README edit, inserted alphabetically in the **🤖 Coding Agents** section between `elhamid/llm-council` and `freema/openclaw-mcp`.
+
+**Entry added:**
 
 ```
-- [ethanadjedj-labs/concerto](https://github.com/ethanadjedj-labs/concerto) 🐍 ☁️ - Orchestrate parallel Claude Code sessions over MCP. Spawn, list, inspect, kill long-running agents from your editor.
+- [ethanadjedj-labs/concerto](https://github.com/ethanadjedj-labs/concerto) 🐍 ☁️ - Orchestrate parallel Claude Code sessions over MCP. Hosted MCP server with `start_claude_session`, `list_claude_sessions`, `get_claude_session`, and `kill_claude_session` so any MCP client (Claude Desktop, Claude Code, Cursor, Zed, VS Code) can spawn, inspect, and kill long-running Claude Code agents on a managed VPS that survive between turns.
 ```
 
-PR title prefix `🤖🤖🤖` is the awesome-list's tag for agent-submitted PRs; if Ethan files it manually, drop the prefix.
+**Note on Glama prerequisite (now confirmed wrong):** Earlier guidance circulating online claimed that a Glama listing is a hard prerequisite for PRs to this awesome list. **The CONTRIBUTING.md does NOT enforce that** — and the maintainers explicitly opt agent-submitted PRs into a fast-track lane when the title carries `🤖🤖🤖`. The README is "synced with" Glama, so a parallel Glama listing helps discoverability, but it's not a gate.
+
+**If the maintainer asks for changes:** comments will appear at the PR URL above. Pull `ethanadjedj:add-concerto` locally to amend.
 
 ---
 
