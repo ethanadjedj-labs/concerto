@@ -41,10 +41,11 @@ Sequence the channels. Respect the timing. Watch the right metric at each step.
 **Timing**: 9am–11am ET or 6–8pm ET Tuesday–Thursday. Avoid Monday (low engagement) and Friday (drops off).
 
 **Execute**:
-1. Post `twitter_launch_thread.md` tweet 1 first — wait for initial engagement (likes/replies/retweets)
-2. Reply with tweets 2–6 as a thread within 30 minutes
+1. Post `twitter_launch_thread.md` (variant A — narrative) tweet 1 first — wait for initial engagement (likes/replies/retweets)
+2. Reply with tweets 2–7 as a thread within 30 minutes
 3. Pin the thread to your profile
 4. If you have reach in adjacent accounts (other devtools, AI tools), DM the link — don't ask for retweets, just share
+5. **Day 4 (48–72h later)**: post `twitter_thread_strandedgrid.md` (variant C — receipts) as a second thread. Same time-of-day window. If it outperforms A, repin.
 
 **Key metric to watch**: impressions on tweet 1 in the first 2 hours. If <500 impressions, your account reach is the bottleneck — consider building reach before the next launch.
 
@@ -117,8 +118,9 @@ Sequence the channels. Respect the timing. Watch the right metric at each step.
 |-----|---------|-----------|----------------|
 | 0 | WhatsApp + Email | Morning local | Reply rate >30% |
 | 1 | HN Show | 9–11am PT | Points at 2h mark |
-| 2 | Twitter/X thread | 9–11am or 6–8pm ET | Tweet 1 impressions at 2h |
+| 2 | Twitter/X thread A (narrative) | 9–11am or 6–8pm ET | Tweet 1 impressions at 2h |
 | 3 | LinkedIn | 8–10am or 12–1pm | Impressions at 24h |
+| 4 | Twitter/X thread C (StrandedGrid receipts) | 9–11am ET | Tweet 1 impressions at 2h |
 | 5 | Reddit r/selfhosted | 9am–12pm ET | Upvote ratio >85% |
 | 7 | Product Hunt | 12:01am PT | Rank at 12pm PT |
 | 10 | dev.to / Medium | Morning | Reads at 48h |
