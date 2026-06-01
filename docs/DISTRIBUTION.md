@@ -162,6 +162,14 @@ This is the anti-stale guarantee: `server.json` is the only place version metada
 
 ---
 
+## Related outreach assets
+
+- [`docs/outreach/creators_top10.md`](outreach/creators_top10.md) — top 10 AI-coding YouTubers + X accounts with per-creator hooks.
+- [`docs/outreach/newsletters_top.md`](outreach/newsletters_top.md) — newsletter shortlist (PulseMCP, Latent Space, Pragmatic Engineer, TLDR AI, Ben's Bites, AI Tidbits, The Rundown) with per-outlet hooks. PulseMCP feature pitch should fire immediately after registry submission #1 above lands.
+- [`docs/distribution/hn_show_post.md`](distribution/hn_show_post.md), [`docs/distribution/producthunt_listing_draft.md`](distribution/producthunt_listing_draft.md), [`docs/distribution/twitter_launch_thread.md`](distribution/twitter_launch_thread.md), [`docs/distribution/twitter_thread_strandedgrid.md`](distribution/twitter_thread_strandedgrid.md) — ready-to-fire launch kits (none posted by the agent).
+
+---
+
 ## Sources (verified 2026-06-01)
 
 - [MCP Registry Quickstart](https://modelcontextprotocol.io/registry/quickstart)
