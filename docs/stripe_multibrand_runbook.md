@@ -1,3 +1,5 @@
+> **→ Superseded by /opt/infra/skills/stripe-multibrand/SKILL.md** (canonical, verified live 2026-06-01). This file is retained for historical context only.
+
 # Stripe multi-brand runbook (Concerto + ClickCure)
 
 Operator-facing manual steps to finish the WS3 multi-brand

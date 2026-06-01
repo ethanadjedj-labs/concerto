@@ -1,3 +1,5 @@
+> **→ Superseded by /opt/infra/skills/stripe-multibrand/SKILL.md** (canonical, verified live 2026-06-01). This file is retained for historical context only.
+
 # Stripe topology — empire (concerto + clickcure)
 
 Snapshot: 2026-05-31. Discovery output for WS3 Stripe multi-brand work.
