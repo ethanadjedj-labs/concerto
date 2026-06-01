@@ -18,7 +18,7 @@ Canonical metadata for every listing is `server.json` at the repo root, conformi
 | 4 | Smithery (`smithery.ai`) | READY-FOR-ETHAN | URL-hosted submission via the Smithery dashboard or CLI. Payload below. |
 | 5 | Glama (`glama.ai/mcp/servers`) | READY-FOR-ETHAN | Submit repo URL via Add Server. Payload below. |
 | 6 | mcp.so (`mcp.so`) | READY-FOR-ETHAN | Open a submission issue on `chatmcp/mcp-directory`. Payload below. |
-| 7 | `punkpeye/awesome-mcp-servers` | **PR-OPEN** | [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242) opened 2026-06-01 with the agent fast-track marker (`🤖🤖🤖` per CONTRIBUTING.md). One-line entry added in the 🤖 Coding Agents section between `elhamid/llm-council` and `freema/openclaw-mcp`. |
+| 7 | `punkpeye/awesome-mcp-servers` | **PR-OPEN (needs Glama)** | [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242) opened 2026-06-01. Within 2 hours the `glama-check` bot commented requiring a Glama listing + badge before merge. **Blocked on registry #5 (Glama).** Ethan completes #5 → posts the badge comment from [`docs/listings/awesome_mcp_pr_response.md`](listings/awesome_mcp_pr_response.md) → bot re-checks → merge eligible. |
 
 CI workflow `.github/workflows/mcp-publish.yml` re-publishes to the Official MCP Registry on every GitHub release tag, so listings cannot go stale.
 
@@ -136,7 +136,7 @@ Listings appear after the maintainer batches and merges them (typically days, no
 
 **Source:** https://github.com/punkpeye/awesome-mcp-servers, https://github.com/punkpeye/awesome-mcp-servers/blob/main/CONTRIBUTING.md.
 
-**Status:** **PR-OPEN** — [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242), filed 2026-06-01.
+**Status:** **PR-OPEN, blocked on Glama listing.** [PR #7242](https://github.com/punkpeye/awesome-mcp-servers/pull/7242), filed 2026-06-01.
 
 **Submission details (for the record):**
 
@@ -151,9 +151,19 @@ Listings appear after the maintainer batches and merges them (typically days, no
 - [ethanadjedj-labs/concerto](https://github.com/ethanadjedj-labs/concerto) 🐍 ☁️ - Orchestrate parallel Claude Code sessions over MCP. Hosted MCP server with `start_claude_session`, `list_claude_sessions`, `get_claude_session`, and `kill_claude_session` so any MCP client (Claude Desktop, Claude Code, Cursor, Zed, VS Code) can spawn, inspect, and kill long-running Claude Code agents on a managed VPS that survive between turns.
 ```
 
-**Note on Glama prerequisite (now confirmed wrong):** Earlier guidance circulating online claimed that a Glama listing is a hard prerequisite for PRs to this awesome list. **The CONTRIBUTING.md does NOT enforce that** — and the maintainers explicitly opt agent-submitted PRs into a fast-track lane when the title carries `🤖🤖🤖`. The README is "synced with" Glama, so a parallel Glama listing helps discoverability, but it's not a gate.
+**What actually happened (corrected):** Within ~2 hours of filing, the `glama-check` GitHub Action posted [comment #4595567807](https://github.com/punkpeye/awesome-mcp-servers/pull/7242#issuecomment-4595567807) on the PR. The bot's two demands are now the gating requirement:
 
-**If the maintainer asks for changes:** comments will appear at the PR URL above. Pull `ethanadjedj:add-concerto` locally to amend.
+> 1. Ensure your server is listed on Glama.
+> 2. Update your PR by adding a Glama score badge after the server description.
+
+A previous draft of this doc claimed the prerequisite was "confirmed wrong" — the bot's behaviour contradicts that. **Treat Glama listing as a hard prerequisite** for this PR going forward. The `🤖🤖🤖` fast-track marker accelerates human review *after* the bot is green; it does not bypass the bot.
+
+**Exact sequence (Ethan):**
+
+1. Complete registry #5 (Glama). See section "5) Glama" above.
+2. Wait for the Glama server page to be live at `https://glama.ai/mcp/servers/<owner>/<repo>` and for the score badge to render.
+3. Post the comment in [`docs/listings/awesome_mcp_pr_response.md`](listings/awesome_mcp_pr_response.md) on PR #7242 (it edits the entry to embed the badge, addresses the bot, and re-pings).
+4. If the maintainer asks for further changes: pull `ethanadjedj:add-concerto` locally to amend.
 
 ---
 
