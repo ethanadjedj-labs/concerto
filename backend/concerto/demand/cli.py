@@ -137,6 +137,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     p_scan.set_defaults(func=cmd_scan)
 
+    p_rescore = sub.add_parser(
+        "rescore",
+        help="re-apply the scorer to all stored opportunities (no network)",
+    )
+    p_rescore.set_defaults(func=cmd_rescore)
+
     p_top = sub.add_parser("top", help="print ranked opportunities")
     p_top.add_argument("-n", type=int, default=20)
     p_top.add_argument("--min-score", type=float, default=0.2)
@@ -158,6 +164,39 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = p.parse_args(argv)
     return args.func(args)
+
+
+def cmd_rescore(args: argparse.Namespace) -> int:
+    """Re-apply the current scorer to every stored opportunity.
+
+    Use this after editing scoring rules so the operator-facing ranking
+    reflects the new logic without burning API quota on a re-fetch. Touches
+    score / matched_signals / rationale only — never URL, body, or status.
+    """
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    log = logging.getLogger("demand.rescore")
+    updated = 0
+    promoted = 0
+    demoted = 0
+    with storage.connect(args.db) as conn:
+        rows = list(conn.execute(
+            "SELECT dedup_key, title, body, created_ts, score FROM opportunities"
+        ))
+        for r in rows:
+            old = r["score"]
+            s = scoring.score_post(r["title"] or "", r["body"] or "", r["created_ts"] or 0)
+            conn.execute(
+                "UPDATE opportunities SET score=?, matched_signals=?, rationale=? WHERE dedup_key=?",
+                (s.score, json.dumps(s.matched_signals), s.rationale, r["dedup_key"]),
+            )
+            updated += 1
+            if old < 0.5 <= s.score:
+                promoted += 1
+            elif s.score < 0.5 <= old:
+                demoted += 1
+    log.info("rescored=%d promoted_above_0.5=%d demoted_below_0.5=%d", updated, promoted, demoted)
+    print(json.dumps({"rescored": updated, "promoted": promoted, "demoted": demoted}))
+    return 0
 
 
 def cmd_package(args: argparse.Namespace) -> int:

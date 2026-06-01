@@ -72,6 +72,36 @@ def test_set_draft_persists(tmp_path: Path):
         assert row["status"] == "drafted"
 
 
+def test_upsert_refreshes_title_and_body_but_preserves_operator_state(tmp_path: Path):
+    """When the source rebuilds a title (e.g. comment-prefix change) or the
+    upstream post is edited, the next scan should propagate the fresh content
+    into the store. But operator-owned fields (status, draft_reply,
+    operator_note) must NOT be clobbered by a re-scan."""
+    db = str(tmp_path / "demand.db")
+    with storage.connect(db) as c:
+        opp = _opp(source_id="z", title="old title", body="old body", author="alice")
+        storage.upsert(c, opp)
+        # Operator marks it.
+        storage.set_draft(c, opp.dedup_key(), "operator draft")
+        c.execute(
+            "UPDATE opportunities SET status='reviewed', operator_note='looks promising' WHERE dedup_key=?",
+            (opp.dedup_key(),),
+        )
+        # Re-fetch produces a fresh title (the new comment-prefix flow does this).
+        refreshed = _opp(source_id="z", title="[comment in: parent] new snippet", body="new body", author="alice")
+        storage.upsert(c, refreshed)
+        row = c.execute(
+            "SELECT title, body, status, draft_reply, operator_note FROM opportunities WHERE dedup_key=?",
+            (opp.dedup_key(),),
+        ).fetchone()
+        assert row["title"] == "[comment in: parent] new snippet"
+        assert row["body"] == "new body"
+        # Operator state preserved across refresh.
+        assert row["draft_reply"] == "operator draft"
+        assert row["status"] == "reviewed"
+        assert row["operator_note"] == "looks promising"
+
+
 def test_scan_runs_logged(tmp_path: Path):
     db = str(tmp_path / "demand.db")
     with storage.connect(db) as c:

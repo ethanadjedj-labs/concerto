@@ -32,8 +32,12 @@ def test_hn_hit_to_opp():
 
 
 def test_hn_comment_synthesizes_title():
+    """Comments are tagged with [comment in: <parent>] so the operator can
+    tell at a glance whether they're looking at a story or a comment, and
+    the snippet shows what was actually said."""
     hit = {
         "objectID": "9",
+        "story_title": "Ask HN: What are you working on?",
         "comment_text": "First line of the comment.\nSecond line.",
         "author": "x",
         "created_at_i": 1700000000,
@@ -41,8 +45,28 @@ def test_hn_comment_synthesizes_title():
     }
     opp = hackernews._hit_to_opp(hit, int(time.time()))
     assert opp is not None
-    assert opp.title.startswith("First line of the comment.")
+    assert opp.title.startswith("[comment in:")
+    assert "Ask HN: What are you working on?" in opp.title
+    assert "First line of the comment." in opp.title
     assert opp.url.startswith("https://news.ycombinator.com/item?id=")
+
+
+def test_hn_story_title_unchanged():
+    """Story-type hits keep their own title verbatim — no `[comment in: ...]`
+    prefix, so a buyer-question story still looks like a buyer-question story
+    in the operator's feed."""
+    hit = {
+        "objectID": "10",
+        "title": "Ask HN: how do I run claude code in parallel?",
+        "story_text": "I'm looking for a tool.",
+        "author": "y",
+        "created_at_i": 1700000000,
+        "_tags": ["story", "ask_hn"],
+    }
+    opp = hackernews._hit_to_opp(hit, int(time.time()))
+    assert opp is not None
+    assert opp.title == "Ask HN: how do I run claude code in parallel?"
+    assert "[comment in:" not in opp.title
 
 
 _REDDIT_ATOM = """<?xml version="1.0" encoding="UTF-8"?>

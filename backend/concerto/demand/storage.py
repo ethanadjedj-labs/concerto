@@ -112,12 +112,21 @@ def upsert(conn: sqlite3.Connection, opp: Opportunity) -> bool:
             ),
         )
         return True
-    # Update score/rationale/fingerprint in case scoring rules changed.
+    # Refresh score + the source-derived content fields. The source may have
+    # rebuilt the title (e.g. comment-prefix changes), the post may have been
+    # edited upstream, and the author context (points/comments) drifts. We
+    # leave operator state (status, draft_reply, operator_note) untouched.
     conn.execute(
         """UPDATE opportunities
-           SET score=?, matched_signals=?, rationale=?, fingerprint=?, fetched_ts=?
+           SET title=?, body=?, author=?, author_context=?,
+               score=?, matched_signals=?, rationale=?,
+               fingerprint=?, fetched_ts=?
            WHERE dedup_key=?""",
         (
+            opp.title,
+            opp.body,
+            opp.author,
+            opp.author_context,
             opp.score,
             json.dumps(opp.matched_signals),
             opp.rationale,

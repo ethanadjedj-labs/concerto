@@ -66,6 +66,20 @@ _NEGATIVE_SIGNALS: list[tuple[str, str, float]] = [
     ("model-comparison", r"\b(claude vs|gpt[-\s]?\d|gemini vs)\b", -0.3),
     ("jailbreak", r"\b(jailbreak|uncensored|nsfw|roleplay)\b", -0.5),
     ("hiring", r"\b(we[''']?re hiring|hiring engineers|job posting|apply now)\b", -0.5),
+    # Hiring-monthly omnibus threads ("Ask HN: Who wants to be hired?",
+    # "Ask HN: Who is hiring?"). The titles match Concerto-shaped phrases by
+    # accident when concatenated with thousands of comments. Drop them outright.
+    # The optional `[comment in: ...]` prefix is added by the HN source for
+    # comments under such threads, so the anchor must skip past it.
+    ("ask-hn-hiring-omnibus", r"^(\[comment in:\s*)?ask hn:\s*(who wants to be hired|who is hiring|freelancer)", -1.0),
+    # Same shape for the "what are you working on" / "show off your project"
+    # monthly omnibus — also pollutes with random comments.
+    ("ask-hn-working-omnibus", r"^(\[comment in:\s*)?ask hn:\s*(what are you working on|show off|what['']s your)", -0.6),
+    # Competitor-launch announcements. "Show HN" posts about claude / agents /
+    # MCP are NOT buyer demand — they are peers announcing tools. Engaging in
+    # those comments to push Concerto is the exact spammy behavior the brand
+    # must avoid. Surface them in a separate competitor-watch view, not here.
+    ("competitor-show-hn", r"^(\[comment in:\s*)?show hn:.{0,80}\b(claude code|claude[-\s]agent|agent|mcp|llm|coding agent)", -0.45),
 ]
 
 
@@ -102,10 +116,25 @@ def score_post(
     now: int | None = None,
 ) -> ScoreResult:
     text = f"{title}\n{body}".lower()
+    # Negative signals that key off the title prefix ("Show HN:", "Ask HN:")
+    # must see the title at the start of the buffer. Match against the title
+    # alone so prepended body text can't fool the anchor.
+    title_only = title.lower().strip()
 
     core_hits = _scan(text, _CORE_SIGNALS)
     intent_hits = _scan(text, _INTENT_SIGNALS)
-    neg_hits = _scan(text, _NEGATIVE_SIGNALS)
+    neg_hits = _scan(text, _NEGATIVE_SIGNALS) + _scan(title_only, [
+        s for s in _NEGATIVE_SIGNALS if s[1].startswith("^")
+    ])
+    # Dedup neg hits by label (a title-anchored signal may also match in text).
+    seen_neg: set[str] = set()
+    deduped_neg: list[tuple[str, float]] = []
+    for label, w in neg_hits:
+        if label in seen_neg:
+            continue
+        seen_neg.add(label)
+        deduped_neg.append((label, w))
+    neg_hits = deduped_neg
 
     # Sum core weights, capped at 1.0 (saturating).
     core_raw = sum(w for _, w in core_hits)

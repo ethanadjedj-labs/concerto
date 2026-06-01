@@ -58,3 +58,54 @@ def test_intent_amplifies_core_fit():
     ).score
     without_q = scoring.score_post(base_title, base_body, NOW).score
     assert with_q > without_q, f"intent should amplify: with={with_q} without={without_q}"
+
+
+def test_ask_hn_hiring_monthly_is_suppressed():
+    """The "Ask HN: Who wants to be hired?" monthly thread is a huge omnibus
+    that matches Concerto signals by accident across thousands of comments.
+    It should drop out of the top results entirely."""
+    title = "Ask HN: Who wants to be hired? (May 2026)"
+    # The aggregated comment text contains everything under the sun, including
+    # genuine Concerto-shaped phrases that would otherwise score high.
+    body = (
+        "Resume: I built an mcp orchestration platform with multi-agent fleet "
+        "support. Looking for new role. How can you reach me? "
+        "Recommend you check my GitHub."
+    )
+    r = scoring.score_post(title, body, NOW)
+    assert r.score < 0.2, (
+        f"hiring-omnibus thread should not rank high; got {r.score} "
+        f"signals={r.matched_signals}"
+    )
+    assert any("ask-hn-hiring-omnibus" in s for s in r.matched_signals)
+
+
+def test_competitor_show_hn_is_downweighted():
+    """A competitor's "Show HN: my parallel Claude Code tool" post is NOT
+    buyer demand — engaging in its comments to push Concerto would be the
+    exact spammy behavior the brand must avoid. Downweight."""
+    title = "Show HN: AgentOS – Self-hosted web UI for managing multiple Claude Code sessions"
+    body = "I built a tool to orchestrate multiple Claude Code processes."
+    competitor = scoring.score_post(title, body, NOW)
+    # Same content phrased as a buyer question should outrank it strongly.
+    buyer_title = "Ask HN: how do I manage multiple Claude Code sessions?"
+    buyer_body = "Looking for a tool to orchestrate. Any recommendations?"
+    buyer = scoring.score_post(buyer_title, buyer_body, NOW)
+    assert buyer.score > competitor.score, (
+        f"buyer({buyer.score}) should outrank competitor-launch({competitor.score})"
+    )
+    assert any("competitor-show-hn" in s for s in competitor.matched_signals)
+
+
+def test_competitor_negative_does_not_fire_on_body_show_hn_mention():
+    """The 'Show HN:' anchor must only trigger on the *title* prefix —
+    a buyer post that *quotes* a Show HN in the body should not be penalised."""
+    title = "Ask HN: how do I manage parallel claude code sessions?"
+    body = (
+        "I saw a Show HN: AgentOS earlier but it didn't fit my workflow. "
+        "Looking for a tool that handles MCP orchestration too."
+    )
+    r = scoring.score_post(title, body, NOW)
+    assert not any("competitor-show-hn" in s for s in r.matched_signals), (
+        f"competitor signal should be title-anchored; signals={r.matched_signals}"
+    )
