@@ -180,6 +180,8 @@ in [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md):
 - Docs index → [`docs/`](docs/)
 - FAQ → [`docs/FAQ.md`](docs/FAQ.md)
 - Distribution status → [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md)
+- Case study → [`docs/CASE_STUDY_STRANDEDGRID.md`](docs/CASE_STUDY_STRANDEDGRID.md)
+- Landing conversion audit → [`docs/CONVERSION_AUDIT.md`](docs/CONVERSION_AUDIT.md)
 - License → [LICENSE](LICENSE)
 
 ---
