@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ethanadjedj-labs/concerto",
+  "description": "Orchestrate parallel Claude Code sessions from your editor. MCP server that spawns, lists, inspects, and kills long-running Claude Code agents on a managed VPS — pick up where each left off without re-priming context.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/ethanadjedj-labs/concerto",
+    "source": "github"
+  },
+  "websiteUrl": "https://concerto.run",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.concerto.run/mcp-proxy/{buyer_token}/mcp",
+      "variables": {
+        "buyer_token": {
+          "description": "Per-customer MCP routing token. Get yours by signing up at https://concerto.run (Solo $49/mo or Pro $99/mo). The full URL is shown in your Concerto dashboard at https://concerto.run/dashboard once provisioned.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      }
+    }
+  ]
+}

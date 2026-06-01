@@ -1,0 +1,44 @@
+name: Publish to Official MCP Registry
+
+# Re-publishes server.json to registry.modelcontextprotocol.io on every release.
+# Anti-stale guarantee: as long as server.json is the only place version metadata
+# lives, every release auto-propagates downstream (PulseMCP, GitHub MCP Registry).
+#
+# Manual trigger is also available via workflow_dispatch.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC auth to the MCP Registry
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          # Pin to a known release tag rather than tracking main.
+          PUBLISHER_VERSION="${MCP_PUBLISHER_VERSION:-v1.2.0}"
+          curl -fsSL -o /tmp/mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${PUBLISHER_VERSION}/mcp-publisher_${PUBLISHER_VERSION#v}_linux_amd64.tar.gz"
+          tar -xzf /tmp/mcp-publisher.tar.gz -C /tmp
+          sudo mv /tmp/mcp-publisher /usr/local/bin/mcp-publisher
+          mcp-publisher --version
+
+      - name: Validate server.json
+        run: |
+          test -f server.json
+          python3 -c "import json,sys; json.load(open('server.json'))"
+
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: mcp-publisher login github-oidc
+
+      - name: Publish
+        run: mcp-publisher publish
