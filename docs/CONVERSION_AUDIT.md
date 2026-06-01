@@ -128,7 +128,8 @@ in [`docs/DISTRIBUTION.md`](./DISTRIBUTION.md):
 - The Show HN draft (`docs/distribution/hn_show_post.md`), Product Hunt kit
   (`docs/distribution/producthunt_listing_draft.md`), and X threads
   (`docs/distribution/twitter_launch_thread.md`) all link to `concerto.run`.
-- The intent-keyword pages (`docs/keywords/*.md`) cross-link to
+- The intent-keyword pages — now **live at `concerto.run/learn/...`** (see
+  [`SEO_PAGES_LIVE.md`](./SEO_PAGES_LIVE.md)) — cross-link to
   `concerto.run/#pricing` as the final CTA.
 
 This audit confirms that endpoint is in good shape for those funnels — no
