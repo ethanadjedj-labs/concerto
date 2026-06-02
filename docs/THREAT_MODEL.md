@@ -1,6 +1,8 @@
 # Concerto Threat Model
 
-_Last updated: 2026-06-02. Reviewed against `backend/concerto/*.py` at commit `6e2265a`._
+_Last updated: 2026-06-02 (Phase-3 round 2 — F-07, F-08, F-10, F-11 now
+hardened). Reviewed against `backend/concerto/*.py` at commit `6e2265a` and
+the follow-up hardening commits._
 
 This document enumerates the real adversary-facing attack surface of the
 Concerto control plane (`api.concerto.run`) and per-buyer MCP proxy.  It is
@@ -246,6 +248,12 @@ ergonomic way to bookmark) but require the JSON `/api/admin/*` and
 That confines the leak risk to one HTML route and removes it from all
 API surfaces that may be scraped or proxied.
 
+**Status:** FIXED.  `_check_admin_auth` takes a new
+`allow_query_token` kwarg passed only by `/api/admin/nf-status/page`; the
+JSON `nf-status` endpoint dropped its `token` query parameter.
+`demand_router._check_auth` flat-out refuses `?token=` with 401.  Regression
+guards in `backend/tests/security/test_f07_ops_token_no_query_string.py`.
+
 ---
 
 ### F-08 ─ MEDIUM ─ Cancel-link HMAC secret falls back to a per-process random
@@ -267,6 +275,12 @@ falling back.  (The fix may be a code change; rotating an existing secret
 would be a SECURITY_BLOCKER item, but here the worst case is that we are
 already using a per-process random — switching to a stable but
 freshly-minted secret in env is purely additive.)
+
+**Status:** FIXED — module-import-time WARNING in
+`concerto.customer_portal` whenever `CONCERTO_CANCEL_LINK_SECRET` is
+absent, with a pointer to `docs/SECURITY_BLOCKER.md` item 2 for the
+rotation steps.  Regression guard in
+`backend/tests/security/test_f08_cancel_link_secret_fallback.py`.
 
 ---
 
@@ -314,6 +328,15 @@ unexpected event type would not be caught.
 return 200 immediately without claiming an idempotency row.  Defence in
 depth.
 
+**Status:** FIXED.  `_ALLOWED_EVENT_TYPES` (frozenset) in
+`stripe_webhook.py` gates the dispatcher; unknown event types return
+`{"ignored": True, "reason": "unhandled event type"}` *before*
+`_claim_event` so the dedupe table stays bounded.  A second test asserts
+the allow-list is exhaustive with the dispatcher (so a new
+`elif event_type == "..."` block can't be added without updating the
+allow-list).  Regression guards in
+`backend/tests/security/test_f10_webhook_event_allowlist.py`.
+
 ---
 
 ### F-11 ─ LOW ─ Cancel-by-email rate-limits per L4 client IP behind Cloudflare
@@ -327,6 +350,11 @@ limit useless, or one noisy CF IP DoSes legitimate users.
 
 **Fix:** Switch to `cf-connecting-ip` for keying (same pattern as F-04).
 Also tighten the limit window — 3 attempts/hour/IP/email-pair is enough.
+
+**Status:** FIXED — `customer_portal._client_ip()` prefers
+`cf-connecting-ip`, falls back to `request.client.host` only when CF is
+not in the path.  Regression guard in
+`backend/tests/security/test_f11_cancel_by_email_rate_limit_cf.py`.
 
 ---
 
@@ -370,5 +398,12 @@ this token.  Not fixed in this pass.
 Phase 2 in this same change adds failing security tests under
 `backend/tests/security/` that demonstrate F-01, F-02, F-03, F-04, F-05,
 F-06, and F-09 against the live code.  Phase 3 patches each finding and
-makes the tests pass.  See the `SECURITY_HARDENING_2026-06-02` block
-in `MEMORY.md` / git history.
+makes the tests pass.  Follow-up round (this commit): F-07, F-08, F-10,
+F-11 are now hardened the same way — failing test first, then fix.
+
+After this round, every finding above LOW severity is fixed.  Remaining
+items are F-12 (by-design and documented) and the Out-of-Scope-but-Noted
+notes — neither of which has an exploitable consequence today.
+
+See git log for `security: harden ...` commits, `MEMORY.md`, and the
+test files under `backend/tests/security/`.

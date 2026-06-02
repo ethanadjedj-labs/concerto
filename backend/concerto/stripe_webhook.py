@@ -27,6 +27,21 @@ _PAST_DUE_SUSPEND_DAYS = 7
 # Plans that Concerto hosts (subscription-based)
 _HOSTED_PLANS = {"solo", "pro"}
 
+# F-10: allow-list of Stripe event types we actually dispatch.  Any other
+# (signed but unhandled) event type returns 200 immediately WITHOUT a
+# stripe_processed_events row — Stripe does not retry 2xx responses and we
+# do not need to dedupe events we never act on.  Keep this in sync with the
+# `event_type == "..."` branches in `_dispatch_event`; the F-10 regression
+# test asserts every dispatched type is present here.
+_ALLOWED_EVENT_TYPES: frozenset[str] = frozenset({
+    "checkout.session.completed",
+    "invoice.payment_failed",
+    "invoice.paid",
+    "customer.subscription.deleted",
+    "customer.subscription.created",
+    "charge.dispute.created",
+})
+
 stripe.api_key = _STRIPE_SECRET
 
 
@@ -560,6 +575,13 @@ async def stripe_webhook(request: Request):
 
     event_id = event["id"]
     event_type = event["type"]
+
+    # F-10: drop unhandled-but-signed event types BEFORE we claim a dedupe row.
+    # We confirm receipt to Stripe (2xx so it does not retry) but never touch
+    # the DB, avoiding unbounded growth of stripe_processed_events with rows
+    # for events no handler acts on.
+    if event_type not in _ALLOWED_EVENT_TYPES:
+        return {"ignored": True, "reason": "unhandled event type", "event_type": event_type}
 
     # Commit-after-success idempotency: claim the event, run side effects, and
     # mark it done ONLY once they commit. On failure we release the claim and

@@ -55,13 +55,27 @@ router = APIRouter()
 _OPS_TOKEN = os.getenv("CONCERTO_OPS_TOKEN", "")
 
 
-def _check_admin_auth(request: Request, query_token: str = "") -> None:
+def _check_admin_auth(
+    request: Request, query_token: str = "", *, allow_query_token: bool = False
+) -> None:
     if not _OPS_TOKEN:
         raise HTTPException(
             status_code=503,
             detail="CONCERTO_OPS_TOKEN not configured — set this env var to enable the admin dashboard",
         )
-    candidate = query_token
+    # F-07: the JSON API rejects ?token= even when correct — tokens in the
+    # query string leak into access logs, browser history, Referer headers,
+    # and CDN logs.  Only the HTML dashboard route passes allow_query_token
+    # (so admins can bookmark it; the page strips the param from `location`).
+    if query_token and not allow_query_token:
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Unauthorized — JSON endpoints require Authorization: Bearer "
+                "header.  ?token= is only accepted on /api/admin/nf-status/page."
+            ),
+        )
+    candidate = query_token if allow_query_token else ""
     if not candidate:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
@@ -70,7 +84,7 @@ def _check_admin_auth(request: Request, query_token: str = "") -> None:
     # byte via response-timing.
     import hmac as _hmac
     if not candidate or not _hmac.compare_digest(candidate, _OPS_TOKEN):
-        raise HTTPException(status_code=401, detail="Unauthorized — supply CONCERTO_OPS_TOKEN as Bearer token or ?token= param")
+        raise HTTPException(status_code=401, detail="Unauthorized — supply CONCERTO_OPS_TOKEN as Bearer token")
 
 
 # ── NF API config ─────────────────────────────────────────────────────────────
@@ -218,8 +232,9 @@ def compute_volume_cost_today(size_mb: int, now: datetime) -> float:
 # ── Main endpoint ─────────────────────────────────────────────────────────────
 
 @router.get("/api/admin/nf-status")
-async def nf_status(request: Request, token: str = ""):
-    _check_admin_auth(request, token)
+async def nf_status(request: Request):
+    # F-07: bearer-only — no query-string token on JSON endpoints.
+    _check_admin_auth(request)
 
     now = datetime.now(timezone.utc)
 
@@ -525,8 +540,10 @@ setInterval(load, 30000);
 
 @router.get("/api/admin/nf-status/page", response_class=HTMLResponse)
 async def nf_status_page(request: Request, token: str = ""):
-    # Token accepted via query param OR bearer header (JS then uses sessionStorage)
-    # If neither provided, page still loads and prompts via JS login form
+    # Token accepted via query param OR bearer header (JS then uses sessionStorage).
+    # If neither provided, page still loads and prompts via JS login form.
+    # F-07: only this HTML route is allowed to accept ?token= — the JSON
+    # endpoint refuses it so tokens never enter access logs / Referer headers.
     if token or request.headers.get("Authorization", ""):
-        _check_admin_auth(request, token)
+        _check_admin_auth(request, token, allow_query_token=True)
     return HTMLResponse(content=_HTML)

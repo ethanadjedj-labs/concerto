@@ -58,17 +58,25 @@ def _check_auth(request: Request, query_token: str = "") -> None:
             status_code=503,
             detail="CONCERTO_OPS_TOKEN not configured — set this env var to enable the demand API",
         )
-    candidate = query_token
-    if not candidate:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            candidate = auth_header[7:]
+    # F-07: refuse ?token= on JSON endpoints — tokens in the query string leak
+    # into access logs, browser history, Referer, and CDN logs.  Demand API is
+    # JSON-only (no HTML), so there is no ergonomic exception.
+    if query_token:
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Unauthorized — /api/demand/* requires Authorization: Bearer "
+                "header.  ?token= is not accepted (would leak into access logs)."
+            ),
+        )
+    auth_header = request.headers.get("Authorization", "")
+    candidate = auth_header[7:] if auth_header.startswith("Bearer ") else ""
     # F-06: constant-time comparison so timing does not leak the token.
     import hmac as _hmac
     if not candidate or not _hmac.compare_digest(candidate, _OPS_TOKEN):
         raise HTTPException(
             status_code=401,
-            detail="Unauthorized — supply CONCERTO_OPS_TOKEN as Bearer token or ?token= param",
+            detail="Unauthorized — supply CONCERTO_OPS_TOKEN as Bearer token",
         )
 
 
