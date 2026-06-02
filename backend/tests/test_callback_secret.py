@@ -62,10 +62,15 @@ def test_018_is_idempotent():
 # ── HMAC logic unit tests (extracted from provision_router pattern) ───────────
 
 def _verify(stored_callback: str | None, stored_ttyd: str | None, incoming: str) -> bool:
-    """Mirrors the updated droplet_ready verification logic."""
+    """Mirrors the updated droplet_ready verification logic.
+
+    F-02 hardening: when neither secret is set, FAIL CLOSED (return False).
+    Previously this returned True ("graceful skip") which let an attacker
+    pin mcp_url during the install window — see docs/THREAT_MODEL.md F-02.
+    """
     stored_secret = stored_callback or stored_ttyd or ""
     if not stored_secret:
-        return True  # graceful skip — same as before
+        return False  # fail-closed (was True before F-02 hardening)
     return hmac.compare_digest(stored_secret, incoming)
 
 
@@ -86,13 +91,14 @@ def test_legacy_ttyd_password_rejected_on_mismatch():
     assert _verify(None, "oldpass", "badpass") is False
 
 
-def test_both_null_skips_check():
-    """Neither field set — accept unconditionally (race at very start of install)."""
-    assert _verify(None, None, "anything") is True
+def test_both_null_fails_closed():
+    """Neither field set — REJECT (F-02 hardening; was accept-all before)."""
+    assert _verify(None, None, "anything") is False
 
 
-def test_empty_string_treated_as_null():
-    assert _verify("", "", "anything") is True
+def test_empty_string_fails_closed():
+    """Empty strings are equivalent to None and must also fail-closed."""
+    assert _verify("", "", "anything") is False
 
 
 def test_callback_secret_takes_precedence_over_ttyd():

@@ -172,8 +172,14 @@ async def trial_start(req: TrialStartRequest, request: Request):
     if not _EMAIL_RE.match(email):
         raise HTTPException(status_code=422, detail="invalid_email")
 
-    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() \
-        or request.client.host if request.client else "unknown"
+    # F-04: client-supplied X-Forwarded-For is trivially spoofable, so we
+    # never trust it.  Cloudflare overwrites cf-connecting-ip with the real
+    # peer; if that header is absent (local dev, direct hit) we fall back
+    # to the L4 peer.  Either source is unforgeable by the HTTP client.
+    client_ip = (
+        request.headers.get("cf-connecting-ip", "").strip()
+        or (request.client.host if request.client else "unknown")
+    )
 
     # Rate limiting (operator allowlist bypasses both checks)
     if not _OPERATOR_EMAIL_RE.match(email):
@@ -211,19 +217,16 @@ async def trial_start(req: TrialStartRequest, request: Request):
 
 @router.get("/api/trial/eligibility")
 async def trial_eligibility(email: str = "", ip: str = ""):
-    eligible = True
-    reason   = ""
+    """F-05 hardening: the response no longer encodes whether the supplied
+    email or IP has been used.  The only signal is `invalid_email` for
+    obvious format errors (the trial-start form already validates this
+    client-side; surfacing it here is helpful and leaks nothing).
 
+    All other queries return the same canonical "looks fine, try it" payload.
+    The real eligibility check still happens on POST /api/trial/start with
+    the unforgeable peer IP — see F-04.  Probing this endpoint cannot be
+    used to enumerate customers."""
     if email:
         if not _EMAIL_RE.match(email.strip()):
             return {"eligible": False, "reason": "invalid_email"}
-        if await _email_already_trialed(email.strip()):
-            eligible = False
-            reason   = "email_used"
-
-    if eligible and ip:
-        if await _ip_trialed_recently(ip):
-            eligible = False
-            reason   = "ip_rate_limited"
-
-    return {"eligible": eligible, "reason": reason}
+    return {"eligible": True, "reason": ""}

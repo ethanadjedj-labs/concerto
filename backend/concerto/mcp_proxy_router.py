@@ -48,6 +48,50 @@ _HOP_BY_HOP = frozenset([
     "host", "content-length",
 ])
 
+
+# F-03: defence-in-depth path validation.  Reject anything that:
+#   * contains "..", "//" (double-slash anywhere — keeps the upstream URL
+#     unambiguous), NUL bytes, CR/LF, or non-printable chars;
+#   * URL-decodes into the same set;
+#   * looks like a scheme prefix (http:, https:, file:, …) so an attacker
+#     cannot try to coerce the forwarder into hitting another host.
+# Returns (target_url, error_message). One is None.
+def _safe_target_url(vps_ip: str, path: str) -> tuple[str | None, str | None]:
+    import urllib.parse as _up
+
+    # Reject pre-decoded literal traversal first.
+    raw = path or ""
+    if "\x00" in raw or "\r" in raw or "\n" in raw:
+        return None, "control_char_in_path"
+
+    # Decode once and re-check (FastAPI's {path:path} already URL-decodes,
+    # but we re-quote and recompare to catch double-encoding tricks).
+    try:
+        decoded = _up.unquote(raw)
+    except Exception:
+        return None, "undecodable_path"
+
+    forbidden_substrings = ("..", "//", "\x00", "\r", "\n")
+    for needle in forbidden_substrings:
+        if needle in raw or needle in decoded:
+            return None, f"forbidden_substring:{needle!r}"
+
+    # Reject scheme-shaped prefixes anywhere in the first segment.
+    low = decoded.lower().lstrip("/")
+    for scheme in ("http:", "https:", "ws:", "wss:", "file:", "ftp:", "gopher:"):
+        if low.startswith(scheme):
+            return None, f"scheme_prefix:{scheme}"
+
+    # The vps_ip we proxy to must be a known-shape https URL.  We do not
+    # validate the suffix here (the operator may move providers), but we
+    # require https + a host.
+    base = (vps_ip or "").rstrip("/")
+    parsed = _up.urlparse(base)
+    if parsed.scheme != "https" or not parsed.netloc:
+        return None, "bad_upstream_base"
+
+    return f"{base}/{raw}", None
+
 # ── Rate-limit (in-memory, per-buyer) ────────────────────────────────────────
 # Simple sliding-window counter.  Resets are best-effort (no cron); keys with
 # no recent activity are garbage-collected on next access.
@@ -130,8 +174,19 @@ async def mcp_proxy(buyer_token: str, path: str, request: Request):
                 },
             )
 
-    # ── 3. Forward request ───────────────────────────────────────────────────
-    internal_url = f"{vps_ip}/{path}"
+    # ── 3. Validate + build target URL (F-03 hardening) ──────────────────────
+    internal_url, err = _safe_target_url(vps_ip, path)
+    if err is not None:
+        logger.warning(
+            "Proxy rejecting unsafe path token=%.8s path=%r reason=%s",
+            buyer_token, path, err,
+        )
+        return JSONResponse(
+            status_code=400,
+            content={"error": "bad_path", "detail": err},
+        )
+
+    # ── 4. Forward request ───────────────────────────────────────────────────
     try:
         response = await _forward(request, internal_url)
     except httpx.ConnectError as exc:

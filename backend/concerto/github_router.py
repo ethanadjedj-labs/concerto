@@ -14,9 +14,11 @@ Environment variables (all optional — feature disabled gracefully if absent):
   CONCERTO_FRONTEND_URL     Frontend base URL for post-auth redirect (default: https://concerto.run)
 """
 import base64
+import hashlib
 import hmac
 import logging
 import os
+import secrets
 import time
 
 import httpx
@@ -58,6 +60,76 @@ _FRONTEND_URL = os.getenv("CONCERTO_FRONTEND_URL", "https://concerto.run")
 # A GitHub OAuth App registers exactly ONE callback URL, so it cannot carry
 # the per-buyer {token}; the token travels in the OAuth `state` param.
 _STATIC_REDIRECT_URI = f"{_API_BASE}/api/github/callback"
+
+# ── F-01 hardening: signed-state envelope for GitHub OAuth ────────────────────
+#
+# The `state` parameter must be opaque AND verifiable so the callback can trust
+# the buyer token without re-deriving it from anything the attacker controls.
+#
+# Format:  base64url(nonce || expires_be8 || token_utf8) || "." || hex(hmac)
+#
+# Verified before the GitHub-code exchange runs.  No DB row is needed because
+# the HMAC is keyed by a server-side secret (env CONCERTO_GH_STATE_SECRET,
+# auto-minted at boot if unset — see the cold-start warning logged below).
+_GH_STATE_TTL_S = 600  # 10 minutes; consent + redirect always fits
+_GH_STATE_SECRET = os.getenv("CONCERTO_GH_STATE_SECRET")
+if not _GH_STATE_SECRET:
+    _GH_STATE_SECRET = secrets.token_hex(32)
+    if _GITHUB_CLIENT_ID and _GITHUB_CLIENT_SECRET:
+        logger.warning(
+            "CONCERTO_GH_STATE_SECRET is not set; using per-process random. "
+            "Outstanding GitHub OAuth flows will break on restart. "
+            "Set CONCERTO_GH_STATE_SECRET in the backend env to stabilise."
+        )
+
+
+def _sign_state(token: str, now: int | None = None) -> str:
+    """Return an opaque, signed, time-bound state string carrying `token`."""
+    now = int(time.time()) if now is None else int(now)
+    expires = now + _GH_STATE_TTL_S
+    nonce = secrets.token_bytes(8)
+    payload = nonce + expires.to_bytes(8, "big") + token.encode("utf-8")
+    body = base64.urlsafe_b64encode(payload).rstrip(b"=").decode("ascii")
+    sig = hmac.new(
+        _GH_STATE_SECRET.encode("ascii"), body.encode("ascii"), hashlib.sha256
+    ).hexdigest()
+    return f"{body}.{sig}"
+
+
+def _verify_state(state: str) -> str | None:
+    """Return the embedded buyer token if `state` is fresh and authentic.
+
+    Returns None on any failure (bad shape, bad signature, expired, etc.).
+    Never raises.
+    """
+    if not state or "." not in state:
+        return None
+    body, _, sig = state.rpartition(".")
+    if not body or not sig:
+        return None
+    expected = hmac.new(
+        _GH_STATE_SECRET.encode("ascii"), body.encode("ascii"), hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(expected, sig):
+        return None
+    # Base64-decode and unpack.
+    pad = "=" * (-len(body) % 4)
+    try:
+        payload = base64.urlsafe_b64decode(body + pad)
+    except (ValueError, TypeError):
+        return None
+    if len(payload) < 8 + 8 + 1:
+        return None
+    expires = int.from_bytes(payload[8:16], "big")
+    if int(time.time()) > expires:
+        return None
+    try:
+        token = payload[16:].decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not token:
+        return None
+    return token
 
 
 def _github_configured() -> bool:
@@ -104,11 +176,13 @@ async def github_connect(token: str):
         return _dash(token, "error")
 
     redirect_uri = _STATIC_REDIRECT_URI
+    # F-01: state must be opaque + verifiable, NOT the raw buyer token.
+    state = _sign_state(token)
     auth_url = (
         "https://github.com/login/oauth/authorize"
         f"?client_id={_GITHUB_CLIENT_ID}"
         f"&redirect_uri={redirect_uri}"
-        f"&state={token}"
+        f"&state={state}"
         # `repo` (full) scope is required: we create a private `concerto` repo
         # for the user on first connect, and MCP tools read/write private repos.
         "&scope=repo"
@@ -387,14 +461,25 @@ async def _exchange_and_store(token: str, code: str) -> str:
 
 @router.get("/api/github/callback")
 async def github_callback_static(request: Request):
-    """The one registered GitHub callback. Buyer token comes from `state`."""
+    """The one registered GitHub callback. Buyer token is recovered from the
+    signed `state` envelope (F-01 hardening — was previously the raw token,
+    which let an OAuth-CSRF attacker steal the victim's GitHub access token
+    onto the attacker's buyer row)."""
     query = dict(request.query_params)
     code = query.get("code", "")
-    token = query.get("state", "")  # state == buyer token (set in /connect)
+    state = query.get("state", "")
 
-    if not token:
-        # Nothing we can do without a token; close the popup quietly.
+    if not state:
         return _popup_close("", "error")
+
+    token = _verify_state(state)
+    if not token:
+        # Unsigned/expired/forged state: refuse to look up a buyer or
+        # exchange the code, because we have no proof this callback
+        # belongs to a flow we started.
+        logger.warning("GitHub callback rejected: bad/expired state")
+        return _popup_close("", "error")
+
     if not _github_configured():
         return _popup_close(token, "unavailable")
 
@@ -412,13 +497,25 @@ async def github_callback_static(request: Request):
 @router.get("/api/buyer/{token}/github/callback")
 async def github_callback_legacy(token: str, request: Request):
     """Back-compat: old per-buyer callback path. Same logic, token from path.
-    Kept so any in-flight links still work; new flows use the static one."""
+
+    F-01 hardening: even on the legacy path, `state` must be a signed
+    envelope (the new /connect emits signed state for both paths).  We
+    additionally require the recovered token to match the path's token,
+    so a leaked signed-state for buyer A cannot be redirected through
+    buyer B's URL.
+    """
     if not _github_configured():
         return _popup_close(token, "unavailable")
     query = dict(request.query_params)
     code = query.get("code", "")
     state = query.get("state", "")
-    if state != token:
+    if not state:
+        return _popup_close(token, "error")
+    state_token = _verify_state(state)
+    if not state_token or state_token != token:
+        logger.warning(
+            "GitHub legacy callback rejected: state mismatch for token %.8s", token
+        )
         return _popup_close(token, "error")
     buyer = await db.get_buyer(token)
     if not buyer:

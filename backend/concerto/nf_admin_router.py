@@ -66,7 +66,10 @@ def _check_admin_auth(request: Request, query_token: str = "") -> None:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             candidate = auth_header[7:]
-    if not candidate or candidate != _OPS_TOKEN:
+    # F-06: constant-time comparison to avoid leaking the ops-token byte by
+    # byte via response-timing.
+    import hmac as _hmac
+    if not candidate or not _hmac.compare_digest(candidate, _OPS_TOKEN):
         raise HTTPException(status_code=401, detail="Unauthorized — supply CONCERTO_OPS_TOKEN as Bearer token or ?token= param")
 
 

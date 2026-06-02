@@ -56,16 +56,19 @@ def _mock_upstream():
     return client
 
 
+# NOTE: httpx (used by TestClient) collapses bare ".." segments client-side
+# before sending, so we send those as URL-encoded variants to actually
+# exercise the server-side rejection.  Real HTTP clients can absolutely
+# send the raw bytes; defence-in-depth on the server is what we need.
 @pytest.mark.parametrize("bad_path", [
-    "..",
-    "../etc/passwd",
     "..%2F..%2Fetc/passwd",
-    "mcp/../../../admin",
+    "..%2Fadmin",
+    "mcp%2F..%2F..%2Fadmin",
     "%00",
     "mcp%00admin",
-    "http://evil.example/x",
-    "https://evil.example/x",
-    "//evil.example/x",
+    "http:%2F%2Fevil.example/x",
+    "https:%2F%2Fevil.example/x",
+    "%2F%2Fevil.example/x",
 ])
 def test_f03_dangerous_path_rejected(bad_path):
     """All listed payloads must NOT be forwarded upstream."""

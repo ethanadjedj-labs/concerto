@@ -59,9 +59,36 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Concerto Backend", version="1.0.0", lifespan=lifespan)
 
 _CORS_ORIGINS = ["https://concerto.run", "https://www.concerto.run"]
+
+
+def _validate_extra_origin(o: str) -> str:
+    """F-09 hardening: refuse to start with a misconfigured CORS allowlist.
+
+    Because the API uses allow_credentials=True, ANY misconfigured origin
+    here punches a credentialed cross-origin hole through every /api/*
+    route.  We require: HTTPS (no plaintext, no scheme-less), a host
+    component, no wildcards, no path/trailing slash, no query/fragment.
+    """
+    o = o.strip()
+    if not o:
+        raise ValueError("empty origin")
+    if "*" in o:
+        raise ValueError(f"wildcard not allowed in CORS origin: {o!r}")
+    if not o.startswith("https://"):
+        raise ValueError(f"origin must be https://: {o!r}")
+    tail = o[len("https://"):]
+    if not tail or "/" in tail or "?" in tail or "#" in tail or " " in tail:
+        raise ValueError(
+            f"origin must be exactly scheme+host (no path or trailing /): {o!r}"
+        )
+    return o
+
+
 _extra = os.getenv("CONCERTO_EXTRA_ORIGINS", "")
 if _extra:
-    _CORS_ORIGINS.extend(o.strip() for o in _extra.split(",") if o.strip())
+    for raw in _extra.split(","):
+        if raw.strip():
+            _CORS_ORIGINS.append(_validate_extra_origin(raw))
 
 app.add_middleware(
     CORSMiddleware,

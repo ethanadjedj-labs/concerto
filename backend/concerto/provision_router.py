@@ -243,11 +243,19 @@ async def droplet_ready(payload: DropletReadyPayload, request: Request):
 
     # Verify X-Callback-Secret. Prefer the dedicated callback_secret field (new rows);
     # fall back to ttyd_password for legacy rows where callback_secret is NULL.
-    # Skip the check entirely when neither field is populated yet (race at the very
-    # start of install — same graceful behaviour as before).
+    # Fail CLOSED if neither is set: the legitimate provisioner always writes
+    # callback_secret BEFORE the droplet can reach this endpoint, so an absent
+    # secret means either a race the attacker is exploiting or a broken
+    # provisioning sequence. Either way we refuse to mutate the row.
+    # (F-02 hardening — was previously fail-open when stored_secret was empty.)
     stored_secret = buyer.get("callback_secret") or buyer.get("ttyd_password") or ""
     incoming_secret = request.headers.get("X-Callback-Secret", "")
-    if stored_secret and not hmac.compare_digest(stored_secret, incoming_secret):
+    if not stored_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Callback secret not yet provisioned — retry once install advances",
+        )
+    if not hmac.compare_digest(stored_secret, incoming_secret):
         raise HTTPException(status_code=403, detail="Invalid callback secret")
 
     current_status = buyer.get("status", "")
