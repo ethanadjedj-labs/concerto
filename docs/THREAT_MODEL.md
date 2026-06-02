@@ -1,8 +1,8 @@
 # Concerto Threat Model
 
-_Last updated: 2026-06-02 (Phase-3 round 2 — F-07, F-08, F-10, F-11 now
-hardened). Reviewed against `backend/concerto/*.py` at commit `6e2265a` and
-the follow-up hardening commits._
+_Last updated: 2026-06-02 (Phase-3 round 3 — F-13 added & hardened, F-09
+status note added). Reviewed against `backend/concerto/*.py` at commit
+`6e2265a` and the follow-up hardening commits._
 
 This document enumerates the real adversary-facing attack surface of the
 Concerto control plane (`api.concerto.run`) and per-buyer MCP proxy.  It is
@@ -309,6 +309,14 @@ route.
 wildcard, and refuse to start if any entry is malformed.  Bonus: keep
 `allow_methods` to the explicit set actually used.
 
+**Status:** FIXED.  `concerto.server._validate_extra_origin` refuses to
+boot with a malformed `CONCERTO_EXTRA_ORIGINS` entry — no wildcards, must
+be `https://`, no path/query/fragment.  Regression guard in
+`backend/tests/security/test_f09_cors_extra_origins.py`.  The
+`allow_methods=["*"]` and `allow_headers=["*"]` wildcards are kept (they
+only apply for the now-strictly-allowlisted origins, so the residual risk
+is contained).
+
 ---
 
 ### F-10 ─ LOW ─ Webhook accepts and DB-records arbitrary unknown event types
@@ -378,6 +386,49 @@ this token.  Not fixed in this pass.
 
 ---
 
+### F-13 ─ MEDIUM ─ MCP proxy rate-limit is per-token only → enumeration + cooperative DoS
+
+**Code:**
+  * `backend/concerto/mcp_proxy_router.py:95-123` (pre-fix `_rate_limit_check`)
+
+**Issue:**
+The original rate-limiter keyed only off `buyer_token`.  Two consequences:
+
+  1. **Token enumeration.**  An attacker can send N distinct unknown
+     `buyer_token` values from a single source IP and never trip the cap —
+     each token gets its own fresh bucket.  Every request still reaches
+     `db.get_buyer(...)`, so the attacker can probe for valid tokens
+     and/or burn DB CPU at line rate.
+  2. **Cooperative DoS via global GC clear.**  When `_rl_buckets` grows
+     past 10000 entries, the original code called `_rl_buckets.clear()`,
+     wiping every legitimate buyer's rate-limit state.  An attacker only
+     needs to push the dict over 10000 (which a token-fuzz storm does in
+     seconds) to reset the abuse counters for everyone else.
+
+**Exploit:**
+  1. Attacker hits `GET /mcp-proxy/<random-tok-i>/mcp` from one IP, varying
+     `i` over 11000 unique tokens.
+  2. The per-token cap never engages (each token has its own bucket).
+  3. `_rl_buckets` overflows, triggers `.clear()`, and every legitimate
+     buyer's per-token request history is wiped — they all get a fresh
+     60-req/min budget on the attacker's schedule.
+
+**Fix:**
+  * Add `_unknown_token_ip_check(client_ip)`: a per-IP sliding-window cap
+    of 20 unknown-token requests / minute.  Keyed off `cf-connecting-ip`
+    (with `request.client.host` fallback — same F-04/F-11 pattern).  This
+    counter is only consumed by requests whose `buyer_token` is unknown,
+    so a legitimate buyer never pays into it.
+  * Replace `_rl_buckets.clear()` with `_gc_rl_buckets()`, which evicts
+    the oldest-by-activity half of the entries.  Attacker's stale fuzz
+    tokens are dropped first; legit buyers' state survives.
+
+**Status:** FIXED.  See `concerto.mcp_proxy_router._unknown_token_ip_check`
+and `concerto.mcp_proxy_router._gc_rl_buckets`.  Regression guards in
+`backend/tests/security/test_f13_proxy_per_ip_rate_limit.py`.
+
+---
+
 ## Out-of-Scope-but-Noted
 
   * **No bug-bounty program.**  `security@concerto.run` is the disclosure
@@ -396,14 +447,15 @@ this token.  Not fixed in this pass.
 ## What we are doing about it
 
 Phase 2 in this same change adds failing security tests under
-`backend/tests/security/` that demonstrate F-01, F-02, F-03, F-04, F-05,
-F-06, and F-09 against the live code.  Phase 3 patches each finding and
-makes the tests pass.  Follow-up round (this commit): F-07, F-08, F-10,
-F-11 are now hardened the same way — failing test first, then fix.
+`backend/tests/security/` that demonstrate F-01..F-06 and F-09 against
+the live code.  Phase 3 patches each finding and makes the tests pass.
+Follow-up rounds: F-07, F-08, F-10, F-11 hardened (round 2);
+F-13 (proxy enumeration + GC-clear DoS) added and hardened (round 3).
 
-After this round, every finding above LOW severity is fixed.  Remaining
-items are F-12 (by-design and documented) and the Out-of-Scope-but-Noted
-notes — neither of which has an exploitable consequence today.
+After this round, every finding above LOW severity is fixed AND covered
+by a regression test.  Remaining items are F-12 (by-design and
+documented) and the Out-of-Scope-but-Noted notes — neither of which has
+an exploitable consequence today.
 
 See git log for `security: harden ...` commits, `MEMORY.md`, and the
 test files under `backend/tests/security/`.

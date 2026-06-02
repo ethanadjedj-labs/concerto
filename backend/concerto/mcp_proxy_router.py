@@ -92,12 +92,44 @@ def _safe_target_url(vps_ip: str, path: str) -> tuple[str | None, str | None]:
 
     return f"{base}/{raw}", None
 
-# ── Rate-limit (in-memory, per-buyer) ────────────────────────────────────────
-# Simple sliding-window counter.  Resets are best-effort (no cron); keys with
-# no recent activity are garbage-collected on next access.
+# ── Rate-limit (in-memory) ────────────────────────────────────────────────────
+# Two sliding-window counters keyed by buyer_token AND by client IP.  The
+# per-token cap protects buyers from one another; the per-IP-on-unknown
+# cap stops a single attacker IP from cheaply enumerating buyer tokens or
+# flooding `_rl_buckets` to force a global GC clear (F-13).
 _RL_WINDOW_S = 60          # window length
 _RL_MAX_PER_WINDOW = 60    # max requests per buyer per window (1/s avg, bursty)
+_RL_BUCKETS_CAP = 10000    # entries before GC kicks in
+
+# Per-IP cap that ONLY counts requests targeting unknown tokens.  A real
+# buyer hits a single (known) token from their browser, so they never
+# touch this counter.  An attacker fuzzing tokens trips it fast.
+_RL_UNKNOWN_WINDOW_S = 60
+_RL_UNKNOWN_MAX_PER_IP = 20
+
 _rl_buckets: dict[str, list[float]] = {}
+_rl_unknown_per_ip: dict[str, list[float]] = {}
+
+
+def _gc_rl_buckets() -> None:
+    """LRU-style eviction for `_rl_buckets`.
+
+    Pre-F-13 this method was `_rl_buckets.clear()`, which let an attacker
+    fill the dict with throwaway tokens and force a wipe of every
+    legitimate buyer's rate-limit state.  Now we keep the most-recently-
+    active half of the entries — the attacker's stale tokens get dropped
+    while legitimate buyers' history survives.
+    """
+    if len(_rl_buckets) <= _RL_BUCKETS_CAP:
+        return
+    # Sort by most-recent activity ascending.  Drop the older half.
+    items = sorted(
+        _rl_buckets.items(),
+        key=lambda kv: (kv[1][-1] if kv[1] else 0.0),
+    )
+    drop_n = len(items) // 2
+    for tok, _ in items[:drop_n]:
+        _rl_buckets.pop(tok, None)
 
 
 def _rate_limit_check(buyer_token: str) -> bool:
@@ -117,10 +149,48 @@ def _rate_limit_check(buyer_token: str) -> bool:
         return False
     bucket.append(now)
     _rl_buckets[buyer_token] = bucket
-    # Garbage-collect: if the dict grows huge, drop oldest unused keys
-    if len(_rl_buckets) > 10000:
-        _rl_buckets.clear()  # cheap reset; better than slow scan
+    # GC when full — drops the oldest-by-activity half so legitimate
+    # buyers' state survives an attacker-driven fuzz storm (F-13).
+    _gc_rl_buckets()
     return True
+
+
+def _unknown_token_ip_check(client_ip: str) -> bool:
+    """F-13: per-IP cap on requests that target UNKNOWN buyer tokens.
+
+    Returns True if the request is still under the cap.  Tracked
+    separately from `_rl_buckets` so a legitimate buyer hitting their
+    own token from many IPs (e.g. mobile) does not consume budget here.
+    """
+    import time as _t
+    now = _t.monotonic()
+    cutoff = now - _RL_UNKNOWN_WINDOW_S
+    bucket = _rl_unknown_per_ip.get(client_ip, [])
+    bucket = [t for t in bucket if t > cutoff]
+    if len(bucket) >= _RL_UNKNOWN_MAX_PER_IP:
+        _rl_unknown_per_ip[client_ip] = bucket
+        return False
+    bucket.append(now)
+    _rl_unknown_per_ip[client_ip] = bucket
+    # Cap the per-IP map too; same LRU trick.
+    if len(_rl_unknown_per_ip) > _RL_BUCKETS_CAP:
+        items = sorted(
+            _rl_unknown_per_ip.items(),
+            key=lambda kv: (kv[1][-1] if kv[1] else 0.0),
+        )
+        for ip, _ in items[: len(items) // 2]:
+            _rl_unknown_per_ip.pop(ip, None)
+    return True
+
+
+def _client_ip(request: Request) -> str:
+    """F-04/F-11 pattern: prefer cf-connecting-ip (CF-set, unforgeable from
+    the buyer), fall back to the L4 peer.  Never trust X-Forwarded-For —
+    that header is attacker-supplied."""
+    cf = request.headers.get("cf-connecting-ip", "").strip()
+    if cf:
+        return cf
+    return request.client.host if request.client else "unknown"
 
 
 @router.api_route(
@@ -141,6 +211,16 @@ async def mcp_proxy(buyer_token: str, path: str, request: Request):
     # ── 2. Resolve buyer ──────────────────────────────────────────────────────
     buyer = await db.get_buyer(buyer_token)
     if not buyer:
+        # F-13: cap unknown-token probes per source IP so an attacker cannot
+        # cheaply enumerate or DB-flood by trying many random tokens.
+        # Done AFTER the DB lookup so legit buyers (who always resolve) never
+        # pay this cost, but BEFORE we 404 so the attacker actually hits 429.
+        if not _unknown_token_ip_check(_client_ip(request)):
+            return JSONResponse(
+                status_code=429,
+                content={"error": "rate_limited", "detail": "Too many requests"},
+                headers={"Retry-After": "60"},
+            )
         return JSONResponse(
             status_code=404,
             content={"error": "not_found"},
