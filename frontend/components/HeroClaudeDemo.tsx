@@ -1,50 +1,45 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
+import { Check, ExternalLink, RefreshCw, Github } from "lucide-react"
 import {
-  Menu,
-  ChevronDown,
-  ChevronRight,
-  Check,
-  Search,
-  MessageSquare,
-  BookOpen,
-  Briefcase,
-  Code2,
-  Star,
-  Clock,
-} from "lucide-react"
-import { DEMO_TEXTS, DEMO_TIMINGS, CURSOR_WAYPOINTS, type CursorWaypoint } from "./hero-claude-demo-script"
+  DEMO_TEXTS,
+  DEMO_TIMINGS,
+  CURSOR_WAYPOINTS,
+  type CursorWaypoint,
+} from "./hero-claude-demo-script"
 
 /* ── Types ────────────────────────────────────────────────────── */
 
-type ChipState = "hidden" | "active" | "complete"
+type Step = 1 | 2 | 3
+
+type SignInPhase =
+  | "idle"          // primary "Sign in with Claude" button
+  | "starting"      // button shows "Preparing sign-in…"
+  | "awaiting_code" // open-Anthropic link + paste field, empty
+  | "code_typed"    // paste field filled, ready to submit
+  | "finishing"     // submit clicked, spinner running
+  | "success"       // green confirmation visible
 
 interface DemoState {
-  userVisible: boolean
-  prose1Chars: number
-  chip1: ChipState
-  chip2: ChipState
-  prose2Chars: number
-  chip3: ChipState
-  prose3Chars: number
+  step: Step
+  signIn: SignInPhase
+  codeChars: number          // how many characters of the pasted code are visible
+  connectPhase: "ready" | "waiting"
   fading: boolean
 }
 
 interface CursorState {
-  x: number      // px from left of container
-  y: number      // px from top of container
+  x: number
+  y: number
   clicking: boolean
 }
 
 const INITIAL: DemoState = {
-  userVisible: false,
-  prose1Chars: 0,
-  chip1: "hidden",
-  chip2: "hidden",
-  prose2Chars: 0,
-  chip3: "hidden",
-  prose3Chars: 0,
+  step: 1,
+  signIn: "idle",
+  codeChars: 0,
+  connectPhase: "ready",
   fading: false,
 }
 
@@ -62,34 +57,18 @@ function usePrefersReducedMotion(): boolean {
   return r
 }
 
-/* ── CSS keyframes ─────────────────────────────────────────────── */
+/* ── CSS keyframes (reused across the component) ────────────────── */
 
 const CSS_KEYFRAMES = `
-  @keyframes cc-spin {
-    0%   { opacity: 1 }
-    100% { opacity: 0.12 }
-  }
-  @keyframes cc-chip-pulse {
-    0%,100% {
-      box-shadow: 0 0 0 1px rgba(204,120,92,0.14),
-                  0 0  8px rgba(204,120,92,0.07);
-    }
-    50% {
-      box-shadow: 0 0 0 1px rgba(204,120,92,0.32),
-                  0 0 18px rgba(204,120,92,0.15);
-    }
+  @keyframes cc-fade-in {
+    from { opacity: 0 } to { opacity: 1 }
   }
   @keyframes cc-fade-up {
-    from { opacity: 0; transform: translateY(5px) }
+    from { opacity: 0; transform: translateY(6px) }
     to   { opacity: 1; transform: translateY(0)   }
   }
-  @keyframes cc-fade-in {
-    from { opacity: 0 }
-    to   { opacity: 1 }
-  }
   @keyframes cc-blink {
-    0%,100% { opacity: 1 }
-    50%     { opacity: 0 }
+    0%,100% { opacity: 1 } 50% { opacity: 0 }
   }
   @keyframes cc-cursor-click {
     0%   { transform: scale(1)    }
@@ -97,16 +76,15 @@ const CSS_KEYFRAMES = `
     100% { transform: scale(1)    }
   }
   @keyframes cc-ripple {
-    0%   { transform: scale(0); opacity: 0.45 }
-    100% { transform: scale(2.8); opacity: 0  }
+    0%   { transform: scale(0);   opacity: 0.45 }
+    100% { transform: scale(2.8); opacity: 0    }
   }
-  @keyframes cc-thinking-dot {
-    0%, 60%, 100% { opacity: 0.18; transform: scale(0.85) }
-    30%           { opacity: 1;    transform: scale(1)    }
+  @keyframes cc-spin {
+    to { transform: rotate(360deg) }
   }
 `
 
-/* ── Animated mouse cursor ─────────────────────────────────────── */
+/* ── Animated mouse cursor (macOS arrow) ───────────────────────── */
 
 function MouseCursor({ x, y, clicking }: CursorState) {
   return (
@@ -119,12 +97,11 @@ function MouseCursor({ x, y, clicking }: CursorState) {
         pointerEvents: "none",
         zIndex: 100,
         transform: "translate(-2px, -2px)",
-        // Smooth movement with realistic ease — no linear snapping
-        transition: "left 0.38s cubic-bezier(0.25,0.46,0.45,0.94), top 0.38s cubic-bezier(0.25,0.46,0.45,0.94)",
+        transition:
+          "left 0.40s cubic-bezier(0.25,0.46,0.45,0.94), top 0.40s cubic-bezier(0.25,0.46,0.45,0.94)",
         willChange: "left, top",
       }}
     >
-      {/* Click ripple */}
       {clicking && (
         <div
           style={{
@@ -134,35 +111,33 @@ function MouseCursor({ x, y, clicking }: CursorState) {
             width: 16,
             height: 16,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.22)",
+            background: "rgba(204,120,92,0.32)",
             animation: "cc-ripple 0.42s cubic-bezier(0.22,1,0.36,1) both",
           }}
         />
       )}
-      {/* macOS arrow cursor SVG */}
       <svg
         width="20"
         height="22"
         viewBox="0 0 20 22"
         fill="none"
         style={{
-          filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 1px rgba(0,0,0,0.8))",
+          filter:
+            "drop-shadow(0 1px 2px rgba(25,25,25,0.35)) drop-shadow(0 0 1px rgba(25,25,25,0.6))",
           animation: clicking ? "cc-cursor-click 0.22s ease both" : "none",
         }}
       >
-        {/* Outer black stroke */}
         <path
           d="M3 1L3 17.5L6.8 13.8L9.6 19.6L11.8 18.6L9.1 12.8L14 12.8L3 1Z"
-          fill="#111"
-          stroke="#111"
+          fill="#191919"
+          stroke="#191919"
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-        {/* White fill */}
         <path
           d="M3 1L3 17.5L6.8 13.8L9.6 19.6L11.8 18.6L9.1 12.8L14 12.8L3 1Z"
-          fill="white"
+          fill="#ffffff"
           strokeWidth="0"
         />
       </svg>
@@ -170,625 +145,7 @@ function MouseCursor({ x, y, clicking }: CursorState) {
   )
 }
 
-/* ── Claude avatar ─────────────────────────────────────────────── */
-
-function ClaudeAvatar() {
-  return (
-    <div
-      style={{
-        width: 24,
-        height: 24,
-        borderRadius: "50%",
-        background: "linear-gradient(135deg, #cc785c 0%, #b8604a 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        marginTop: 1,
-      }}
-    >
-      {/* Anthropic logo-ish shape: simplified A */}
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path
-          d="M6 2L9.5 9.5H8L6.8 7H5.2L4 9.5H2.5L6 2ZM6 4.2L5.6 6H6.4L6 4.2Z"
-          fill="white"
-          fillRule="evenodd"
-        />
-      </svg>
-    </div>
-  )
-}
-
-/* ── Spinner matching real Claude tool call spinner ─────────────── */
-
-function ToolSpinner() {
-  const dots = Array.from({ length: 8 }, (_, i) => {
-    const angle = (i / 8) * 2 * Math.PI - Math.PI / 2
-    const delay = `${(i / 8) * 0.9}s`
-    return { x: 8 + 5.5 * Math.cos(angle), y: 8 + 5.5 * Math.sin(angle), delay }
-  })
-  return (
-    <div style={{ position: "relative", width: 16, height: 16, flexShrink: 0 }}>
-      {dots.map((d, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: d.x - 1.2,
-            top:  d.y - 1.2,
-            width: 2.4,
-            height: 2.4,
-            borderRadius: "50%",
-            background: "#cc785c",
-            animation: `cc-spin 0.9s linear ${d.delay} infinite`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-/* ── Tool call chip — real Claude collapsible block style ────────── */
-
-function ToolChip({ label, state }: { label: string; state: ChipState }) {
-  if (state === "hidden") return null
-  const isActive = state === "active"
-
-  return (
-    <div
-      style={{
-        animation: "cc-fade-up 0.22s cubic-bezier(0.22,1,0.36,1) both",
-        marginLeft: 32, // indent under avatar
-      }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 7,
-          padding: "4px 10px 4px 8px",
-          background: isActive ? "rgba(204,120,92,0.07)" : "rgba(255,255,255,0.03)",
-          border: `1px solid ${isActive ? "rgba(204,120,92,0.22)" : "rgba(255,255,255,0.08)"}`,
-          borderRadius: 6,
-          cursor: "default",
-          maxWidth: "100%",
-          transition: "background 0.35s ease, border-color 0.35s ease",
-          animation: isActive ? "cc-chip-pulse 2.8s ease-in-out infinite" : "none",
-        }}
-      >
-        {isActive ? <ToolSpinner /> : (
-          <div
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              background: "rgba(204,120,92,0.15)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              animation: "cc-fade-in 0.18s ease both",
-            }}
-          >
-            <Check size={9} color="#cc785c" strokeWidth={2.5} />
-          </div>
-        )}
-
-        <span
-          style={{
-            fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
-            fontSize: 11.5,
-            color: isActive ? "#d4a088" : "#8a8275",
-            letterSpacing: "0.01em",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            maxWidth: 260,
-          }}
-        >
-          {label}
-        </span>
-
-        <ChevronRight
-          size={11}
-          color="#524d44"
-          strokeWidth={1.8}
-          style={{ flexShrink: 0, marginLeft: 2 }}
-        />
-      </div>
-    </div>
-  )
-}
-
-/* ── Thinking dots (shown briefly before prose 1 starts) ─────────── */
-
-function ThinkingDots({ visible }: { visible: boolean }) {
-  if (!visible) return null
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        marginLeft: 32,
-        paddingTop: 2,
-        animation: "cc-fade-in 0.2s ease both",
-      }}
-    >
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "#524d44",
-            animation: `cc-thinking-dot 1.2s ease-in-out ${i * 0.18}s infinite`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-/* ── Assistant prose — no fake glow, correct real Claude styling ──── */
-
-function AssistantProse({ chars, text }: { chars: number; text: string }) {
-  if (chars === 0) return null
-  const displayed = text.slice(0, chars)
-  const streaming = chars < text.length
-
-  return (
-    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-      <ClaudeAvatar />
-      <div
-        style={{
-          fontSize: 13.5,
-          lineHeight: 1.65,
-          color: "#ece8e1",
-          letterSpacing: "-0.003em",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          animation: "cc-fade-in 0.18s ease both",
-          flex: 1,
-          minWidth: 0,
-        }}
-      >
-        {displayed}
-        {streaming && (
-          <span
-            style={{
-              display: "inline-block",
-              width: 1.5,
-              height: "1.1em",
-              background: "#cc785c",
-              verticalAlign: "text-bottom",
-              marginLeft: 1,
-              animation: "cc-blink 0.75s step-end infinite",
-              borderRadius: 1,
-            }}
-          />
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ── User message bubble ──────────────────────────────────────────── */
-
-function UserMessage({ visible }: { visible: boolean }) {
-  if (!visible) return null
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "flex-end",
-        animation: "cc-fade-up 0.22s cubic-bezier(0.22,1,0.36,1) both",
-        paddingRight: 2,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "78%",
-          background: "#2c2a27",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "18px 18px 4px 18px",
-          padding: "8px 13px",
-          fontSize: 13.5,
-          lineHeight: 1.55,
-          color: "#ece8e1",
-          letterSpacing: "-0.003em",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        }}
-      >
-        {DEMO_TEXTS.userMessage}
-      </div>
-    </div>
-  )
-}
-
-/* ── Sidebar ──────────────────────────────────────────────────────── */
-
-const SIDEBAR_ICONS = [
-  { Icon: Search,       active: false },
-  { Icon: MessageSquare,active: true  },  // active conversation indicator
-  { Icon: BookOpen,     active: false },
-  { Icon: Briefcase,    active: false },
-  { Icon: Code2,        active: false },
-  { Icon: Star,         active: false },
-  { Icon: Clock,        active: false },
-] as const
-
-function Sidebar() {
-  return (
-    <div
-      style={{
-        width: 56,
-        flexShrink: 0,
-        background: "#1a1917",
-        borderRight: "1px solid rgba(255,255,255,0.05)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "10px 0 10px",
-        gap: 0,
-      }}
-    >
-      <Menu size={17} color="#4d4840" strokeWidth={1.5} style={{ marginBottom: 18 }} />
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 1, width: "100%", padding: "0 8px" }}>
-        {SIDEBAR_ICONS.map(({ Icon, active }, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-              height: 34,
-              borderRadius: 7,
-              background: active ? "rgba(255,255,255,0.07)" : "transparent",
-              cursor: "default",
-            }}
-          >
-            <Icon
-              size={16}
-              color={active ? "#ece8e1" : "#4d4840"}
-              strokeWidth={active ? 1.8 : 1.5}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div style={{ flex: 1 }} />
-
-      {/* User avatar */}
-      <div
-        style={{
-          width: 26,
-          height: 26,
-          borderRadius: "50%",
-          background: "#cc785c",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 10.5,
-          fontWeight: 600,
-          color: "#1f1e1c",
-          letterSpacing: "-0.02em",
-          cursor: "default",
-        }}
-      >
-        E
-      </div>
-    </div>
-  )
-}
-
-/* ── Top bar ───────────────────────────────────────────────────────── */
-
-function TopBar() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "6px 14px",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        flexShrink: 0,
-        minHeight: 38,
-      }}
-    >
-      {/* Model selector pill */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 5,
-          padding: "3px 9px",
-          borderRadius: 7,
-          border: "1px solid rgba(255,255,255,0.07)",
-          cursor: "default",
-          background: "transparent",
-        }}
-      >
-        {/* Claude logomark (simplified) */}
-        <div
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #cc785c 0%, #b8604a 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-            <path d="M4 1L6.5 6.5H5.2L4.6 5H3.4L2.8 6.5H1.5L4 1ZM4 2.8L3.7 4H4.3L4 2.8Z"
-              fill="white" fillRule="evenodd" />
-          </svg>
-        </div>
-        <span style={{ color: "#ece8e1", fontSize: 12, fontWeight: 500, letterSpacing: "-0.01em" }}>
-          Claude
-        </span>
-        <span style={{ color: "#6b6560", fontSize: 12 }}>Opus 4.7</span>
-        <ChevronDown size={10} color="#4d4840" strokeWidth={1.8} />
-      </div>
-
-      {/* Right icons */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        {/* Share icon */}
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" opacity={0.3}>
-          <path d="M7.5 2L11.5 5.5M7.5 2L3.5 5.5M7.5 2V10.5M1.5 11V13.5H13.5V11"
-            stroke="#8a8275" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        {/* More/ellipsis */}
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" opacity={0.3}>
-          <circle cx="3.5"  cy="7.5" r="1.2" fill="#8a8275" />
-          <circle cx="7.5"  cy="7.5" r="1.2" fill="#8a8275" />
-          <circle cx="11.5" cy="7.5" r="1.2" fill="#8a8275" />
-        </svg>
-      </div>
-    </div>
-  )
-}
-
-/* ── Input area ─────────────────────────────────────────────────────── */
-
-function InputArea({ phase }: { phase: "pre-send" | "post-send" | "ready" }) {
-  // phase: pre-send = cursor blinking in box (user about to type)
-  //        post-send = empty + placeholder (message sent)
-  //        ready = cursor in input again (end of loop, ready for next)
-  const showTypingCursor = phase === "pre-send" || phase === "ready"
-  const showPlaceholder  = phase === "post-send"
-
-  return (
-    <div style={{ padding: "4px 12px 12px", flexShrink: 0 }}>
-      {/* Attachment / style pills row above input */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 6, paddingLeft: 2 }}>
-        {["No file", "Default style"].map((label) => (
-          <div
-            key={label}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "2px 8px",
-              borderRadius: 99,
-              border: "1px solid rgba(255,255,255,0.07)",
-              fontSize: 11,
-              color: "#524d44",
-              cursor: "default",
-            }}
-          >
-            {label}
-            <ChevronDown size={9} color="#3d3830" strokeWidth={1.5} />
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          borderRadius: 12,
-          background: "#252320",
-          border: "1px solid rgba(255,255,255,0.07)",
-          padding: "10px 12px 10px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12)",
-        }}
-      >
-        {/* Text area */}
-        <div
-          style={{
-            fontSize: 13.5,
-            color: showPlaceholder ? "#524d44" : "#ece8e1",
-            lineHeight: 1.55,
-            minHeight: 36,
-            letterSpacing: "-0.003em",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          }}
-        >
-          {showPlaceholder ? (
-            "How can Claude help you today?"
-          ) : showTypingCursor ? (
-            <span>
-              {phase === "ready" ? "Run end-to-end tests" : "Build and deploy this landing page."}
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 1.5,
-                  height: "1.1em",
-                  background: "#cc785c",
-                  verticalAlign: "text-bottom",
-                  marginLeft: 1,
-                  animation: "cc-blink 1.05s step-end infinite",
-                  borderRadius: 1,
-                }}
-              />
-            </span>
-          ) : null}
-        </div>
-
-        {/* Bottom toolbar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {/* + button */}
-            <div
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,0.07)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#524d44",
-                fontSize: 16,
-                fontWeight: 300,
-                cursor: "default",
-                lineHeight: 1,
-              }}
-            >
-              +
-            </div>
-            {/* Search web */}
-            <div style={{ display: "flex", alignItems: "center", gap: 3, cursor: "default", opacity: 0.5 }}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <circle cx="5.5" cy="5.5" r="4" stroke="#524d44" strokeWidth="1.2" />
-                <path d="M9 9L11.5 11.5" stroke="#524d44" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Mic */}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" opacity={0.35}>
-              <rect x="4.5" y="1" width="5" height="7" rx="2.5" stroke="#8a8275" strokeWidth="1.1" />
-              <path d="M2.5 7c0 2.48 2.02 4.5 4.5 4.5S11.5 9.48 11.5 7M7 11.5V13M5 13h4"
-                stroke="#8a8275" strokeWidth="1.1" strokeLinecap="round" />
-            </svg>
-            {/* Send button */}
-            <div
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 7,
-                background: phase === "pre-send" ? "rgba(204,120,92,0.18)" : "rgba(255,255,255,0.05)",
-                border: phase === "pre-send" ? "1px solid rgba(204,120,92,0.3)" : "1px solid rgba(255,255,255,0.06)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "default",
-                transition: "background 0.3s ease, border-color 0.3s ease",
-              }}
-            >
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                <path d="M5.5 9.5V1.5M5.5 1.5L2.5 4.5M5.5 1.5L8.5 4.5"
-                  stroke={phase === "pre-send" ? "#cc785c" : "#524d44"}
-                  strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ── Browser chrome shell ─────────────────────────────────────────── */
-
-function DemoShell({
-  fading,
-  cursor,
-  containerRef,
-  children,
-}: {
-  fading: boolean
-  cursor: CursorState
-  containerRef: { current: HTMLDivElement | null }
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      role="img"
-      aria-label="Concerto demo: Claude spawning parallel sessions via MCP"
-      className="relative w-full select-none"
-      style={{
-        opacity: fading ? 0 : 1,
-        transition: "opacity 0.7s ease",
-      }}
-    >
-      <div
-        style={{
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.07)",
-          boxShadow:
-            "0 0 0 1px rgba(0,0,0,0.18), 0 8px 32px rgba(0,0,0,0.32), 0 32px 64px rgba(0,0,0,0.18)",
-        }}
-      >
-        {/* macOS title bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "7px 12px",
-            background: "#111110",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-          }}
-        >
-          {/* Traffic lights */}
-          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            {["#ff5f57", "#ffbd2e", "#28c840"].map((c) => (
-              <span
-                key={c}
-                style={{ display: "block", width: 10, height: 10, borderRadius: "50%", background: c }}
-              />
-            ))}
-          </div>
-          {/* URL bar */}
-          <div
-            style={{
-              flex: 1,
-              margin: "0 8px",
-              borderRadius: 5,
-              background: "#1c1b19",
-              color: "#524d44",
-              fontSize: 10.5,
-              padding: "2.5px 10px",
-              textAlign: "center",
-              letterSpacing: "0.01em",
-            }}
-          >
-            claude.ai/chat
-          </div>
-          <div style={{ width: 44, flexShrink: 0 }} />
-        </div>
-
-        {/* Content + cursor layer */}
-        <div
-          ref={containerRef}
-          style={{
-            display: "flex",
-            height: 468,
-            background: "#1f1e1c",
-            position: "relative",
-          }}
-        >
-          {children}
-          <MouseCursor x={cursor.x} y={cursor.y} clicking={cursor.clicking} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ── Cursor animation engine ──────────────────────────────────────── */
+/* ── Cursor animation engine (identical math, different waypoints) ── */
 
 function useCursorAnimation(
   waypoints: CursorWaypoint[],
@@ -808,14 +165,8 @@ function useCursorAnimation(
       return { w: r.width, h: r.height }
     }
 
-    function lerp(a: number, b: number, t: number) {
-      return a + (b - a) * t
-    }
-
-    // Cubic-bezier ease-out approximation for smooth deceleration
-    function easeOut(t: number) {
-      return 1 - Math.pow(1 - t, 3)
-    }
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
 
     function tick(now: number) {
       if (cancelled) return
@@ -824,7 +175,6 @@ function useCursorAnimation(
       const elapsed = (now - startTimeRef.current) % loopDuration
       const { w, h } = getContainerSize()
 
-      // Find surrounding waypoints
       let prev = waypoints[0]
       let next = waypoints[waypoints.length - 1]
       for (let i = 0; i < waypoints.length - 1; i++) {
@@ -843,9 +193,8 @@ function useCursorAnimation(
       const px = lerp(prev.x * w, next.x * w, t)
       const py = lerp(prev.y * h, next.y * h, t)
 
-      // Click: show clicking state within 120ms window around click waypoints
       const isClicking = waypoints.some(
-        (wp) => wp.action === "click" && Math.abs(elapsed - wp.t) < 120
+        (wp) => wp.action === "click" && Math.abs(elapsed - wp.t) < 140
       )
 
       setCursor({ x: px, y: py, clicking: isClicking })
@@ -862,17 +211,792 @@ function useCursorAnimation(
   return cursor
 }
 
-/* ── Animated demo ─────────────────────────────────────────────────── */
+/* ── Concerto logo mark (matches /brand/logo-mark.png at small size) ── */
+
+function LogoMark({ size = 28 }: { size?: number }) {
+  // Same image the real dashboard uses for header branding.
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src="/brand/logo-mark.png?v=3"
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: "block", width: size, height: size }}
+    />
+  )
+}
+
+/* ── Concerto top header (matches dashboard sticky header) ──────── */
+
+function DashHeader() {
+  return (
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 5,
+        borderBottom: "1px solid rgba(25,25,25,0.07)",
+        background: "rgba(250,249,245,0.90)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 560,
+          margin: "0 auto",
+          padding: "10px 18px",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <LogoMark size={24} />
+        <span
+          style={{
+            fontSize: 16,
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+            color: "#191919",
+            lineHeight: 1,
+          }}
+        >
+          Concerto
+        </span>
+      </div>
+    </header>
+  )
+}
+
+/* ── 3-step progress bar (matches ProgressBar in dashboard) ──────── */
+
+function ProgressBar({ step }: { step: Step }) {
+  const labels = DEMO_TEXTS.progressLabels
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {([1, 2, 3] as const).map((s, i) => (
+          <div key={s} style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                width: 64,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: 22,
+                  height: 22,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  backgroundColor:
+                    s < step
+                      ? "#cc785c"
+                      : s === step
+                        ? "#cc785c"
+                        : "rgba(25,25,25,0.08)",
+                  color: s <= step ? "#ffffff" : "#8a847b",
+                  transition: "background-color 0.35s ease, color 0.35s ease",
+                }}
+              >
+                {s < step ? <Check size={12} strokeWidth={3} /> : s}
+              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: s === step ? "#191919" : "#8a847b",
+                  transition: "color 0.35s ease",
+                }}
+              >
+                {labels[i]}
+              </span>
+            </div>
+            {i < 2 && (
+              <div
+                style={{
+                  height: 2,
+                  width: 28,
+                  marginBottom: 18,
+                  background: s < step ? "#cc785c" : "rgba(25,25,25,0.12)",
+                  transition: "background 0.35s ease",
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Card primitive (matches dashboard rounded-2xl card) ─────────── */
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        borderRadius: 16,
+        background: "#ffffff",
+        border: "1px solid #f3efe5",
+        animation: "cc-fade-up 0.32s cubic-bezier(0.22,1,0.36,1) both",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* ── Step 1: Sign in to Claude ───────────────────────────────────── */
+
+function Step1Card({
+  phase,
+  codeChars,
+}: {
+  phase: SignInPhase
+  codeChars: number
+}) {
+  const t = DEMO_TEXTS.step1
+  const codeText = t.codeTyped.slice(0, codeChars)
+  const typing = phase === "awaiting_code" && codeChars < t.codeTyped.length
+  const showSuccess = phase === "success"
+  const showInitialButton = phase === "idle" || phase === "starting"
+  const showCodeFlow =
+    phase === "awaiting_code" ||
+    phase === "code_typed" ||
+    phase === "finishing"
+
+  return (
+    <Card style={{ padding: "20px 22px" }}>
+      <div style={{ marginBottom: 16 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 19,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: "#191919",
+          }}
+        >
+          {t.title}
+        </h2>
+        <p
+          style={{
+            marginTop: 6,
+            marginBottom: 0,
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "#8a847b",
+          }}
+        >
+          {t.blurb}
+        </p>
+      </div>
+
+      {showInitialButton && !showSuccess && (
+        <button
+          type="button"
+          style={{
+            width: "100%",
+            borderRadius: 12,
+            background: "#cc785c",
+            color: "#ffffff",
+            fontSize: 14,
+            fontWeight: 500,
+            minHeight: 44,
+            border: "none",
+            cursor: "default",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            transition: "background 0.25s ease",
+          }}
+        >
+          {phase === "starting" ? (
+            <>
+              <RefreshCw
+                size={14}
+                style={{
+                  transformOrigin: "center",
+                  animation: "cc-spin 1.2s linear infinite",
+                }}
+              />
+              {t.primaryStarting}
+            </>
+          ) : (
+            t.primaryIdle
+          )}
+        </button>
+      )}
+
+      {showCodeFlow && !showSuccess && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              width: "100%",
+              minHeight: 42,
+              borderRadius: 12,
+              background: "#191919",
+              color: "#ffffff",
+              fontSize: 13.5,
+              fontWeight: 600,
+            }}
+          >
+            {t.openAnthropic}
+            <ExternalLink size={14} />
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#191919",
+                marginBottom: 6,
+              }}
+            >
+              {t.codeLabel}
+            </label>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                minHeight: 40,
+                padding: "8px 12px",
+                borderRadius: 12,
+                border: "2px solid #cc785c",
+                background: "#ffffff",
+                fontSize: 13,
+                fontFamily:
+                  "'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                color: codeChars === 0 ? "#a59f97" : "#191919",
+                boxShadow:
+                  phase === "awaiting_code" || phase === "code_typed"
+                    ? "0 0 0 3px rgba(204,120,92,0.15)"
+                    : "none",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {codeChars === 0 ? t.codePlaceholder : codeText}
+              {typing && (
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 1.4,
+                    height: "1.1em",
+                    background: "#cc785c",
+                    verticalAlign: "text-bottom",
+                    marginLeft: 1,
+                    animation: "cc-blink 0.7s step-end infinite",
+                    borderRadius: 1,
+                  }}
+                />
+              )}
+            </div>
+
+            <button
+              type="button"
+              style={{
+                marginTop: 10,
+                width: "100%",
+                borderRadius: 12,
+                background:
+                  phase === "code_typed" || phase === "finishing"
+                    ? "#cc785c"
+                    : "rgba(204,120,92,0.5)",
+                color: "#ffffff",
+                fontSize: 14,
+                fontWeight: 500,
+                minHeight: 44,
+                border: "none",
+                cursor: "default",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "background 0.25s ease",
+              }}
+            >
+              {phase === "finishing" ? (
+                <>
+                  <RefreshCw
+                    size={14}
+                    style={{
+                      transformOrigin: "center",
+                      animation: "cc-spin 1.2s linear infinite",
+                    }}
+                  />
+                  {t.finishing}
+                </>
+              ) : (
+                t.primaryComplete
+              )}
+            </button>
+
+            <p
+              style={{
+                marginTop: 8,
+                marginBottom: 0,
+                fontSize: 11,
+                lineHeight: 1.5,
+                color: "#8a847b",
+              }}
+            >
+              {t.helpHint}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {showSuccess && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            borderRadius: 12,
+            padding: "12px 14px",
+            background: "rgba(34,197,94,0.08)",
+            color: "#16a34a",
+            border: "1px solid rgba(34,197,94,0.2)",
+            fontSize: 14,
+            fontWeight: 500,
+            animation: "cc-fade-in 0.3s ease both",
+          }}
+        >
+          <Check size={16} strokeWidth={2.5} />
+          {DEMO_TEXTS.step1.success}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ── Step 2: Connect Concerto to Claude ──────────────────────────── */
+
+function Step2Card({ phase }: { phase: "ready" | "waiting" }) {
+  const t = DEMO_TEXTS.step2
+  return (
+    <Card style={{ padding: "20px 22px" }}>
+      <div style={{ marginBottom: 16 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 19,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: "#191919",
+          }}
+        >
+          {t.title}
+        </h2>
+        <p
+          style={{
+            marginTop: 6,
+            marginBottom: 0,
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "#8a847b",
+          }}
+        >
+          {t.blurb}
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          width: "100%",
+          minHeight: 46,
+          borderRadius: 12,
+          background: "#cc785c",
+          color: "#ffffff",
+          fontSize: 14,
+          fontWeight: 600,
+          boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+        }}
+      >
+        {t.primary}
+        <ExternalLink size={14} />
+      </div>
+
+      <div
+        style={{
+          marginTop: 12,
+          fontSize: 12.5,
+          lineHeight: 1.5,
+          color: "#191919",
+        }}
+      >
+        <span style={{ color: "#8a847b" }}>In Claude:</span>{" "}
+        <strong style={{ fontWeight: 600 }}>Add</strong> · then{" "}
+        <strong style={{ fontWeight: 600 }}>Connect</strong>
+      </div>
+
+      {phase === "waiting" && (
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 12px",
+            borderRadius: 12,
+            background: "#faf9f5",
+            border: "1px solid #f3efe5",
+            animation: "cc-fade-in 0.3s ease both",
+          }}
+        >
+          <RefreshCw
+            size={14}
+            style={{
+              flexShrink: 0,
+              color: "#cc785c",
+              animation: "cc-spin 1.2s linear infinite",
+            }}
+          />
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12.5,
+              fontWeight: 500,
+              color: "#191919",
+              lineHeight: 1.4,
+            }}
+          >
+            {t.waiting}
+          </p>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ── Step 3: You're all set ──────────────────────────────────────── */
+
+function Step3Card() {
+  const t = DEMO_TEXTS.step3
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 12,
+        animation: "cc-fade-up 0.32s cubic-bezier(0.22,1,0.36,1) both",
+      }}
+    >
+      {/* Headline + GitHub action */}
+      <div>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 18,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: "#191919",
+            lineHeight: 1.25,
+          }}
+        >
+          {t.title}
+        </h2>
+        <p
+          style={{
+            marginTop: 4,
+            marginBottom: 0,
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: "#8a847b",
+          }}
+        >
+          {t.blurb}
+        </p>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            width: "100%",
+            minHeight: 46,
+            borderRadius: 12,
+            background: "#24292f",
+            color: "#ffffff",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          <Github size={16} />
+          {t.githubButton}
+        </div>
+      </div>
+
+      {/* You're all set callout */}
+      <div
+        style={{
+          marginTop: 8,
+          paddingTop: 14,
+          borderTop: "1px solid #efeae0",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "#cc785c",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Check size={16} color="#ffffff" strokeWidth={3} />
+          </div>
+        </div>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 17,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: "#191919",
+          }}
+        >
+          {t.setHeadline}
+        </h3>
+        <p
+          style={{
+            marginTop: 4,
+            marginBottom: 10,
+            fontSize: 12.5,
+            lineHeight: 1.5,
+            color: "#8a847b",
+            maxWidth: 320,
+          }}
+        >
+          {t.setBlurb}
+        </p>
+
+        <div
+          style={{
+            width: "100%",
+            borderRadius: 12,
+            background: "#faf9f5",
+            border: "1px solid #f3efe5",
+            padding: "10px 12px",
+            textAlign: "left",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: "0.07em",
+              color: "#8a847b",
+            }}
+          >
+            {t.promptLabel}
+          </p>
+          <p
+            style={{
+              marginTop: 4,
+              marginBottom: 0,
+              fontFamily:
+                "'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
+              fontSize: 13,
+              color: "#191919",
+            }}
+          >
+            {t.promptText}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Browser chrome shell (mac title bar + concerto URL) ─────────── */
+
+function DemoShell({
+  fading,
+  cursor,
+  containerRef,
+  children,
+}: {
+  fading: boolean
+  cursor: CursorState
+  containerRef: { current: HTMLDivElement | null }
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      role="img"
+      aria-label="Concerto demo: the real onboarding wizard"
+      className="relative w-full select-none"
+      style={{
+        opacity: fading ? 0 : 1,
+        transition: "opacity 0.6s ease",
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 12,
+          overflow: "hidden",
+          border: "1px solid rgba(25,25,25,0.10)",
+          boxShadow:
+            "0 0 0 1px rgba(25,25,25,0.04), 0 8px 32px rgba(25,25,25,0.10), 0 32px 64px rgba(25,25,25,0.06)",
+          background: "#ffffff",
+        }}
+      >
+        {/* macOS title bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "7px 12px",
+            background: "#ece8e1",
+            borderBottom: "1px solid rgba(25,25,25,0.08)",
+          }}
+        >
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            {["#ff5f57", "#ffbd2e", "#28c840"].map((c) => (
+              <span
+                key={c}
+                style={{
+                  display: "block",
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: c,
+                }}
+              />
+            ))}
+          </div>
+          <div
+            style={{
+              flex: 1,
+              margin: "0 8px",
+              borderRadius: 5,
+              background: "#faf9f5",
+              color: "#8a847b",
+              fontSize: 10.5,
+              padding: "3px 10px",
+              textAlign: "center",
+              letterSpacing: "0.01em",
+              border: "1px solid rgba(25,25,25,0.06)",
+            }}
+          >
+            concerto.run/dashboard
+          </div>
+          <div style={{ width: 44, flexShrink: 0 }} />
+        </div>
+
+        {/* Content + cursor layer */}
+        <div
+          ref={containerRef}
+          style={{
+            position: "relative",
+            background: "#faf9f5",
+            height: 468,
+            overflow: "hidden",
+          }}
+        >
+          {children}
+          <MouseCursor x={cursor.x} y={cursor.y} clicking={cursor.clicking} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Inner wizard scroll area ────────────────────────────────────── */
+
+function WizardBody({ state }: { state: DemoState }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      }}
+    >
+      <DashHeader />
+      <main
+        style={{
+          flex: 1,
+          padding: "22px 18px 18px",
+          maxWidth: 520,
+          width: "100%",
+          margin: "0 auto",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ marginBottom: 20 }}>
+          <ProgressBar step={state.step} />
+        </div>
+
+        {state.step === 1 && (
+          <Step1Card phase={state.signIn} codeChars={state.codeChars} />
+        )}
+        {state.step === 2 && <Step2Card phase={state.connectPhase} />}
+        {state.step === 3 && <Step3Card />}
+      </main>
+    </div>
+  )
+}
+
+/* ── Animated demo (timed state transitions) ─────────────────────── */
 
 function AnimatedDemo() {
   const [state, setState] = useState<DemoState>(INITIAL)
-  const [inputPhase, setInputPhase] = useState<"pre-send" | "post-send" | "ready">("pre-send")
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
-  const scrollRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const runLoopRef = useRef<() => void>(() => {})
 
-  const cursor = useCursorAnimation(CURSOR_WAYPOINTS, DEMO_TIMINGS.loopDuration, containerRef)
+  const cursor = useCursorAnimation(
+    CURSOR_WAYPOINTS,
+    DEMO_TIMINGS.loopDuration,
+    containerRef,
+  )
 
   const clearTimers = useCallback(() => {
     timers.current.forEach(clearTimeout)
@@ -883,154 +1007,104 @@ function AnimatedDemo() {
     timers.current.push(setTimeout(fn, ms))
   }, [])
 
-  const scrollBottom = useCallback(() => {
-    requestAnimationFrame(() => {
-      if (scrollRef.current)
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    })
-  }, [])
-
   const runLoop = useCallback(() => {
     clearTimers()
     setState(INITIAL)
-    setInputPhase("pre-send")
-
     const T = DEMO_TIMINGS
-    const texts = DEMO_TEXTS
+    const code = DEMO_TEXTS.step1.codeTyped
 
-    // T=0: send — input clears, user message appears
-    add(() => {
-      setState((s) => ({ ...s, userVisible: true }))
-      setInputPhase("post-send")
-    }, T.userMessageAt)
+    // ── Step 1: sign-in flow ────────────────────────────────────
+    // Click "Sign in with Claude" → briefly show "Preparing…"
+    add(() => setState((s) => ({ ...s, signIn: "starting" })), T.signInClickAt)
 
-    // T=1s: stream prose 1
-    for (let c = 1; c <= texts.assistantProse1.length; c++) {
-      const cap = c
-      add(() => {
-        setState((s) => ({ ...s, prose1Chars: cap }))
-        if (cap === texts.assistantProse1.length) scrollBottom()
-      }, T.prose1At + cap * T.streamMs)
-    }
+    // Card morphs to the OAuth code-paste form
+    add(
+      () => setState((s) => ({ ...s, signIn: "awaiting_code" })),
+      T.awaitingCodeAt,
+    )
 
-    // T=4s: chip 1
-    add(() => {
-      setState((s) => ({ ...s, chip1: "active" }))
-      scrollBottom()
-    }, T.chip1At)
-
-    // T=6s: chip 2 — parallel WOW moment
-    add(() => {
-      setState((s) => ({ ...s, chip2: "active" }))
-      scrollBottom()
-    }, T.chip2At)
-
-    // T=9s: chip 1 complete
-    add(() => setState((s) => ({ ...s, chip1: "complete" })), T.chip1CompleteAt)
-
-    // T=10s: chip 2 complete
-    add(() => setState((s) => ({ ...s, chip2: "complete" })), T.chip2CompleteAt)
-
-    // T=11s: stream prose 2
-    for (let c = 1; c <= texts.assistantProse2.length; c++) {
+    // Type the pasted code character by character
+    for (let c = 1; c <= code.length; c++) {
       const cap = c
       add(
-        () => setState((s) => ({ ...s, prose2Chars: cap })),
-        T.prose2At + cap * T.streamMs
+        () => setState((s) => ({ ...s, codeChars: cap })),
+        T.codeTypeStartAt + cap * T.streamMs,
       )
     }
+    // After typing finishes, mark the "code_typed" phase so the submit
+    // button switches from disabled-look to active peach.
+    add(
+      () =>
+        setState((s) => ({
+          ...s,
+          codeChars: code.length,
+          signIn: "code_typed",
+        })),
+      T.codeTypeEndAt,
+    )
 
-    // T=13s: chip 3
-    add(() => {
-      setState((s) => ({ ...s, chip3: "active" }))
-      scrollBottom()
-    }, T.chip3At)
+    // Click "Complete sign-in" → finishing spinner
+    add(
+      () => setState((s) => ({ ...s, signIn: "finishing" })),
+      T.finishingAt,
+    )
+    // Green confirmation
+    add(() => setState((s) => ({ ...s, signIn: "success" })), T.successAt)
 
-    // T=14.5s: chip 3 complete
-    add(() => setState((s) => ({ ...s, chip3: "complete" })), T.chip3CompleteAt)
+    // ── Step 2: connect flow ────────────────────────────────────
+    add(
+      () =>
+        setState((s) => ({
+          ...s,
+          step: 2,
+          signIn: "idle",
+          codeChars: 0,
+          connectPhase: "ready",
+        })),
+      T.step2AppearAt,
+    )
+    add(
+      () => setState((s) => ({ ...s, connectPhase: "waiting" })),
+      T.waitingAt,
+    )
 
-    // T=15s: stream prose 3
-    for (let c = 1; c <= texts.assistantProse3.length; c++) {
-      const cap = c
-      add(() => {
-        setState((s) => ({ ...s, prose3Chars: cap }))
-        if (cap === texts.assistantProse3.length) {
-          scrollBottom()
-          setInputPhase("ready")
-        }
-      }, T.prose3At + cap * T.streamMs)
-    }
+    // ── Step 3: you're all set ──────────────────────────────────
+    add(
+      () =>
+        setState((s) => ({
+          ...s,
+          step: 3,
+          connectPhase: "ready",
+        })),
+      T.step3AppearAt,
+    )
 
-    // T=17s: fade out
+    // Fade out, loop restart
     add(() => setState((s) => ({ ...s, fading: true })), T.fadeOutAt)
-
-    // T=18s: loop restart
     add(() => runLoopRef.current(), T.loopDuration)
-  }, [clearTimers, add, scrollBottom])
+  }, [clearTimers, add])
 
   useEffect(() => {
     runLoopRef.current = runLoop
   }, [runLoop])
 
   useEffect(() => {
-    const t = setTimeout(() => runLoop(), 300)
+    const t = setTimeout(() => runLoop(), 250)
     return () => {
       clearTimeout(t)
       clearTimers()
     }
   }, [runLoop, clearTimers])
 
-  const {
-    userVisible,
-    prose1Chars,
-    chip1,
-    chip2,
-    prose2Chars,
-    chip3,
-    prose3Chars,
-    fading,
-  } = state
-
-  // Show thinking dots between user message and prose starting
-  const showThinking = userVisible && prose1Chars === 0
-
   return (
     <>
       <style>{CSS_KEYFRAMES}</style>
-      <DemoShell fading={fading} cursor={cursor} containerRef={containerRef}>
-        <Sidebar />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          <TopBar />
-          <div
-            ref={scrollRef}
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "16px 18px 8px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              scrollbarWidth: "none",
-            }}
-          >
-            <UserMessage visible={userVisible} />
-            <ThinkingDots visible={showThinking} />
-            <AssistantProse chars={prose1Chars} text={DEMO_TEXTS.assistantProse1} />
-            <ToolChip label="concerto__start_claude_session" state={chip1} />
-            <ToolChip label="concerto__start_claude_session" state={chip2} />
-            <AssistantProse chars={prose2Chars} text={DEMO_TEXTS.assistantProse2} />
-            <ToolChip label="concerto__get_claude_session" state={chip3} />
-            <AssistantProse chars={prose3Chars} text={DEMO_TEXTS.assistantProse3} />
-          </div>
-          <InputArea phase={inputPhase} />
-        </div>
+      <DemoShell
+        fading={state.fading}
+        cursor={cursor}
+        containerRef={containerRef}
+      >
+        <WizardBody state={state} />
       </DemoShell>
     </>
   )
@@ -1039,46 +1113,23 @@ function AnimatedDemo() {
 /* ── Static fallback (prefers-reduced-motion) ─────────────────────── */
 
 function StaticFallback() {
-  const texts = DEMO_TEXTS
+  // Show the final, most reassuring frame: step 3 "You're all set".
+  const finalState: DemoState = {
+    step: 3,
+    signIn: "idle",
+    codeChars: 0,
+    connectPhase: "ready",
+    fading: false,
+  }
   return (
     <>
       <style>{CSS_KEYFRAMES}</style>
       <DemoShell
         fading={false}
-        cursor={{ x: 0, y: 0, clicking: false }}
+        cursor={{ x: -100, y: -100, clicking: false }}
         containerRef={{ current: null }}
       >
-        <Sidebar />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          <TopBar />
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "16px 18px 8px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              scrollbarWidth: "none",
-            }}
-          >
-            <UserMessage visible={true} />
-            <AssistantProse chars={texts.assistantProse1.length} text={texts.assistantProse1} />
-            <ToolChip label="concerto__start_claude_session" state="complete" />
-            <ToolChip label="concerto__start_claude_session" state="complete" />
-            <AssistantProse chars={texts.assistantProse2.length} text={texts.assistantProse2} />
-            <ToolChip label="concerto__get_claude_session" state="complete" />
-            <AssistantProse chars={texts.assistantProse3.length} text={texts.assistantProse3} />
-          </div>
-          <InputArea phase="ready" />
-        </div>
+        <WizardBody state={finalState} />
       </DemoShell>
     </>
   )

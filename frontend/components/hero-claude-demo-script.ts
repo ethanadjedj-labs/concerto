@@ -1,144 +1,131 @@
-// Demo content and timing constants — edit this file to change what the demo shows.
-// Animation script: 18s loop demonstrating parallel Claude Code sessions via Concerto MCP.
-
-// ── VARIANT SELECTOR ────────────────────────────────────────────────────────
-// Switch the active variant by changing this import alias:
-//   "VARIANT_A" = default (balanced, natural cursor movement)
-//   "VARIANT_B" = calm/slow (fewer cursor hops, longer pauses, meditative pace)
-//   "VARIANT_C" = snappy (fast cursor, tight timing, high-energy)
+// Demo content and timing constants for HeroClaudeDemo.
 //
-// To switch: change `export const DEMO_TIMINGS = VARIANT_A.timings` etc. at bottom.
-// ─────────────────────────────────────────────────────────────────────────────
+// What this demo shows:
+//   The REAL Concerto onboarding wizard at /dashboard/[token] —
+//   the 3-step flow a paying customer actually walks through after
+//   checkout. Step 1 (Sign in with Claude), Step 2 (Add Concerto as a
+//   custom connector in Claude), Step 3 (You're all set + GitHub connect).
+//
+// Every string below is copied verbatim from
+// frontend/app/dashboard/[token]/page.tsx so the demo cannot drift from
+// what a logged-in customer actually sees.
 
 export const DEMO_TEXTS = {
-  userMessage:
-    "Build me a Notion clone - block-based doc editor, relational database, and auth. Spin up the frontend, backend, and tests in parallel, watch them, and tell me when it's ready.",
-  assistantProse1:
-    "On it. I'm spawning three Claude Code sessions - one for the block editor, one for the backend + database, one for tests. Starting now.",
-  assistantProse2: "All three running. I'm watching their progress.",
-  assistantProse3:
-    "Editor and backend are done. Tests pass - your Notion clone is live. Want me to add doc sharing, or deploy it to your domain?",
+  // Wizard progress bar labels
+  progressLabels: ["Sign in", "Connect", "Build"] as const,
+
+  // ── Step 1: Sign in to Claude ───────────────────────────────────
+  step1: {
+    title: "Sign in to Claude",
+    blurb:
+      "Authorize Concerto with your Claude account so it can run Claude Code on your behalf. Same one-click flow you use to link GitHub.",
+    primaryIdle: "Sign in with Claude",
+    primaryStarting: "Preparing sign-in…",
+    openAnthropic: "Open Anthropic, then click Authorize",
+    codeLabel: "Paste the code Anthropic gave you",
+    codePlaceholder: "Paste the code here…",
+    // The pasted code — same shape Anthropic returns (sk-ant-oat01-…)
+    codeTyped: "sk-ant-oat01-•••••••••••••••",
+    primaryComplete: "Complete sign-in",
+    finishing: "Finishing sign-in…",
+    finishingAlt: "Securing your access…",
+    helpHint: "The code looks like sk-ant-oat01-… A tab may have opened on its own — if not, use the button above.",
+    success: "Signed in. Moving to next step…",
+  },
+
+  // ── Step 2: Connect Concerto to Claude ──────────────────────────
+  step2: {
+    title: "Connect Concerto to Claude",
+    blurb:
+      "The button opens Claude with everything pre-filled. Just click Add, then Connect — this page jumps ahead the moment you do.",
+    primary: "Open Claude & add Concerto",
+    instruction: "In Claude: Add · then Connect",
+    waiting: "Waiting on Add + Connect in Claude — you'll jump ahead automatically.",
+  },
+
+  // ── Step 3: You're all set / Build ──────────────────────────────
+  step3: {
+    title: "Already have a project? Connect your GitHub.",
+    blurb:
+      "One click and Claude can build on your existing code right away.",
+    githubButton: "Connect your GitHub in one click",
+    setHeadline: "You're all set.",
+    setBlurb:
+      "Concerto is connected. Open Claude, describe what you want built, and Concerto orchestrates the work for you.",
+    promptLabel: "JUST SAY, FOR EXAMPLE",
+    promptText: "“Build me a Notion-like app”",
+    promptHelp:
+      "Concerto decides whether it's one focused job or several parallel workstreams — you don't have to think about it.",
+    openClaude: "Open Claude",
+  },
+} as const
+
+// ── Timings (ms from start of loop) ────────────────────────────────
+// The loop walks step1 → step2 → step3, then fades out and restarts.
+export const DEMO_TIMINGS = {
+  // Step 1
+  step1AppearAt:        300,
+  signInClickAt:      1_600,   // cursor clicks "Sign in with Claude"
+  awaitingCodeAt:     2_400,   // card morphs to code-paste form
+  codeTypeStartAt:    3_300,   // start typing in paste field
+  codeTypeEndAt:      5_300,   // finished typing pasted code
+  completeClickAt:    5_900,   // cursor clicks "Complete sign-in"
+  finishingAt:        6_100,   // button shows "Finishing sign-in…"
+  successAt:          8_000,   // green "Signed in" confirmation
+  // Step 2
+  step2AppearAt:      9_200,   // progress bar advances, step2 card mounts
+  openClaudeClickAt: 10_500,   // cursor clicks "Open Claude & add Concerto"
+  waitingAt:         10_700,   // card shows the waiting spinner
+  // Step 3
+  step3AppearAt:     13_000,   // progress bar advances, step3 card mounts
+  githubClickAt:     15_000,   // cursor hovers/clicks "Connect your GitHub"
+  // End-of-loop
+  fadeOutAt:         17_500,
+  loopDuration:      18_800,
+  // Typewriter
+  streamMs:              26,   // ms per character when typing the code
+} as const
+
+export type CursorWaypoint = {
+  t: number
+  x: number    // 0..1 fraction of container width
+  y: number    // 0..1 fraction of container height
+  action: "idle" | "move" | "click"
 }
 
-// ── VARIANT A — Balanced (DEFAULT) ──────────────────────────────────────────
-// Natural, unhurried cursor movement. Mimics a real user who types, sends, then
-// watches Claude work. Best for most audiences.
-const VARIANT_A_TIMINGS = {
-  userMessageAt:    0,
-  prose1At:         1_000,
-  chip1At:          4_000,
-  chip2At:          6_000,
-  chip1CompleteAt:  9_000,
-  chip2CompleteAt: 10_000,
-  prose2At:        11_000,
-  chip3At:         13_000,
-  chip3CompleteAt: 14_500,
-  prose3At:        15_000,
-  fadeOutAt:       17_000,
-  loopDuration:    18_000,
-  streamMs:            10,
-}
-
-// Cursor waypoints for VARIANT A.
-// Each entry: { t: ms, x: 0-1 (fraction of component width), y: 0-1 (fraction of height), action? }
-// x/y are fractional so the component can scale them to actual px.
-// actions: "click" | "idle" | "move"
-const VARIANT_A_CURSOR = [
-  // Start: cursor resting near bottom-right (near send button)
-  { t:     0, x: 0.82, y: 0.87, action: "idle"  as const },
-  // T=0ms: user clicks send — cursor on send button, click
-  { t:   200, x: 0.82, y: 0.87, action: "click" as const },
-  // Cursor drifts up-right after sending, natural post-click drift
-  { t:   700, x: 0.75, y: 0.70, action: "move"  as const },
-  // Moves toward message area to "read" response
-  { t: 1_500, x: 0.60, y: 0.42, action: "move"  as const },
-  // Settles while prose streams
-  { t: 3_000, x: 0.55, y: 0.50, action: "idle"  as const },
-  // Chip 1 appears — cursor moves toward it
-  { t: 4_200, x: 0.50, y: 0.58, action: "move"  as const },
-  // Chip 2 appears — cursor moves slightly down (parallel wow)
-  { t: 6_200, x: 0.50, y: 0.64, action: "move"  as const },
-  // Cursor drifts away while chips process — natural "watching" position
-  { t: 7_500, x: 0.62, y: 0.55, action: "idle"  as const },
-  // Chips complete — cursor moves to follow prose 2
-  { t:11_200, x: 0.55, y: 0.68, action: "move"  as const },
-  // Chip 3 active — cursor tracks it
-  { t:13_200, x: 0.50, y: 0.74, action: "move"  as const },
-  // Chip 3 complete — cursor begins drifting toward input
-  { t:14_800, x: 0.65, y: 0.80, action: "move"  as const },
-  // Final prose — cursor settles near input area
-  { t:16_000, x: 0.78, y: 0.88, action: "idle"  as const },
-  // Pre-fade: cursor moves to send, ready for next loop
-  { t:16_800, x: 0.82, y: 0.87, action: "move"  as const },
+// Cursor choreography — coordinates are container-relative fractions so
+// the animation scales with the demo on mobile.
+export const CURSOR_WAYPOINTS: CursorWaypoint[] = [
+  // Start resting just outside the card
+  { t:      0, x: 0.78, y: 0.62, action: "idle"  },
+  // Move toward "Sign in with Claude" primary button
+  { t:  1_000, x: 0.50, y: 0.66, action: "move"  },
+  // Click sign-in
+  { t:  1_600, x: 0.50, y: 0.66, action: "click" },
+  // Move to the paste field after the card morphs
+  { t:  2_800, x: 0.48, y: 0.62, action: "move"  },
+  // Click the paste field to focus
+  { t:  3_200, x: 0.48, y: 0.62, action: "click" },
+  // Move down to "Complete sign-in" button after typing
+  { t:  5_500, x: 0.50, y: 0.72, action: "move"  },
+  // Click complete sign-in
+  { t:  5_900, x: 0.50, y: 0.72, action: "click" },
+  // Drift right while it finishes
+  { t:  7_200, x: 0.66, y: 0.68, action: "idle"  },
+  // Wait near the success line
+  { t:  8_200, x: 0.55, y: 0.78, action: "move"  },
+  // Step 2 mounts — cursor drifts to the new primary button
+  { t:  9_800, x: 0.50, y: 0.55, action: "move"  },
+  // Click "Open Claude & add Concerto"
+  { t: 10_500, x: 0.50, y: 0.55, action: "click" },
+  // Drift while the spinner shows
+  { t: 11_400, x: 0.62, y: 0.66, action: "idle"  },
+  // Step 3 mounts — move to the GitHub button
+  { t: 13_700, x: 0.50, y: 0.58, action: "move"  },
+  // Hover the GitHub button (no click — we just show it exists)
+  { t: 15_000, x: 0.50, y: 0.58, action: "idle"  },
+  // Drift down toward the "Open Claude" CTA at the bottom
+  { t: 16_200, x: 0.55, y: 0.85, action: "move"  },
+  // Pre-fade: gentle rest
+  { t: 17_200, x: 0.62, y: 0.82, action: "idle"  },
 ]
-
-// ── VARIANT B — Calm / Slow ──────────────────────────────────────────────────
-// Fewer cursor hops. Cursor stays mostly still, moves only when necessary.
-// Good for audiences who find movement distracting. Pace feels meditative.
-// Switch: export DEMO_TIMINGS = VARIANT_B_TIMINGS, CURSOR_WAYPOINTS = VARIANT_B_CURSOR
-const VARIANT_B_TIMINGS = {
-  userMessageAt:    0,
-  prose1At:         1_500,
-  chip1At:          5_000,
-  chip2At:          7_500,
-  chip1CompleteAt: 10_500,
-  chip2CompleteAt: 11_500,
-  prose2At:        12_500,
-  chip3At:         15_000,
-  chip3CompleteAt: 16_500,
-  prose3At:        17_000,
-  fadeOutAt:       20_000,
-  loopDuration:    21_000,
-  streamMs:            14,  // slower streaming — feels more considered
-}
-
-const VARIANT_B_CURSOR = [
-  { t:     0, x: 0.80, y: 0.88, action: "idle"  as const },
-  { t:   300, x: 0.82, y: 0.87, action: "click" as const },
-  { t: 1_200, x: 0.65, y: 0.60, action: "move"  as const },
-  // Stays put for a long time — unhurried
-  { t: 5_500, x: 0.52, y: 0.62, action: "move"  as const },
-  { t:10_000, x: 0.52, y: 0.62, action: "idle"  as const },
-  { t:15_200, x: 0.52, y: 0.72, action: "move"  as const },
-  { t:19_000, x: 0.80, y: 0.88, action: "move"  as const },
-]
-
-// ── VARIANT C — Snappy / High-energy ────────────────────────────────────────
-// Fast cursor, tight timing. More cursor activity. Feels like an impatient
-// power user who types fast and tracks every action.
-// Switch: export DEMO_TIMINGS = VARIANT_C_TIMINGS, CURSOR_WAYPOINTS = VARIANT_C_CURSOR
-const VARIANT_C_TIMINGS = {
-  userMessageAt:    0,
-  prose1At:           700,
-  chip1At:          3_000,
-  chip2At:          4_500,
-  chip1CompleteAt:  7_500,
-  chip2CompleteAt:  8_200,
-  prose2At:         8_800,
-  chip3At:         10_500,
-  chip3CompleteAt: 11_500,
-  prose3At:        12_000,
-  fadeOutAt:       14_000,
-  loopDuration:    15_000,
-  streamMs:             8,  // snappier streaming
-}
-
-const VARIANT_C_CURSOR = [
-  { t:    0,  x: 0.82, y: 0.87, action: "idle"  as const },
-  { t:  100,  x: 0.82, y: 0.87, action: "click" as const },
-  { t:  400,  x: 0.60, y: 0.40, action: "move"  as const },
-  { t: 3_100, x: 0.50, y: 0.55, action: "move"  as const },
-  { t: 4_600, x: 0.50, y: 0.60, action: "move"  as const },
-  { t: 7_600, x: 0.60, y: 0.52, action: "move"  as const },
-  { t: 8_900, x: 0.55, y: 0.65, action: "move"  as const },
-  { t:10_600, x: 0.52, y: 0.70, action: "move"  as const },
-  { t:11_600, x: 0.68, y: 0.80, action: "move"  as const },
-  { t:13_500, x: 0.82, y: 0.87, action: "move"  as const },
-]
-
-// ── ACTIVE VARIANT (change here to switch) ───────────────────────────────────
-export const DEMO_TIMINGS = VARIANT_A_TIMINGS
-export const CURSOR_WAYPOINTS = VARIANT_A_CURSOR
-
-// Type export for the component
-export type CursorWaypoint = (typeof VARIANT_A_CURSOR)[number]
