@@ -183,9 +183,18 @@ The landing page now shows the corrected demo on
 
 - `frontend/components/HeroClaudeDemo.tsx` (rewritten)
 - `frontend/components/hero-claude-demo-script.ts` (rewritten)
+- `frontend/app/hero-demo/page.tsx` (now renders `HeroClaudeDemo` instead of the old terminal mock)
+- `frontend/components/HeroDemo.tsx` (deleted — old terminal mock, fictional content)
+- `frontend/components/hero-demo-data.ts` (deleted — fictional "Refactor my auth module" script + fake pytest output)
 
-The same two files were copied to the live deploy path
-`/opt/concerto-frontend/components/` and built/restarted in place.
+The same set was mirrored to the live deploy path `/opt/concerto-frontend/`
+and built/restarted in place. The standalone preview route
+`https://concerto.run/hero-demo` (publicly reachable, returns 200) used to
+render the old fictional terminal demo with strings like "Refactor my auth
+module to use JWT" and "spawning session sess_abc123". It now renders the
+same wizard-mirror `HeroClaudeDemo` as the landing-page hero, on a cream
+`#faf9f5` background, so there is no surface anywhere on concerto.run that
+shows fictional UI.
 
 A small unrelated side-fix was required to actually restart the
 service: a previously dormant hardening drop-in
