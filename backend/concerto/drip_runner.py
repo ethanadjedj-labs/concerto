@@ -7,7 +7,7 @@ Logic:
 
 Days schedule: 0, 1, 3, 7, 14 (hosted only), 21, 30
 Tracking: drip_day_N_sent_at columns in concerto_buyers (migration 006)
-Transport: Migadu SMTP via concerto.transactional.MigaduSMTPClient
+Transport: mailroom (critical=False — no raw-SMTP fallback, DLQ on failure).
 """
 
 from __future__ import annotations
@@ -82,10 +82,10 @@ def _load_text_template(name: str, buyer: dict) -> str | None:
 
 def _send(to: str, subject: str, html: str, text: str | None = None) -> bool:
     try:
-        get_client().send(to, subject, html, text)
+        get_client().send(to, subject, html, text, critical=False)
         return True
     except Exception as e:
-        print(f"  [error] SMTP send failed: {e}")
+        print(f"  [error] drip send failed (DLQ'd): {e}")
         return False
 
 

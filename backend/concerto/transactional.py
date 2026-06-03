@@ -1,20 +1,26 @@
 """Concerto transactional email client — routes through mailroom, falls back
-to raw Migadu SMTP if mailroom is unreachable.
+to raw Migadu SMTP only for CRITICAL sends when mailroom is unreachable.
 
-Primary path: ``mailroom.client.send`` with ``send_kind="transactional"`` and
-``brand="concerto"``. mailroom owns the inbox pool, warmup, rotation, and
-reputation/suppression — this is the unified-path rule (see
-/opt/mailroom/docs/EMAIL_SENDERS_INVENTORY.md, row #4).
+## Routing policy
 
-Fallback path: raw ``smtplib`` over STARTTLS:587 to Migadu. Transactional
-sends (receipts, billing alerts) must not block the purchase flow if
-mailroom is offline — the inventory documents this as a bounded, justified
-exception. Disable the fallback by setting ``CONCERTO_TRANSACTIONAL_STRICT=1``
-(treats a mailroom outage as a hard send failure → DLQ).
+Every send must specify a criticality:
 
-Env vars (loaded from /etc/cortex/env at service start):
-    MAILROOM_URL                 — mailroom HTTP endpoint (default 127.0.0.1:8099)
-    CONCERTO_TRANSACTIONAL_STRICT — when "1", drop the raw-SMTP fallback
+``critical=True``  — TRANSACTIONAL CRITICAL (payment receipts, billing alerts).
+    Primary path: mailroom (brand="concerto", send_kind="transactional").
+    Fallback path on MailroomError: raw smtplib STARTTLS:587 — receipts must
+    not block after a payment has been collected. The fallback is AUDIBLE:
+    log at ERROR level + write a ``smtp_fallback`` event to cortex claude_inbox
+    so the operator is paged. Suppress the fallback with
+    ``CONCERTO_TRANSACTIONAL_STRICT=1`` (raises + DLQ instead).
+
+``critical=False`` — NON-CRITICAL (drip onboarding, marketing).
+    Mailroom ONLY — no raw-SMTP escape hatch. Bypassing the pool risks burning
+    warm-up reputation. On mailroom failure: DLQ + exception.
+
+Env vars (loaded at service start from /etc/empire/env for concerto-backend
+and /etc/concerto/env for concerto-drip-runner):
+    MAILROOM_URL                 — mailroom HTTP base (default http://127.0.0.1:8079)
+    CONCERTO_TRANSACTIONAL_STRICT — when "1", removes raw-SMTP fallback even for critical
     CONCERTO_SMTP_HOST, CONCERTO_SMTP_PORT, CONCERTO_SMTP_USER_NOREPLY,
     CONCERTO_SMTP_PASS_NOREPLY, CONCERTO_EMAIL_FROM, CONCERTO_EMAIL_REPLY_TO
 """
@@ -22,6 +28,7 @@ Env vars (loaded from /etc/cortex/env at service start):
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import re
@@ -47,6 +54,54 @@ _log = logging.getLogger(__name__)
 _SUPPRESS_PATTERN = os.getenv("CONCERTO_SUPPRESS_EMAILS_TO", "").strip()
 _SUPPRESS_RE = re.compile(_SUPPRESS_PATTERN, re.IGNORECASE) if _SUPPRESS_PATTERN else None
 
+# Counter file for SMTP fallback occurrences — written alongside the DB.
+_FALLBACK_COUNT_FILE = os.path.join(
+    os.path.dirname(os.getenv("CONCERTO_DB_PATH", "/var/lib/concerto/concerto.db")),
+    "smtp_fallback_count",
+)
+
+
+def _alert_mailroom_fallback(to: str, subject: str, reason: str) -> None:
+    """Log at ERROR and write a smtp_fallback alert to cortex claude_inbox.
+
+    Both are best-effort — must not propagate exceptions.
+    """
+    _log.error(
+        "MAILROOM SMTP FALLBACK — transactional email bypassed mailroom pool: "
+        "to=%s subject=%r reason=%s — check mailroom service health",
+        to, subject, reason,
+    )
+    # Increment a file-based counter so ops dashboards can scrape it.
+    try:
+        current = 0
+        try:
+            current = int(open(_FALLBACK_COUNT_FILE).read().strip())
+        except (FileNotFoundError, ValueError):
+            pass
+        with open(_FALLBACK_COUNT_FILE, "w") as fh:
+            fh.write(str(current + 1))
+    except Exception as exc:
+        _log.warning("smtp_fallback counter write failed: %s", exc)
+    # Write alert to cortex claude_inbox for operator visibility.
+    try:
+        payload = json.dumps({
+            "severity": "warning",
+            "to": to,
+            "subject": subject,
+            "reason": reason,
+            "detail": "transactional email bypassed mailroom pool via raw-SMTP fallback",
+        })
+        conn = sqlite3.connect("/var/lib/cortex/cortex.db", timeout=3)
+        conn.execute(
+            "INSERT INTO claude_inbox(created_at,actor,project,kind,payload_json)"
+            " VALUES(strftime('%s','now'),'concerto-transactional','concerto','smtp_fallback',?)",
+            (payload,),
+        )
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        _log.warning("cortex claude_inbox alert write failed: %s", exc)
+
 
 class MigaduSMTPClient:
     def __init__(self):
@@ -56,27 +111,33 @@ class MigaduSMTPClient:
         self.password = os.environ["CONCERTO_SMTP_PASS_NOREPLY"]
         self.from_addr = os.environ["CONCERTO_EMAIL_FROM"]
         self.reply_to = os.environ["CONCERTO_EMAIL_REPLY_TO"]
+        # Explicit URL avoids mailroom.client DEFAULT_BASE_URL which defaults to
+        # port 8099; the real mailroom service listens on 8079.
+        mailroom_url = os.environ.get("MAILROOM_URL", "http://127.0.0.1:8079")
         self._mailroom: MailroomClient | None = (
-            MailroomClient() if _MAILROOM_AVAILABLE else None
+            MailroomClient(base_url=mailroom_url) if _MAILROOM_AVAILABLE else None
         )
 
-    def send(self, to: str, subject: str, html: str, text: str | None = None, *, _bypass_suppress: bool = False) -> str:
-        """Send email synchronously. Returns the Message-ID string.
+    def send(
+        self,
+        to: str,
+        subject: str,
+        html: str,
+        text: str | None = None,
+        *,
+        critical: bool = True,
+        _bypass_suppress: bool = False,
+    ) -> str:
+        """Send email. Returns the Message-ID string.
 
-        Order of attempts:
-          1. Route through mailroom (unified path, brand="concerto",
-             send_kind="transactional"). Honours suppression + warmup.
-          2. If mailroom is unreachable (MailroomError) AND
-             ``CONCERTO_TRANSACTIONAL_STRICT`` is not set, fall back to raw
-             Migadu SMTP — receipts must still ship if the pool service died.
+        ``critical=True``  (default) — payment receipts, billing alerts.
+            Mailroom primary; raw-SMTP fallback on unreachability (audible).
+        ``critical=False`` — drip / onboarding / marketing.
+            Mailroom only; DLQ + exception on failure, no raw-SMTP escape.
 
-        Raises smtplib.SMTPException only if every path failed and DLQ was
-        written. Suppression returns the sentinel ``"<suppressed>"``.
+        Suppression returns the sentinel ``"<suppressed>"``.
         """
-        # Defense-in-depth: respect CONCERTO_SUPPRESS_EMAILS_TO at the SMTP
-        # layer. send_email() in email_utils.py also enforces this, but any
-        # call site that directly uses get_client().send(...) (e.g. drip_runner,
-        # trial_reaper) would otherwise bypass the filter and spam the operator.
+        # Defense-in-depth suppression — catches callers that bypass email_utils.
         if not _bypass_suppress and _SUPPRESS_RE and _SUPPRESS_RE.match(to.strip().lower()):
             print(f"[email-suppress] dropped email to {to} (subject={subject!r})", flush=True)
             return "<suppressed>"
@@ -94,13 +155,22 @@ class MigaduSMTPClient:
                     idempotency_key=f"concerto:transactional:{to}:{subject}",
                 )
             except MailroomError as exc:
+                if not critical:
+                    # Non-critical: no SMTP escape — preserve pool health.
+                    self._write_dlq(to, subject, html, text,
+                                    f"mailroom unreachable: {exc}", retries=0)
+                    raise smtplib.SMTPException(
+                        f"mailroom unreachable (non-critical, deferred to DLQ): {exc}"
+                    )
                 if os.getenv("CONCERTO_TRANSACTIONAL_STRICT") == "1":
                     self._write_dlq(to, subject, html, text,
                                     f"mailroom unreachable: {exc}", retries=0)
                     raise smtplib.SMTPException(
                         f"mailroom unreachable and STRICT mode: {exc}"
                     )
-                _log.warning("mailroom unreachable, falling back to raw SMTP: %s", exc)
+                # Critical + non-strict: audible fallback to raw SMTP.
+                _alert_mailroom_fallback(to, subject, f"MailroomError: {exc}")
+                # fall through to raw SMTP below
             else:
                 status = resp.get("status")
                 if status == "sent":
@@ -112,21 +182,35 @@ class MigaduSMTPClient:
                     )
                 if status == "suppressed":
                     return "<suppressed>"
-                # status in ("blocked", "failed") — pool can't route this send
-                # right now. For transactional we treat that as "mailroom can't
-                # do it, fall back to raw SMTP" so the customer still gets
-                # their receipt. In STRICT mode we honour mailroom's verdict.
+                # status in ("blocked", "failed") — pool can't route this send.
+                err = resp.get("error") or status
+                if not critical:
+                    # Non-critical: pool failure → DLQ, no SMTP bypass.
+                    self._write_dlq(to, subject, html, text,
+                                    f"mailroom {status}: {err}", retries=0)
+                    raise smtplib.SMTPException(
+                        f"mailroom {status}: {err} (non-critical, deferred to DLQ)"
+                    )
                 if os.getenv("CONCERTO_TRANSACTIONAL_STRICT") == "1":
-                    err = resp.get("error") or status
                     self._write_dlq(to, subject, html, text,
                                     f"mailroom {status}: {err}", retries=0)
                     raise smtplib.SMTPException(f"mailroom {status}: {err}")
-                _log.warning(
-                    "mailroom returned %s (%s), falling back to raw SMTP",
-                    status, resp.get("error"),
+                # Critical + non-strict: audible fallback.
+                _alert_mailroom_fallback(to, subject, f"mailroom {status}: {err}")
+                # fall through to raw SMTP below
+        else:
+            # mailroom SDK not installed — should not happen in production.
+            if not critical:
+                self._write_dlq(to, subject, html, text,
+                                "mailroom SDK not available", retries=0)
+                raise smtplib.SMTPException(
+                    "mailroom SDK not available (non-critical, deferred to DLQ)"
                 )
+            _log.error(
+                "mailroom SDK not available — falling back to raw SMTP for critical send to %s", to
+            )
 
-        # 2. fallback path — raw Migadu SMTP (today's behaviour).
+        # 2. raw-SMTP fallback — only reached for critical sends.
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = f"Concerto <{self.from_addr}>"
@@ -156,9 +240,21 @@ class MigaduSMTPClient:
         self._write_dlq(to, subject, html, text, str(last_exc), retries=3)
         raise last_exc  # type: ignore[misc]
 
-    async def send_async(self, to: str, subject: str, html: str, text: str | None = None, *, _bypass_suppress: bool = False) -> str:
+    async def send_async(
+        self,
+        to: str,
+        subject: str,
+        html: str,
+        text: str | None = None,
+        *,
+        critical: bool = True,
+        _bypass_suppress: bool = False,
+    ) -> str:
         """Async wrapper around send() — runs in a thread pool."""
-        return await asyncio.to_thread(self.send, to, subject, html, text, _bypass_suppress=_bypass_suppress)
+        return await asyncio.to_thread(
+            self.send, to, subject, html, text,
+            critical=critical, _bypass_suppress=_bypass_suppress,
+        )
 
     def _write_dlq(
         self,

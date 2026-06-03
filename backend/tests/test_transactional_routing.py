@@ -4,17 +4,20 @@ This pins OUTCOME 1 of the email-system goal for the concerto.run brand:
 the noreply transactional path is no longer raw smtplib by default — it
 goes through ``mailroom.client.send`` with brand="concerto",
 send_kind="transactional", so warmup/quota/reputation/suppression all see
-it. The raw-SMTP fallback only engages when mailroom itself is unreachable
-(documented justified exception: transactional cannot block the purchase
-flow if mailroom is down).
+it. The raw-SMTP fallback only engages for CRITICAL sends when mailroom is
+unreachable. Non-critical sends (drip, marketing) are NEVER sent via raw
+SMTP — failure → DLQ only.
 
 What is asserted here:
-  * The default path calls ``MailroomClient.send`` with the right payload.
+  * The default (critical) path calls ``MailroomClient.send`` with the right payload.
   * A "sent" response short-circuits — raw smtplib is NEVER touched.
   * A "suppressed" response returns the suppression sentinel.
-  * On ``MailroomError`` (mailroom down), the raw SMTP fallback runs.
+  * On ``MailroomError`` (mailroom down) for CRITICAL: raw SMTP fallback runs.
+  * On ``MailroomError`` for NON-CRITICAL: DLQ + exception, no raw SMTP.
+  * On mailroom "failed" status for NON-CRITICAL: DLQ + exception, no raw SMTP.
   * With ``CONCERTO_TRANSACTIONAL_STRICT=1``, a MailroomError raises
-    instead of falling back.
+    instead of falling back (critical path).
+  * Critical fallback fires _alert_mailroom_fallback (ERROR log + inbox write).
 """
 from __future__ import annotations
 
@@ -40,6 +43,7 @@ def env(monkeypatch):
     monkeypatch.setenv("CONCERTO_EMAIL_REPLY_TO", "ops@concerto.run")
     monkeypatch.delenv("CONCERTO_TRANSACTIONAL_STRICT", raising=False)
     monkeypatch.delenv("CONCERTO_SUPPRESS_EMAILS_TO", raising=False)
+    monkeypatch.setenv("MAILROOM_URL", "http://127.0.0.1:8079")
 
     # Reload so the module-level regex picks up the env state.
     if "concerto.transactional" in sys.modules:
@@ -114,7 +118,7 @@ def test_mailroom_suppressed_returns_sentinel(env, monkeypatch):
 
 
 def test_mailroom_unreachable_falls_back_to_smtp(env, monkeypatch):
-    """When mailroom is down, transactional MUST still ship via raw SMTP.
+    """When mailroom is down, CRITICAL transactional MUST still ship via raw SMTP.
 
     Transactional cannot block the purchase flow — this is the documented,
     bounded exception for concerto.
@@ -145,10 +149,17 @@ def test_mailroom_unreachable_falls_back_to_smtp(env, monkeypatch):
     import smtplib
     monkeypatch.setattr(smtplib, "SMTP", _StubSMTP)
 
+    alerts: list[dict] = []
+
+    def _stub_alert(to, subject, reason):
+        alerts.append({"to": to, "subject": subject, "reason": reason})
+
+    monkeypatch.setattr(env, "_alert_mailroom_fallback", _stub_alert)
+
     client = env.MigaduSMTPClient()
     client._mailroom = _StubMailroom(env.MailroomError("connection refused"))
 
-    msg_id = client.send("buyer@example.com", "Order Receipt", "<p>thanks</p>")
+    msg_id = client.send("buyer@example.com", "Order Receipt", "<p>thanks</p>", critical=True)
 
     # The raw-SMTP path stamps a Message-ID derived from concerto.run.
     assert "@concerto.run" in msg_id
@@ -156,6 +167,9 @@ def test_mailroom_unreachable_falls_back_to_smtp(env, monkeypatch):
     assert captured["to"] == "buyer@example.com"
     assert captured["subject"] == "Order Receipt"
     assert captured["user"] == "noreply@concerto.run"
+    # Alert was fired.
+    assert len(alerts) == 1
+    assert alerts[0]["to"] == "buyer@example.com"
 
 
 def test_strict_mode_raises_when_mailroom_down(env, monkeypatch):
@@ -183,7 +197,7 @@ def test_strict_mode_raises_when_mailroom_down(env, monkeypatch):
 
 
 def test_mailroom_failed_falls_back_in_non_strict(env, monkeypatch):
-    """A mailroom-side ``failed`` (no inbox available) falls back to raw SMTP.
+    """A mailroom-side ``failed`` on a CRITICAL send falls back to raw SMTP.
 
     This protects transactional sends from a misconfigured pool — receipt
     still ships, operator notices via the digest. STRICT mode would honour
@@ -202,6 +216,8 @@ def test_mailroom_failed_falls_back_in_non_strict(env, monkeypatch):
     import smtplib
     monkeypatch.setattr(smtplib, "SMTP", _StubSMTP)
 
+    monkeypatch.setattr(env, "_alert_mailroom_fallback", lambda *a, **kw: None)
+
     client = env.MigaduSMTPClient()
     client._mailroom = _StubMailroom({
         "status": "failed",
@@ -210,7 +226,7 @@ def test_mailroom_failed_falls_back_in_non_strict(env, monkeypatch):
         "inbox_id": None,
     })
 
-    msg_id = client.send("buyer@example.com", "Receipt", "<p>x</p>")
+    msg_id = client.send("buyer@example.com", "Receipt", "<p>x</p>", critical=True)
     assert "@concerto.run" in msg_id
     assert captured.get("sent") is True
 
@@ -241,3 +257,93 @@ def test_suppression_pattern_short_circuits_before_mailroom(env, monkeypatch):
     # Reset module to keep test isolation for any later tests in the file.
     monkeypatch.delenv("CONCERTO_SUPPRESS_EMAILS_TO", raising=False)
     importlib.reload(tx)
+
+
+# ── Non-critical (drip/marketing) routing tests ──────────────────────────────
+
+def test_non_critical_no_smtp_fallback_on_mailroom_error(env, monkeypatch):
+    """Non-critical sends MUST NOT fall back to raw SMTP when mailroom is down.
+
+    Bypassing the pool for marketing/drip emails risks burning warm-up
+    reputation. Failure must go to DLQ and raise — never touch SMTP.
+    """
+    import smtplib
+    monkeypatch.setattr(smtplib, "SMTP", _boom_smtp)
+
+    dlq_writes: list[dict] = []
+
+    client = env.MigaduSMTPClient()
+    client._mailroom = _StubMailroom(env.MailroomError("connection refused"))
+    monkeypatch.setattr(
+        client, "_write_dlq",
+        lambda to, subject, html, text, error, retries: dlq_writes.append(
+            {"to": to, "error": error}
+        ),
+    )
+
+    with pytest.raises(smtplib.SMTPException) as ei:
+        client.send("user@example.com", "Onboarding Day 0", "<p>welcome</p>",
+                    critical=False)
+    assert "non-critical" in str(ei.value)
+    assert "DLQ" in str(ei.value)
+    assert len(dlq_writes) == 1
+    assert "mailroom unreachable" in dlq_writes[0]["error"]
+
+
+def test_non_critical_no_smtp_fallback_on_failed_status(env, monkeypatch):
+    """Non-critical sends DLQ when mailroom returns 'failed' — no SMTP."""
+    import smtplib
+    monkeypatch.setattr(smtplib, "SMTP", _boom_smtp)
+
+    dlq_writes: list[dict] = []
+
+    client = env.MigaduSMTPClient()
+    client._mailroom = _StubMailroom({
+        "status": "failed",
+        "tracking_id": "mr_test_nc_001",
+        "error": "no inbox available",
+        "inbox_id": None,
+    })
+    monkeypatch.setattr(
+        client, "_write_dlq",
+        lambda to, subject, html, text, error, retries: dlq_writes.append(
+            {"to": to, "error": error}
+        ),
+    )
+
+    with pytest.raises(smtplib.SMTPException) as ei:
+        client.send("user@example.com", "Onboarding Day 3", "<p>hello</p>",
+                    critical=False)
+    assert "non-critical" in str(ei.value)
+    assert len(dlq_writes) == 1
+    assert "failed" in dlq_writes[0]["error"]
+
+
+def test_critical_fallback_fires_alert(env, monkeypatch):
+    """Critical SMTP fallback calls _alert_mailroom_fallback (audible)."""
+    captured_alerts: list[dict] = []
+
+    def _fake_alert(to, subject, reason):
+        captured_alerts.append({"to": to, "subject": subject, "reason": reason})
+
+    monkeypatch.setattr(env, "_alert_mailroom_fallback", _fake_alert)
+
+    class _StubSMTP:
+        def __init__(self, *a, **kw): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def starttls(self, **kw): pass
+        def login(self, *a): pass
+        def send_message(self, msg): pass
+
+    import smtplib
+    monkeypatch.setattr(smtplib, "SMTP", _StubSMTP)
+
+    client = env.MigaduSMTPClient()
+    client._mailroom = _StubMailroom(env.MailroomError("mailroom down"))
+
+    client.send("buyer@example.com", "Payment Receipt", "<p>paid</p>", critical=True)
+
+    assert len(captured_alerts) == 1
+    assert captured_alerts[0]["to"] == "buyer@example.com"
+    assert "MailroomError" in captured_alerts[0]["reason"]
