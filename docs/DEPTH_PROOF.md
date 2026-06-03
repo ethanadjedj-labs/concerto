@@ -19,7 +19,7 @@ Source of truth: `/var/lib/concerto/concerto.db` (production SQLite).
 | External paying customers                    | 0     | `SELECT COUNT(*) FROM concerto_buyers WHERE plan != 'trial'` |
 | Trials by external (non-operator) emails     | 0     | only `adjedjethan@gmail.com` row, matched by `_OPERATOR_EMAIL_RE` in `backend/concerto/trial_router.py:20` |
 | Buyers in a failure state                    | 0     | `provisioning_failed`/`failed_install`/`api_key_invalid`/`account_no_credit`/`provisioning_timeout`/`refunded` |
-| Real (non-test/QA) Stripe webhook events     | 0     | `SELECT COUNT(*) FROM stripe_processed_events WHERE event_id NOT LIKE 'evt_test_%' AND event_id NOT LIKE 'evt_qa_%'` |
+| Real (Stripe-issued, non-fixture) webhook events | 0 | All 17 `stripe_processed_events` rows are QA fixtures. The narrow filter `event_id NOT LIKE 'evt_test_%' AND ... NOT LIKE 'evt_qa_%'` returns 3 (`evt_noproduct_*`, `evt_idempotency_test_*`, `evt_emailfix_test_*`) — inspection of those 3 IDs confirms they are also QA-origin (no Stripe-issued `evt_[0-9]…` IDs are present). |
 | Lifecycle pause/resume events                | 6     | `SELECT COUNT(*) FROM concerto_lifecycle_events` |
 | OAuth failures (`concerto_oauth_failures`)   | 0     | table empty since F-01..F-13 hardening |
 | Dead-letter emails to real customers         | 0     | all 15 rows are May-17/18 QA bursts to `*+qa-*@gmail.com` and `*@test.com` |

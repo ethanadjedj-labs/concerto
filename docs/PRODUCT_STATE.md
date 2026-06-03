@@ -107,14 +107,27 @@ One historical Northflank service, cleanly destroyed. **Zero orphans.**
 
 ```
 sqlite3 /var/lib/concerto/concerto.db \
-  "SELECT COUNT(*) FROM stripe_processed_events
+  "SELECT event_id FROM stripe_processed_events
    WHERE event_id NOT LIKE 'evt_test_%' AND event_id NOT LIKE 'evt_qa_%';"
--- → 0
+-- → evt_noproduct_1779088431
+-- → evt_idempotency_test_1779088454
+-- → evt_emailfix_test_1779100566
 ```
 
-All 17 rows are QA fixtures from the 2026-05-17 hardening sweep
-(`evt_test_solo_e2e_*`, `evt_qa_solo_*`, `evt_qa_pro_*`). Zero real
-checkouts have hit the webhook yet.
+The narrow `NOT LIKE` filter returns 3 rows but inspection shows all 3
+are themselves QA fixtures from the 2026-05-17/05-18 hardening sweep,
+just with non-uniform naming (`evt_noproduct_*`, `evt_idempotency_test_*`,
+`evt_emailfix_test_*`). The remaining 14 rows match the
+`evt_test_solo_e2e_*` / `evt_qa_solo_*` / `evt_qa_pro_*` shapes. No
+real Stripe-issued event ID (which would start with `evt_[0-9]`) is
+present. Zero real checkouts have hit the webhook yet.
+
+`/api/admin/product-metrics` reports `stripe.events_real = 3` because
+its filter is purely the `NOT LIKE 'evt_test_%' / 'evt_qa_%'`
+heuristic — see the discrepancy noted in `docs/DEPTH_PROOF.md` §1. The
+honest interpretation is: the endpoint flag means "event ID does not
+match the two most common QA prefixes", not "originated from a real
+Stripe charge".
 
 ## 6. OAuth failures
 
