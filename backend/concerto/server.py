@@ -20,6 +20,7 @@ from concerto.nf_admin_router import router as nf_admin_router
 from concerto.activity_router import router as activity_router
 from concerto.mcp_proxy_router import router as mcp_proxy_router
 from concerto.demand_router import router as demand_router
+from concerto.product_metrics_router import router as product_metrics_router
 
 _MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "migrations")
 _MIGRATIONS = [
@@ -119,3 +120,4 @@ app.include_router(nf_admin_router)
 app.include_router(activity_router)
 app.include_router(mcp_proxy_router)
 app.include_router(demand_router)
+app.include_router(product_metrics_router)
