@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { Check, ExternalLink, RefreshCw, Github } from "lucide-react"
 import {
   DEMO_TEXTS,
   DEMO_TIMINGS,
@@ -11,21 +10,16 @@ import {
 
 /* ── Types ────────────────────────────────────────────────────── */
 
-type Step = 1 | 2 | 3
-
-type SignInPhase =
-  | "idle"          // primary "Sign in with Claude" button
-  | "starting"      // button shows "Preparing sign-in…"
-  | "awaiting_code" // open-Anthropic link + paste field, empty
-  | "code_typed"    // paste field filled, ready to submit
-  | "finishing"     // submit clicked, spinner running
-  | "success"       // green confirmation visible
-
 interface DemoState {
-  step: Step
-  signIn: SignInPhase
-  codeChars: number          // how many characters of the pasted code are visible
-  connectPhase: "ready" | "waiting"
+  userChars: number        // chars of user message visible in input
+  messageSent: boolean     // message moved from input to chat history
+  showThinking: boolean    // Claude thinking dots
+  showIntro: boolean       // Claude's decompose intro text
+  sessionCount: number     // 0..3 session cards visible
+  session1Done: boolean
+  session2Done: boolean
+  session3Done: boolean
+  showReport: boolean      // Claude's final summary
   fading: boolean
 }
 
@@ -36,10 +30,15 @@ interface CursorState {
 }
 
 const INITIAL: DemoState = {
-  step: 1,
-  signIn: "idle",
-  codeChars: 0,
-  connectPhase: "ready",
+  userChars: 0,
+  messageSent: false,
+  showThinking: false,
+  showIntro: false,
+  sessionCount: 0,
+  session1Done: false,
+  session2Done: false,
+  session3Done: false,
+  showReport: false,
   fading: false,
 }
 
@@ -57,14 +56,14 @@ function usePrefersReducedMotion(): boolean {
   return r
 }
 
-/* ── CSS keyframes (reused across the component) ────────────────── */
+/* ── CSS keyframes ────────────────────────────────────────────── */
 
 const CSS_KEYFRAMES = `
   @keyframes cc-fade-in {
     from { opacity: 0 } to { opacity: 1 }
   }
   @keyframes cc-fade-up {
-    from { opacity: 0; transform: translateY(6px) }
+    from { opacity: 0; transform: translateY(8px) }
     to   { opacity: 1; transform: translateY(0)   }
   }
   @keyframes cc-blink {
@@ -81,6 +80,14 @@ const CSS_KEYFRAMES = `
   }
   @keyframes cc-spin {
     to { transform: rotate(360deg) }
+  }
+  @keyframes cc-dot-pulse {
+    0%, 80%, 100% { transform: scale(0.5); opacity: 0.4 }
+    40%           { transform: scale(1);   opacity: 1   }
+  }
+  @keyframes cc-session-in {
+    from { opacity: 0; transform: translateX(-8px) }
+    to   { opacity: 1; transform: translateX(0)    }
   }
 `
 
@@ -145,7 +152,7 @@ function MouseCursor({ x, y, clicking }: CursorState) {
   )
 }
 
-/* ── Cursor animation engine (identical math, different waypoints) ── */
+/* ── Cursor animation engine ────────────────────────────────────── */
 
 function useCursorAnimation(
   waypoints: CursorWaypoint[],
@@ -211,649 +218,486 @@ function useCursorAnimation(
   return cursor
 }
 
-/* ── Concerto logo mark (matches /brand/logo-mark.png at small size) ── */
+/* ── Claude avatar circle ───────────────────────────────────────── */
 
-function LogoMark({ size = 28 }: { size?: number }) {
-  // Same image the real dashboard uses for header branding.
-  // eslint-disable-next-line @next/next/no-img-element
+function ClaudeAvatar({ size = 26 }: { size?: number }) {
   return (
-    <img
-      src="/brand/logo-mark.png?v=3"
-      alt=""
-      width={size}
-      height={size}
-      style={{ display: "block", width: size, height: size }}
-    />
-  )
-}
-
-/* ── Concerto top header (matches dashboard sticky header) ──────── */
-
-function DashHeader() {
-  return (
-    <header
+    <div
+      aria-hidden="true"
       style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 5,
-        borderBottom: "1px solid rgba(25,25,25,0.07)",
-        background: "rgba(250,249,245,0.90)",
-        backdropFilter: "blur(12px)",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, #cc785c 0%, #a05a42 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        fontSize: Math.round(size * 0.44),
+        color: "#ffffff",
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
       }}
     >
-      <div
-        style={{
-          maxWidth: 560,
-          margin: "0 auto",
-          padding: "10px 18px",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
-        <LogoMark size={24} />
-        <span
-          style={{
-            fontSize: 16,
-            fontWeight: 500,
-            letterSpacing: "-0.01em",
-            color: "#191919",
-            lineHeight: 1,
-          }}
-        >
-          Concerto
-        </span>
-      </div>
-    </header>
-  )
-}
-
-/* ── 3-step progress bar (matches ProgressBar in dashboard) ──────── */
-
-function ProgressBar({ step }: { step: Step }) {
-  const labels = DEMO_TEXTS.progressLabels
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        {([1, 2, 3] as const).map((s, i) => (
-          <div key={s} style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                width: 64,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  width: 22,
-                  height: 22,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "50%",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  backgroundColor:
-                    s < step
-                      ? "#cc785c"
-                      : s === step
-                        ? "#cc785c"
-                        : "rgba(25,25,25,0.08)",
-                  color: s <= step ? "#ffffff" : "#8a847b",
-                  transition: "background-color 0.35s ease, color 0.35s ease",
-                }}
-              >
-                {s < step ? <Check size={12} strokeWidth={3} /> : s}
-              </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: s === step ? "#191919" : "#8a847b",
-                  transition: "color 0.35s ease",
-                }}
-              >
-                {labels[i]}
-              </span>
-            </div>
-            {i < 2 && (
-              <div
-                style={{
-                  height: 2,
-                  width: 28,
-                  marginBottom: 18,
-                  background: s < step ? "#cc785c" : "rgba(25,25,25,0.12)",
-                  transition: "background 0.35s ease",
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      C
     </div>
   )
 }
 
-/* ── Card primitive (matches dashboard rounded-2xl card) ─────────── */
+/* ── Thinking dots (Claude is reasoning) ───────────────────────── */
 
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function ThinkingDots() {
   return (
     <div
       style={{
-        borderRadius: 16,
+        display: "flex",
+        gap: 5,
+        alignItems: "center",
+        padding: "10px 14px",
+        borderRadius: 12,
+        borderBottomLeftRadius: 3,
         background: "#ffffff",
-        border: "1px solid #f3efe5",
-        animation: "cc-fade-up 0.32s cubic-bezier(0.22,1,0.36,1) both",
-        ...style,
+        border: "1px solid rgba(25,25,25,0.08)",
+        animation: "cc-fade-in 0.25s ease both",
+        width: "fit-content",
       }}
     >
-      {children}
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          style={{
+            display: "block",
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#8a847b",
+            animation: "cc-dot-pulse 1.2s ease-in-out infinite",
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
+      ))}
     </div>
   )
 }
 
-/* ── Step 1: Sign in to Claude ───────────────────────────────────── */
+/* ── Session status badge ───────────────────────────────────────── */
 
-function Step1Card({
-  phase,
-  codeChars,
-}: {
-  phase: SignInPhase
-  codeChars: number
-}) {
-  const t = DEMO_TEXTS.step1
-  const codeText = t.codeTyped.slice(0, codeChars)
-  const typing = phase === "awaiting_code" && codeChars < t.codeTyped.length
-  const showSuccess = phase === "success"
-  const showInitialButton = phase === "idle" || phase === "starting"
-  const showCodeFlow =
-    phase === "awaiting_code" ||
-    phase === "code_typed" ||
-    phase === "finishing"
-
+function SessionStatusBadge({ done }: { done: boolean }) {
+  if (done) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3,
+          borderRadius: 4,
+          padding: "2px 7px",
+          fontSize: 11,
+          fontWeight: 500,
+          background: "rgba(204,120,92,0.10)",
+          color: "#cc785c",
+          flexShrink: 0,
+          animation: "cc-fade-in 0.3s ease both",
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path
+            d="M2 5l2.5 2.5L8 3"
+            stroke="#cc785c"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        done
+      </span>
+    )
+  }
   return (
-    <Card style={{ padding: "20px 22px" }}>
-      <div style={{ marginBottom: 16 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 19,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            color: "#191919",
-          }}
-        >
-          {t.title}
-        </h2>
-        <p
-          style={{
-            marginTop: 6,
-            marginBottom: 0,
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: "#8a847b",
-          }}
-        >
-          {t.blurb}
-        </p>
-      </div>
-
-      {showInitialButton && !showSuccess && (
-        <button
-          type="button"
-          style={{
-            width: "100%",
-            borderRadius: 12,
-            background: "#cc785c",
-            color: "#ffffff",
-            fontSize: 14,
-            fontWeight: 500,
-            minHeight: 44,
-            border: "none",
-            cursor: "default",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            transition: "background 0.25s ease",
-          }}
-        >
-          {phase === "starting" ? (
-            <>
-              <RefreshCw
-                size={14}
-                style={{
-                  transformOrigin: "center",
-                  animation: "cc-spin 1.2s linear infinite",
-                }}
-              />
-              {t.primaryStarting}
-            </>
-          ) : (
-            t.primaryIdle
-          )}
-        </button>
-      )}
-
-      {showCodeFlow && !showSuccess && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              width: "100%",
-              minHeight: 42,
-              borderRadius: 12,
-              background: "#191919",
-              color: "#ffffff",
-              fontSize: 13.5,
-              fontWeight: 600,
-            }}
-          >
-            {t.openAnthropic}
-            <ExternalLink size={14} />
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#191919",
-                marginBottom: 6,
-              }}
-            >
-              {t.codeLabel}
-            </label>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                minHeight: 40,
-                padding: "8px 12px",
-                borderRadius: 12,
-                border: "2px solid #cc785c",
-                background: "#ffffff",
-                fontSize: 13,
-                fontFamily:
-                  "'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
-                color: codeChars === 0 ? "#a59f97" : "#191919",
-                boxShadow:
-                  phase === "awaiting_code" || phase === "code_typed"
-                    ? "0 0 0 3px rgba(204,120,92,0.15)"
-                    : "none",
-                letterSpacing: "0.01em",
-              }}
-            >
-              {codeChars === 0 ? t.codePlaceholder : codeText}
-              {typing && (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 1.4,
-                    height: "1.1em",
-                    background: "#cc785c",
-                    verticalAlign: "text-bottom",
-                    marginLeft: 1,
-                    animation: "cc-blink 0.7s step-end infinite",
-                    borderRadius: 1,
-                  }}
-                />
-              )}
-            </div>
-
-            <button
-              type="button"
-              style={{
-                marginTop: 10,
-                width: "100%",
-                borderRadius: 12,
-                background:
-                  phase === "code_typed" || phase === "finishing"
-                    ? "#cc785c"
-                    : "rgba(204,120,92,0.5)",
-                color: "#ffffff",
-                fontSize: 14,
-                fontWeight: 500,
-                minHeight: 44,
-                border: "none",
-                cursor: "default",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                transition: "background 0.25s ease",
-              }}
-            >
-              {phase === "finishing" ? (
-                <>
-                  <RefreshCw
-                    size={14}
-                    style={{
-                      transformOrigin: "center",
-                      animation: "cc-spin 1.2s linear infinite",
-                    }}
-                  />
-                  {t.finishing}
-                </>
-              ) : (
-                t.primaryComplete
-              )}
-            </button>
-
-            <p
-              style={{
-                marginTop: 8,
-                marginBottom: 0,
-                fontSize: 11,
-                lineHeight: 1.5,
-                color: "#8a847b",
-              }}
-            >
-              {t.helpHint}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {showSuccess && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            borderRadius: 12,
-            padding: "12px 14px",
-            background: "rgba(34,197,94,0.08)",
-            color: "#16a34a",
-            border: "1px solid rgba(34,197,94,0.2)",
-            fontSize: 14,
-            fontWeight: 500,
-            animation: "cc-fade-in 0.3s ease both",
-          }}
-        >
-          <Check size={16} strokeWidth={2.5} />
-          {DEMO_TEXTS.step1.success}
-        </div>
-      )}
-    </Card>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        borderRadius: 4,
+        padding: "2px 7px",
+        fontSize: 11,
+        fontWeight: 500,
+        background: "rgba(204,120,92,0.10)",
+        color: "#cc785c",
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          display: "inline-block",
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#cc785c",
+          animation: "cc-blink 1.1s step-end infinite",
+          flexShrink: 0,
+        }}
+      />
+      running
+    </span>
   )
 }
 
-/* ── Step 2: Connect Concerto to Claude ──────────────────────────── */
+/* ── Individual session card ────────────────────────────────────── */
 
-function Step2Card({ phase }: { phase: "ready" | "waiting" }) {
-  const t = DEMO_TEXTS.step2
+function SessionCard({
+  session,
+  done,
+  index,
+}: {
+  session: { id: string; label: string; task: string }
+  done: boolean
+  index: number
+}) {
   return (
-    <Card style={{ padding: "20px 22px" }}>
-      <div style={{ marginBottom: 16 }}>
-        <h2
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        padding: "7px 10px",
+        borderRadius: 8,
+        border: "1px solid rgba(25,25,25,0.08)",
+        background: "#faf9f5",
+        animation: "cc-session-in 0.35s cubic-bezier(0.22,1,0.36,1) both",
+        animationDelay: `${index * 0.05}s`,
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <span
           style={{
-            margin: 0,
-            fontSize: 19,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
+            fontFamily: "'SF Mono', 'JetBrains Mono', Consolas, monospace",
+            fontSize: 12,
+            fontWeight: 500,
             color: "#191919",
+            display: "block",
           }}
         >
-          {t.title}
-        </h2>
-        <p
+          {session.label}
+        </span>
+        <span
           style={{
-            marginTop: 6,
-            marginBottom: 0,
-            fontSize: 13,
-            lineHeight: 1.55,
+            fontSize: 11,
             color: "#8a847b",
+            display: "block",
+            marginTop: 1,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
-          {t.blurb}
-        </p>
+          {session.task}
+        </span>
       </div>
+      <SessionStatusBadge done={done} />
+    </div>
+  )
+}
 
+/* ── Chat header ────────────────────────────────────────────────── */
+
+function ChatHeader() {
+  return (
+    <div
+      style={{
+        padding: "9px 14px",
+        borderBottom: "1px solid rgba(25,25,25,0.07)",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: "rgba(250,249,245,0.96)",
+        backdropFilter: "blur(10px)",
+        flexShrink: 0,
+      }}
+    >
+      <ClaudeAvatar size={22} />
+      <span
+        style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: "#191919",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        Claude
+      </span>
+      <span
+        style={{
+          marginLeft: "auto",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          color: "#cc785c",
+          background: "rgba(204,120,92,0.10)",
+          borderRadius: 4,
+          padding: "2px 6px",
+        }}
+      >
+        CONCERTO
+      </span>
+    </div>
+  )
+}
+
+/* ── Chat input area ────────────────────────────────────────────── */
+
+function ChatInput({ state }: { state: DemoState }) {
+  const userMsg = DEMO_TEXTS.userMessage
+  const visibleText = userMsg.slice(0, state.userChars)
+  const isTyping = !state.messageSent && state.userChars > 0 && state.userChars < userMsg.length
+  const showCaret = !state.messageSent && state.userChars > 0
+
+  return (
+    <div
+      style={{
+        padding: "8px 12px",
+        borderTop: "1px solid rgba(25,25,25,0.07)",
+        background: "#ffffff",
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      {/* Input field */}
       <div
         style={{
+          flex: 1,
+          minHeight: 36,
+          borderRadius: 10,
+          border: "1px solid rgba(25,25,25,0.12)",
+          background: "#faf9f5",
+          padding: "8px 12px",
+          fontSize: 13,
+          color: "#191919",
+          display: "flex",
+          alignItems: "center",
+          boxShadow:
+            state.userChars > 0 && !state.messageSent
+              ? "0 0 0 2px rgba(204,120,92,0.18)"
+              : "none",
+          transition: "box-shadow 0.2s ease",
+          overflow: "hidden",
+        }}
+      >
+        {state.userChars === 0 || state.messageSent ? (
+          <span style={{ color: "#a59f97" }}>Ask Claude to build something…</span>
+        ) : (
+          <>
+            <span>{visibleText}</span>
+            {showCaret && (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 1.5,
+                  height: "1.1em",
+                  background: "#cc785c",
+                  verticalAlign: "text-bottom",
+                  marginLeft: 1,
+                  borderRadius: 1,
+                  animation: isTyping ? "none" : "cc-blink 0.7s step-end infinite",
+                }}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Send button */}
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 9,
+          background:
+            state.userChars > 0 && !state.messageSent
+              ? "#cc785c"
+              : "rgba(25,25,25,0.08)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 8,
-          width: "100%",
-          minHeight: 46,
-          borderRadius: 12,
-          background: "#cc785c",
-          color: "#ffffff",
-          fontSize: 14,
-          fontWeight: 600,
-          boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
+          flexShrink: 0,
+          transition: "background 0.2s ease",
         }}
       >
-        {t.primary}
-        <ExternalLink size={14} />
-      </div>
-
-      <div
-        style={{
-          marginTop: 12,
-          fontSize: 12.5,
-          lineHeight: 1.5,
-          color: "#191919",
-        }}
-      >
-        <span style={{ color: "#8a847b" }}>In Claude:</span>{" "}
-        <strong style={{ fontWeight: 600 }}>Add</strong> · then{" "}
-        <strong style={{ fontWeight: 600 }}>Connect</strong>
-      </div>
-
-      {phase === "waiting" && (
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            borderRadius: 12,
-            background: "#faf9f5",
-            border: "1px solid #f3efe5",
-            animation: "cc-fade-in 0.3s ease both",
-          }}
-        >
-          <RefreshCw
-            size={14}
-            style={{
-              flexShrink: 0,
-              color: "#cc785c",
-              animation: "cc-spin 1.2s linear infinite",
-            }}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path
+            d="M1 7h11M8 3l4 4-4 4"
+            stroke={
+              state.userChars > 0 && !state.messageSent ? "#ffffff" : "#8a847b"
+            }
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: "#191919",
-              lineHeight: 1.4,
-            }}
-          >
-            {t.waiting}
-          </p>
-        </div>
-      )}
-    </Card>
+        </svg>
+      </div>
+    </div>
   )
 }
 
-/* ── Step 3: You're all set ──────────────────────────────────────── */
+/* ── Chat messages area ─────────────────────────────────────────── */
 
-function Step3Card() {
-  const t = DEMO_TEXTS.step3
+function ChatMessages({ state }: { state: DemoState }) {
+  const sessions = DEMO_TEXTS.sessions
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        padding: "14px 12px 10px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        overflow: "hidden",
+      }}
+    >
+      {/* User message bubble (appears after send) */}
+      {state.messageSent && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            animation: "cc-fade-up 0.28s cubic-bezier(0.22,1,0.36,1) both",
+          }}
+        >
+          <div
+            style={{
+              background: "#cc785c",
+              color: "#ffffff",
+              borderRadius: 12,
+              borderBottomRightRadius: 3,
+              padding: "9px 13px",
+              fontSize: 13,
+              fontWeight: 500,
+              maxWidth: "78%",
+              lineHeight: 1.45,
+            }}
+          >
+            {DEMO_TEXTS.userMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Claude thinking */}
+      {state.showThinking && !state.showIntro && (
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <ClaudeAvatar size={24} />
+          <ThinkingDots />
+        </div>
+      )}
+
+      {/* Claude intro + session cards */}
+      {state.showIntro && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+            animation: "cc-fade-up 0.28s cubic-bezier(0.22,1,0.36,1) both",
+          }}
+        >
+          <ClaudeAvatar size={24} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Claude intro text */}
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid rgba(25,25,25,0.08)",
+                borderRadius: 12,
+                borderBottomLeftRadius: 3,
+                padding: "9px 13px",
+                fontSize: 13,
+                color: "#191919",
+                lineHeight: 1.5,
+                marginBottom: 7,
+              }}
+            >
+              {DEMO_TEXTS.claudeIntro}
+            </div>
+
+            {/* Session cards */}
+            {state.sessionCount > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {(sessions.slice(0, state.sessionCount) as ReadonlyArray<typeof sessions[number]>).map(
+                  (session, i) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      done={
+                        (i === 0 && state.session1Done) ||
+                        (i === 1 && state.session2Done) ||
+                        (i === 2 && state.session3Done)
+                      }
+                      index={i}
+                    />
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Claude final report */}
+      {state.showReport && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+            animation: "cc-fade-up 0.28s cubic-bezier(0.22,1,0.36,1) both",
+          }}
+        >
+          <ClaudeAvatar size={24} />
+          <div
+            style={{
+              flex: 1,
+              background: "#ffffff",
+              border: "1px solid rgba(204,120,92,0.22)",
+              borderRadius: 12,
+              borderBottomLeftRadius: 3,
+              padding: "9px 13px",
+              fontSize: 13,
+              color: "#191919",
+              lineHeight: 1.5,
+            }}
+          >
+            {DEMO_TEXTS.claudeReport}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Full chat body ─────────────────────────────────────────────── */
+
+function ChatBody({ state }: { state: DemoState }) {
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "stretch",
-        gap: 12,
-        animation: "cc-fade-up 0.32s cubic-bezier(0.22,1,0.36,1) both",
+        height: "100%",
+        background: "#faf9f5",
       }}
     >
-      {/* Headline + GitHub action */}
-      <div>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 18,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            color: "#191919",
-            lineHeight: 1.25,
-          }}
-        >
-          {t.title}
-        </h2>
-        <p
-          style={{
-            marginTop: 4,
-            marginBottom: 0,
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: "#8a847b",
-          }}
-        >
-          {t.blurb}
-        </p>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            width: "100%",
-            minHeight: 46,
-            borderRadius: 12,
-            background: "#24292f",
-            color: "#ffffff",
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          <Github size={16} />
-          {t.githubButton}
-        </div>
-      </div>
-
-      {/* You're all set callout */}
-      <div
-        style={{
-          marginTop: 8,
-          paddingTop: 14,
-          borderTop: "1px solid #efeae0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 50% 45%, rgba(204,120,92,0.18) 0%, rgba(204,120,92,0.06) 60%, transparent 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 10,
-          }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "#cc785c",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Check size={16} color="#ffffff" strokeWidth={3} />
-          </div>
-        </div>
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 17,
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            color: "#191919",
-          }}
-        >
-          {t.setHeadline}
-        </h3>
-        <p
-          style={{
-            marginTop: 4,
-            marginBottom: 10,
-            fontSize: 12.5,
-            lineHeight: 1.5,
-            color: "#8a847b",
-            maxWidth: 320,
-          }}
-        >
-          {t.setBlurb}
-        </p>
-
-        <div
-          style={{
-            width: "100%",
-            borderRadius: 12,
-            background: "#faf9f5",
-            border: "1px solid #f3efe5",
-            padding: "10px 12px",
-            textAlign: "left",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 10.5,
-              fontWeight: 600,
-              letterSpacing: "0.07em",
-              color: "#8a847b",
-            }}
-          >
-            {t.promptLabel}
-          </p>
-          <p
-            style={{
-              marginTop: 4,
-              marginBottom: 0,
-              fontFamily:
-                "'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
-              fontSize: 13,
-              color: "#191919",
-            }}
-          >
-            {t.promptText}
-          </p>
-        </div>
-      </div>
+      <ChatHeader />
+      <ChatMessages state={state} />
+      <ChatInput state={state} />
     </div>
   )
 }
 
-/* ── Browser chrome shell (mac title bar + concerto URL) ─────────── */
+/* ── Browser chrome shell ───────────────────────────────────────── */
 
 function DemoShell({
   fading,
@@ -869,7 +713,7 @@ function DemoShell({
   return (
     <div
       role="img"
-      aria-label="Concerto demo: the real onboarding wizard"
+      aria-label="Concerto demo: one conversation with Claude orchestrating parallel Claude Code sessions"
       className="relative w-full select-none"
       style={{
         opacity: fading ? 0 : 1,
@@ -925,7 +769,7 @@ function DemoShell({
               border: "1px solid rgba(25,25,25,0.06)",
             }}
           >
-            concerto.run/dashboard
+            claude.ai
           </div>
           <div style={{ width: 44, flexShrink: 0 }} />
         </div>
@@ -944,42 +788,6 @@ function DemoShell({
           <MouseCursor x={cursor.x} y={cursor.y} clicking={cursor.clicking} />
         </div>
       </div>
-    </div>
-  )
-}
-
-/* ── Inner wizard scroll area ────────────────────────────────────── */
-
-function WizardBody({ state }: { state: DemoState }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-      }}
-    >
-      <DashHeader />
-      <main
-        style={{
-          flex: 1,
-          padding: "22px 18px 18px",
-          maxWidth: 520,
-          width: "100%",
-          margin: "0 auto",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ marginBottom: 20 }}>
-          <ProgressBar step={state.step} />
-        </div>
-
-        {state.step === 1 && (
-          <Step1Card phase={state.signIn} codeChars={state.codeChars} />
-        )}
-        {state.step === 2 && <Step2Card phase={state.connectPhase} />}
-        {state.step === 3 && <Step3Card />}
-      </main>
     </div>
   )
 }
@@ -1011,75 +819,49 @@ function AnimatedDemo() {
     clearTimers()
     setState(INITIAL)
     const T = DEMO_TIMINGS
-    const code = DEMO_TEXTS.step1.codeTyped
+    const msg = DEMO_TEXTS.userMessage
 
-    // ── Step 1: sign-in flow ────────────────────────────────────
-    // Click "Sign in with Claude" → briefly show "Preparing…"
-    add(() => setState((s) => ({ ...s, signIn: "starting" })), T.signInClickAt)
-
-    // Card morphs to the OAuth code-paste form
-    add(
-      () => setState((s) => ({ ...s, signIn: "awaiting_code" })),
-      T.awaitingCodeAt,
-    )
-
-    // Type the pasted code character by character
-    for (let c = 1; c <= code.length; c++) {
+    // User types message character by character
+    for (let c = 1; c <= msg.length; c++) {
       const cap = c
       add(
-        () => setState((s) => ({ ...s, codeChars: cap })),
-        T.codeTypeStartAt + cap * T.streamMs,
+        () => setState((s) => ({ ...s, userChars: cap })),
+        T.userTypeStartAt + (cap - 1) * T.streamMs,
       )
     }
-    // After typing finishes, mark the "code_typed" phase so the submit
-    // button switches from disabled-look to active peach.
+
+    // User sends the message (input clears, message appears in chat)
     add(
-      () =>
-        setState((s) => ({
-          ...s,
-          codeChars: code.length,
-          signIn: "code_typed",
-        })),
-      T.codeTypeEndAt,
+      () => setState((s) => ({ ...s, messageSent: true, userChars: msg.length })),
+      T.sendClickAt,
     )
 
-    // Click "Complete sign-in" → finishing spinner
+    // Claude thinking dots appear
     add(
-      () => setState((s) => ({ ...s, signIn: "finishing" })),
-      T.finishingAt,
-    )
-    // Green confirmation
-    add(() => setState((s) => ({ ...s, signIn: "success" })), T.successAt)
-
-    // ── Step 2: connect flow ────────────────────────────────────
-    add(
-      () =>
-        setState((s) => ({
-          ...s,
-          step: 2,
-          signIn: "idle",
-          codeChars: 0,
-          connectPhase: "ready",
-        })),
-      T.step2AppearAt,
-    )
-    add(
-      () => setState((s) => ({ ...s, connectPhase: "waiting" })),
-      T.waitingAt,
+      () => setState((s) => ({ ...s, showThinking: true })),
+      T.thinkingAt,
     )
 
-    // ── Step 3: you're all set ──────────────────────────────────
+    // Claude's intro replaces thinking dots
     add(
-      () =>
-        setState((s) => ({
-          ...s,
-          step: 3,
-          connectPhase: "ready",
-        })),
-      T.step3AppearAt,
+      () => setState((s) => ({ ...s, showThinking: false, showIntro: true })),
+      T.claudeIntroAt,
     )
 
-    // Fade out, loop restart
+    // Session cards appear one by one
+    add(() => setState((s) => ({ ...s, sessionCount: 1 })), T.session1At)
+    add(() => setState((s) => ({ ...s, sessionCount: 2 })), T.session2At)
+    add(() => setState((s) => ({ ...s, sessionCount: 3 })), T.session3At)
+
+    // Sessions complete one by one
+    add(() => setState((s) => ({ ...s, session1Done: true })), T.session1DoneAt)
+    add(() => setState((s) => ({ ...s, session2Done: true })), T.session2DoneAt)
+    add(() => setState((s) => ({ ...s, session3Done: true })), T.session3DoneAt)
+
+    // Claude's final report
+    add(() => setState((s) => ({ ...s, showReport: true })), T.claudeReportAt)
+
+    // Fade out, then loop
     add(() => setState((s) => ({ ...s, fading: true })), T.fadeOutAt)
     add(() => runLoopRef.current(), T.loopDuration)
   }, [clearTimers, add])
@@ -1104,7 +886,7 @@ function AnimatedDemo() {
         cursor={cursor}
         containerRef={containerRef}
       >
-        <WizardBody state={state} />
+        <ChatBody state={state} />
       </DemoShell>
     </>
   )
@@ -1113,12 +895,16 @@ function AnimatedDemo() {
 /* ── Static fallback (prefers-reduced-motion) ─────────────────────── */
 
 function StaticFallback() {
-  // Show the final, most reassuring frame: step 3 "You're all set".
   const finalState: DemoState = {
-    step: 3,
-    signIn: "idle",
-    codeChars: 0,
-    connectPhase: "ready",
+    userChars: DEMO_TEXTS.userMessage.length,
+    messageSent: true,
+    showThinking: false,
+    showIntro: true,
+    sessionCount: 3,
+    session1Done: true,
+    session2Done: true,
+    session3Done: true,
+    showReport: true,
     fading: false,
   }
   return (
@@ -1129,13 +915,13 @@ function StaticFallback() {
         cursor={{ x: -100, y: -100, clicking: false }}
         containerRef={{ current: null }}
       >
-        <WizardBody state={finalState} />
+        <ChatBody state={finalState} />
       </DemoShell>
     </>
   )
 }
 
-/* ── Export ────────────────────────────────────────────────────────── */
+/* ── Export ──────────────────────────────────────────────────────── */
 
 export function HeroClaudeDemo() {
   const reduced = usePrefersReducedMotion()
