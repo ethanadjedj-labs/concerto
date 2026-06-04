@@ -1,8 +1,8 @@
 # Privacy Policy
 
-**Concerto** — Remote Workshop for Claude Code Agents
+**Concerto** — Hosted MCP Server for Claude Code Orchestration
 
-_Last updated: 2026-05-17_
+_Last updated: 2026-06-04_
 
 ---
 
@@ -18,24 +18,22 @@ Concerto is operated by Ethan Adjedj. You can reach us at **privacy@concerto.run
 
 | Data | Why | How long |
 |------|-----|----------|
-| **Buyer email address** | Received from Stripe after a successful purchase. Used to send your onboarding email and dashboard link. | 30 days after purchase, then anonymised |
-| **DigitalOcean API key** | Entered by you during onboarding. Used once to provision your Droplet, then **permanently deleted** from our database. We never store it beyond the time needed to make the DO API call. | Deleted immediately after provisioning completes |
-| **Dashboard token** (UUID) | Generated at purchase. Acts as your authentication credential for the dashboard. | Retained while your session is active; anonymised 30 days post-purchase |
-| **Droplet metadata** | Droplet ID, IP address, and provisioning status — necessary to route your terminal session and show dashboard status. | Retained for 30 days post-purchase, then anonymised |
+| **Buyer email address** | Received from Stripe after a successful purchase or trial signup. Used to send your onboarding email and dashboard link. | 30 days after purchase, then anonymised |
+| **Dashboard token** (UUID) | Generated at purchase. Acts as your authentication credential for the MCP connection. | Retained while your subscription is active; anonymised 30 days post-cancellation |
+| **MCP session metadata** | Session IDs and timestamps necessary to route Claude Code orchestration jobs. | Retained for 30 days, then anonymised |
 
 ### What we explicitly do NOT collect
 
-- The code you write or run on your Droplet
-- Your Claude Code conversations or agent outputs
-- Keystrokes entered in the embedded terminal
+- The code you write or run through Claude Code sessions
+- Your Claude conversations or agent outputs
 - Browser fingerprints, behavioural analytics, or ad-targeting data
-- Any data from your DigitalOcean account beyond what is needed to create a single Droplet
+- Payment card data (handled directly by Stripe — we never see it)
 
 ---
 
 ## 3. Where Your Data Lives
 
-Our backend runs on a VPS in **Hetzner's Falkenstein datacenter** (Germany, EU). Data is stored in a SQLite database on that server. Hetzner is certified to ISO/IEC 27001 and operates within the EU under GDPR jurisdiction.
+Our backend runs on a server in **Hetzner's Falkenstein datacenter** (Germany, EU). Data is stored in a SQLite database on that server. Hetzner is certified to ISO/IEC 27001 and operates within the EU under GDPR jurisdiction.
 
 No personal data is transferred to jurisdictions outside the EU/EEA in the course of normal service operation, with the exception of the processors listed in Section 6.
 
@@ -56,8 +54,7 @@ Your dashboard session is authenticated via a URL-embedded UUID token, not cooki
 | Processing activity | Lawful basis |
 |--------------------|-------------|
 | Sending onboarding email | **Contract performance** (Art. 6(1)(b)) — necessary to deliver the purchased service |
-| Storing Droplet metadata | **Contract performance** — necessary to operate your dashboard |
-| DigitalOcean API key (transient) | **Contract performance** — you provided it expressly for this purpose |
+| Storing session metadata | **Contract performance** — necessary to operate your MCP connection |
 | Retaining anonymised analytics | **Legitimate interest** (Art. 6(1)(f)) — improving service reliability |
 
 ---
@@ -70,8 +67,7 @@ We share data with the following third parties to deliver the service:
 |-----------|---------|-------------|-------------|
 | **Stripe, Inc.** | Payment processing | Email address, payment card (card data goes directly to Stripe — we never see it) | stripe.com/privacy |
 | **Resend** | Transactional email delivery | Email address | resend.com/legal/privacy-policy |
-| **DigitalOcean, LLC** | Droplet provisioning — **customer-controlled** | Your DO API key (used transiently), Droplet creation request | digitalocean.com/legal/privacy-policy |
-| **Hetzner Online GmbH** | VPS hosting for our backend | All data stored in our database (encrypted at rest) | hetzner.com/legal/privacy-policy |
+| **Hetzner Online GmbH** | Server hosting for our backend | All data stored in our database (encrypted at rest) | hetzner.com/legal/privacy-policy |
 
 We do not sell or rent your data to any party.
 
@@ -95,10 +91,9 @@ To exercise any of these rights, email **privacy@concerto.run** with your purcha
 
 ## 8. Data Retention
 
-- Personal data (email, token, Droplet metadata) is retained for **30 days** after your purchase date.
-- After 30 days, records are anonymised: email is hashed, IP addresses are zeroed, tokens are replaced with opaque identifiers.
-- Anonymised aggregate data (e.g., provisioning success rates) may be retained indefinitely for operational analytics.
-- Your DigitalOcean API key is **never retained** past the provisioning step.
+- Personal data (email, token, session metadata) is retained for **30 days** after your subscription ends.
+- After 30 days, records are anonymised: email is hashed, tokens are replaced with opaque identifiers.
+- Anonymised aggregate data (e.g., session success rates) may be retained indefinitely for operational analytics.
 
 ---
 
@@ -106,7 +101,6 @@ To exercise any of these rights, email **privacy@concerto.run** with your purcha
 
 - All API traffic is encrypted in transit via TLS/HTTPS.
 - The backend database is stored on encrypted Hetzner block storage.
-- Your DO API key is held in memory only for the duration of the DO API call, then discarded.
 - Dashboard tokens are cryptographically random 128-bit UUIDs; they cannot be guessed.
 
 ---

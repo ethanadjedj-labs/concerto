@@ -1,15 +1,15 @@
 # Refund Policy
 
-**Concerto** — Remote Workshop for Claude Code Agents
+**Concerto** — Hosted MCP Server for Claude Code Orchestration
 
-_Last updated: 2026-05-17_
+_Last updated: 2026-06-04_
 
 ---
 
 ## The Short Version
 
-- **Full refund**: if your Droplet never reached "ready" and it's been fewer than 14 days since you purchased.
-- **No refund**: once your Droplet is successfully provisioned (you can access it in the dashboard), the service has been rendered.
+- **Full refund**: if the Concerto MCP service is not functional and it's been fewer than 14 days since you purchased.
+- **No refund**: once you have successfully connected Claude using the provided `claude mcp add` command, the service has been delivered.
 - **How to claim**: email **support@concerto.run** from your purchase email address.
 - **Timeline**: Stripe processes refunds within 5 business days of approval.
 
@@ -19,29 +19,26 @@ _Last updated: 2026-05-17_
 
 ### When you are entitled to a refund
 
-You qualify for a **100% refund of $99.00 USD** if all of the following are true:
+You qualify for a **100% refund** if all of the following are true:
 
 1. Your purchase was made within the last **14 calendar days**.
-2. Your Droplet status in the Concerto dashboard shows something other than **"ready"** — meaning the provisioning process did not complete successfully (stuck in "provisioning," "error," or "pending").
-3. You have not manually modified or deleted the Droplet in your DigitalOcean account in a way that prevented provisioning (e.g., deleted the DO API key before provisioning completed).
+2. You were unable to connect Claude to your Concerto MCP endpoint using the provided command — meaning the service did not function as described.
+3. You contacted support@concerto.run and gave us a reasonable opportunity to resolve the issue (typically 1 business day).
 
-We will issue the refund without argument. Provisioning is our job; if we failed at it, you owe us nothing.
+We will issue the refund without argument if the service genuinely failed on our side.
 
 ### When a refund is not available
 
-Once your Droplet shows **"ready"** status in the dashboard, the service has been delivered. At that point:
+Once you have successfully used the Concerto MCP connection — Claude responded to requests through your endpoint — the service has been delivered. At that point:
 
-- A Droplet is running inside your DigitalOcean account
-- Claude Code is installed and accessible via the browser terminal
-- The $99 fee covers the provisioning and orchestration work, which has been completed
-
-Because the Droplet itself is in your DigitalOcean account — not ours — we cannot "take it back." The refund window exists precisely for the case where we failed to deliver, not for change-of-mind after a successful setup.
+- The MCP endpoint was live and functional
+- Refunds are not available for change-of-mind after successful use
 
 ### Edge cases
 
-**Provisioning partially completed, then stalled**: If the Droplet was created in your DO account but never reached "ready" (e.g., cloud-init failed, tunnel never connected), this counts as a provisioning failure. You are entitled to a full refund. The Droplet in your DO account is yours to delete.
+**Service functioned once but stopped**: If the MCP endpoint worked initially and then experienced an outage, contact us first. We will fix it. If we cannot restore service within a reasonable time, we will discuss a prorated refund.
 
-**Refund request after 14 days**: We will consider late refund requests for provisioning failures on a case-by-case basis. Email us — if we genuinely failed, we'll make it right.
+**Refund request after 14 days**: We will consider late refund requests for genuine service failures on a case-by-case basis. Email us — if we genuinely failed, we'll make it right.
 
 **Chargeback**: If you initiate a credit card chargeback before contacting us, it may prevent us from processing a refund and may result in suspension of your Concerto access. Please email us first — we resolve disputes quickly.
 
@@ -50,7 +47,7 @@ Because the Droplet itself is in your DigitalOcean account — not ours — we c
 ## How to Request a Refund
 
 1. Email **support@concerto.run** with the subject line: `Refund request — [your purchase email]`
-2. Include: your purchase email address and a brief description of what went wrong (optional but helpful for us to fix it)
+2. Include: your purchase email address and a brief description of what went wrong
 3. We will respond within 1 business day to confirm eligibility
 4. Once approved, Stripe processes the refund to your original payment method within **5 business days**
 

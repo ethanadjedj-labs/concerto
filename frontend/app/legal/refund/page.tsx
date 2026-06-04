@@ -2,13 +2,13 @@ import type { Metadata } from "next"
 import { getLegalContent } from "@/lib/legal"
 
 export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: "Concerto Terms of Service — governing your use of the Concerto hosted MCP server.",
-  openGraph: { title: "Terms of Service — Concerto", url: "https://concerto.run/legal/terms" },
+  title: "Refund Policy",
+  description: "Concerto Refund Policy — when and how to request a refund.",
+  openGraph: { title: "Refund Policy — Concerto", url: "https://concerto.run/legal/refund" },
 }
 
-export default function TermsPage() {
-  const html = getLegalContent("TERMS.md")
+export default function RefundPage() {
+  const html = getLegalContent("REFUND.md")
   return (
     <article
       className="prose prose-sm sm:prose-base max-w-none

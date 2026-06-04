@@ -89,7 +89,7 @@ function LogoMark({ size = 28 }: { size?: number }) {
 }
 
 function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
-  const labels = ["Sign in", "Connect", "Build"] as const
+  const labels = ["Add MCP", "Connect", "Build"] as const
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center">
@@ -372,6 +372,98 @@ function UpgradeCTAs({ token }: { token: string }) {
           or Pro — $99/mo
         </button>
       </form>
+    </div>
+  )
+}
+
+// ─── MCP connect card ─────────────────────────────────────────────────────────
+function MpcConnectCard({ token, mcpUrl, isConnected }: { token: string; mcpUrl: string; isConnected: boolean }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const cmd = mcpUrl && mcpUrl !== "Loading..."
+    ? `claude mcp add --transport http concerto ${mcpUrl}`
+    : `claude mcp add --transport http concerto https://api.concerto.run/mcp-proxy/${token}/mcp`
+
+  async function copyCmd() {
+    try {
+      await navigator.clipboard.writeText(cmd)
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = cmd
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setCopied(false), 2500)
+  }
+
+  return (
+    <div className="rounded-2xl" style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}>
+      <div className="space-y-5 px-6 py-6 md:px-8 md:py-8">
+        <div>
+          <h1 className="mb-2 text-[22px] font-semibold" style={{ color: "#191919" }}>
+            {isConnected ? "Waiting for your first request…" : "Connect Claude to Concerto"}
+          </h1>
+          <p className="text-[15px] leading-relaxed" style={{ color: "#8a847b" }}>
+            {isConnected
+              ? "MCP connection active. Ask Claude to run something and you’ll jump to step 3 automatically."
+              : "Run this command in your terminal. Your token is already filled in."}
+          </p>
+        </div>
+
+        <div
+          className="rounded-xl"
+          style={{ border: "1.5px solid #cc785c", backgroundColor: "#fffaf7", overflow: "hidden" }}
+        >
+          <div className="px-4 pt-3 pb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
+              Terminal / Claude Desktop
+            </p>
+          </div>
+          <div className="flex items-start gap-2 px-4 pb-3">
+            <code
+              className="min-w-0 flex-1 break-all font-mono text-[13px] leading-relaxed"
+              style={{ color: "#191919" }}
+            >
+              {cmd}
+            </code>
+            <button
+              type="button"
+              onClick={copyCmd}
+              className="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all"
+              style={{
+                backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.10)",
+                color: "#cc785c",
+                whiteSpace: "nowrap",
+              }}
+              aria-label={copied ? "Copied" : "Copy command"}
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+
+        <p className="text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+          Your token appears in your dashboard right after checkout. Works the same for Claude Desktop and any other MCP client.
+        </p>
+
+        {isConnected && (
+          <div
+            className="flex items-center gap-3 rounded-xl px-4 py-3.5"
+            style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
+          >
+            <RefreshCw className="h-4 w-4 shrink-0 animate-spin" style={{ color: "#cc785c" }} />
+            <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
+              Waiting for your first Claude Code call — you’ll jump ahead automatically.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1058,276 +1150,14 @@ export default function DashboardPage({
           </StatusCard>
         )}
 
-        {/* ── Step 1: Sign in to Claude (GitHub-style) ── */}
+        {/* ── Step 1: Add MCP connection ── */}
         {uiState === "step1" && (
-          <div
-            className="rounded-2xl"
-            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
-          >
-            <div className="space-y-5 px-6 py-6 md:px-8 md:py-8">
-              <div>
-                <h1
-                  className="mb-2 text-[22px] font-semibold"
-                  style={{ color: "#191919" }}
-                >
-                  Sign in to Claude
-                </h1>
-                <p
-                  className="text-[15px] leading-relaxed"
-                  style={{ color: "#8a847b" }}
-                >
-                  Authorize Concerto with your Claude account so it can run
-                  Claude Code on your behalf. Same one-click flow you use to
-                  link GitHub.
-                </p>
-              </div>
-
-              {/* idle / starting → primary button */}
-              {(signInPhase === "idle" || signInPhase === "starting") &&
-                !oauthSuccess && (
-                  <Button
-                    onClick={startSignIn}
-                    disabled={signInPhase === "starting"}
-                    className="w-full rounded-xl text-[15px] font-medium"
-                    style={{
-                      backgroundColor: "#cc785c",
-                      color: "#fff",
-                      minHeight: "48px",
-                    }}
-                  >
-                    {signInPhase === "starting" ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Preparing sign-in…
-                      </>
-                    ) : (
-                      "Sign in with Claude"
-                    )}
-                  </Button>
-                )}
-
-              {/* awaiting_code / submitting → authorize link + code input */}
-              {(signInPhase === "awaiting_code" ||
-                signInPhase === "submitting" ||
-                signInPhase === "finishing") &&
-                !oauthSuccess && (
-                  <div className="space-y-4">
-                    {authUrl && (
-                      <a
-                        href={authUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold"
-                        style={{
-                          backgroundColor: "#191919",
-                          color: "#fff",
-                          minHeight: "48px",
-                        }}
-                      >
-                        Open Anthropic, then click Authorize
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    )}
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="oauth-code-input"
-                        className="block text-[13px] font-semibold"
-                        style={{ color: "#191919" }}
-                      >
-                        Paste the code Anthropic gave you
-                      </label>
-                      <input
-                        id="oauth-code-input"
-                        type="text"
-                        value={oauthCode}
-                        onChange={(e) => setOauthCode(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") submitCode()
-                        }}
-                        placeholder="Paste the code here…"
-                        autoComplete="off"
-                        spellCheck={false}
-                        autoFocus
-                        disabled={
-                          signInPhase === "submitting" ||
-                          signInPhase === "finishing"
-                        }
-                        className="w-full rounded-xl px-4 py-3.5 text-[15px] font-mono outline-none transition-shadow focus:shadow-[0_0_0_3px_rgba(204,120,92,0.15)]"
-                        style={{
-                          backgroundColor: "#fff",
-                          border: "2px solid #cc785c",
-                          color: "#191919",
-                        }}
-                      />
-                      <Button
-                        onClick={submitCode}
-                        disabled={
-                          signInPhase === "submitting" ||
-                          signInPhase === "finishing" ||
-                          !oauthCode.trim()
-                        }
-                        className="w-full rounded-xl text-[15px] font-medium"
-                        style={{
-                          backgroundColor: "#cc785c",
-                          color: "#fff",
-                          minHeight: "48px",
-                        }}
-                      >
-                        {signInPhase === "submitting" ||
-                        signInPhase === "finishing" ? (
-                          <>
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                            {signInPhase === "finishing"
-                              ? finishingMsg
-                              : "Sending code…"}
-                          </>
-                        ) : (
-                          "Complete sign-in"
-                        )}
-                      </Button>
-                      <p
-                        className="text-[12px] leading-relaxed"
-                        style={{ color: "#8a847b" }}
-                      >
-                        The code looks like{" "}
-                        <code
-                          className="rounded px-1 py-0.5 font-mono text-[11px]"
-                          style={{ backgroundColor: "#f3efe5", color: "#191919" }}
-                        >
-                          sk-ant-oat01-…
-                        </code>
-                        . A tab may have opened on its own — if not, use the
-                        button above.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-              {/* error */}
-              {signInError && !oauthSuccess && (
-                <div
-                  className="rounded-xl px-4 py-3 text-[13px] leading-relaxed"
-                  style={{
-                    backgroundColor: "rgba(220,38,38,0.06)",
-                    color: "#b91c1c",
-                    border: "1px solid rgba(220,38,38,0.2)",
-                  }}
-                >
-                  {signInError}
-                </div>
-              )}
-
-              {/* success */}
-              {oauthSuccess && (
-                <div
-                  className="flex items-center gap-2 rounded-xl px-4 py-3 text-[15px] font-medium"
-                  style={{
-                    backgroundColor: "rgba(34,197,94,0.08)",
-                    color: "#16a34a",
-                    border: "1px solid rgba(34,197,94,0.2)",
-                  }}
-                >
-                  <Check className="h-4 w-4 shrink-0" />
-                  Signed in. Moving to next step…
-                </div>
-              )}
-            </div>
-          </div>
+          <MpcConnectCard token={params.token} mcpUrl={mcpUrl} isConnected={false} />
         )}
 
-        {/* ── Step 2: Connect to Claude ── */}
+        {/* ── Step 2: Waiting for MCP call ── */}
         {uiState === "step2" && (
-          <div
-            className="rounded-2xl"
-            style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}
-          >
-            <div className="space-y-5 px-6 py-6 md:px-8 md:py-7">
-              <div>
-                <h1
-                  className="mb-1.5 text-[21px] font-semibold"
-                  style={{ color: "#191919" }}
-                >
-                  Connect Concerto to Claude
-                </h1>
-                <p
-                  className="text-[14px] leading-relaxed"
-                  style={{ color: "#8a847b" }}
-                >
-                  The button opens Claude with everything pre-filled. Just
-                  click Add, then Connect — this page jumps ahead the moment
-                  you do.
-                </p>
-              </div>
-
-              <a
-                href={`https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Concerto&connectorUrl=${encodeURIComponent(mcpUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: "#cc785c",
-                  color: "#fff",
-                  minHeight: "52px",
-                  boxShadow: "0 1px 2px rgba(204,120,92,0.25)",
-                }}
-              >
-                Open Claude &amp; add Concerto
-                <ExternalLink className="h-4 w-4" />
-              </a>
-
-              <div className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: "#191919" }}>
-                <span style={{ color: "#8a847b" }}>In Claude:</span>
-                <span>
-                  <strong>Add</strong> &middot; then <strong>Connect</strong>
-                </span>
-              </div>
-
-              {/* Live detection — the real source of truth */}
-              <div
-                className="flex items-center gap-3 rounded-xl px-4 py-3.5"
-                style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
-              >
-                <RefreshCw
-                  className="h-4 w-4 shrink-0 animate-spin"
-                  style={{ color: "#cc785c" }}
-                />
-                <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-                  Waiting on Add + Connect in Claude — you&apos;ll jump ahead automatically.
-                </p>
-              </div>
-
-
-              <details className="group">
-                <summary
-                  className="cursor-pointer list-none text-center text-[12px] font-medium transition-opacity hover:opacity-70"
-                  style={{ color: "#8a847b" }}
-                >
-                  The form was empty, or already connected? →
-                </summary>
-                <div className="mt-3 space-y-3">
-                  <ValueCard label="Name" value="Concerto" />
-                  <ValueCard label="Remote MCP server URL" value={mcpUrl} emphasis />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUIState("step3")
-                      uiStateRef.current = "step3"
-                    }}
-                    className="w-full rounded-xl text-[13px] font-medium transition-opacity hover:opacity-80"
-                    style={{
-                      backgroundColor: "#faf9f5",
-                      color: "#8a847b",
-                      border: "1px solid #f3efe5",
-                      minHeight: "42px",
-                    }}
-                  >
-                    Skip ahead — I&apos;ve already connected
-                  </button>
-                </div>
-              </details>
-            </div>
-          </div>
+          <MpcConnectCard token={params.token} mcpUrl={mcpUrl} isConnected={true} />
         )}
 
         {/* ── Step 3: You're ready ── */}

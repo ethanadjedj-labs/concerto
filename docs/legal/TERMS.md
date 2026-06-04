@@ -1,25 +1,31 @@
 # Terms of Service
 
-**Concerto** — Remote Workshop for Claude Code Agents
+**Concerto** — Hosted MCP Server for Claude Code Orchestration
 
-_Last updated: 2026-05-17_
+_Last updated: 2026-06-04_
 
 ---
 
 ## 1. Who We Are and What Concerto Does
 
-Concerto is a provisioning and orchestration service operated by Ethan Adjedj ("we," "us," "our"). When you purchase access to Concerto, we use your DigitalOcean API key to spin up a Virtual Private Server (VPS) — a Droplet — inside **your** DigitalOcean account. We then install Claude Code, an MCP server, and a secure tunnel so you can pilot Claude Code agents from your browser.
+Concerto is a hosted MCP (Model Context Protocol) server operated by Ethan Adjedj ("we," "us," "our"). When you subscribe to Concerto, you receive a personal MCP endpoint that you connect to Claude using a single command:
 
-Key point: **you own the infrastructure.** The Droplet lives in your DigitalOcean account, is billed by DigitalOcean directly to you, and you retain full control over it. Concerto's role is to provision it, connect you to it, and get out of your way.
+```
+claude mcp add --transport http concerto https://api.concerto.run/mcp-proxy/<your-token>/mcp
+```
+
+Your token appears in your dashboard immediately after checkout. The same command works for Claude Desktop and any other MCP-compatible client.
+
+Concerto manages all infrastructure on its own servers. You do not provision, own, or pay for any third-party cloud account or virtual machine as part of this service.
 
 ---
 
 ## 2. The Service in Plain Terms
 
-- **What you pay us**: a one-time fee of **$99 USD**, processed by Stripe.
-- **What you get**: a ready-to-use remote Claude Code workshop running on a DigitalOcean Droplet in your account.
-- **What remains yours**: the Droplet itself, any work you do on it, your DigitalOcean account, your Anthropic Max subscription.
-- **What we orchestrate**: initial provisioning (cloud-init, package install, tunnel setup), dashboard access, embedded browser terminal.
+- **What you pay us**: a recurring subscription fee, charged monthly by Stripe (Solo — $49/mo, Pro — $99/mo). Free 30-minute trials are available without a card.
+- **What you get**: a personal, hosted MCP server endpoint. Connect Claude to it and Claude can orchestrate Claude Code sessions on Concerto-managed infrastructure.
+- **What remains yours**: your Claude conversations, your code, your Anthropic account.
+- **What we manage**: the MCP server, Claude Code orchestration workers, uptime, and all underlying cloud infrastructure.
 
 ---
 
@@ -27,15 +33,15 @@ Key point: **you own the infrastructure.** The Droplet lives in your DigitalOcea
 
 All payments are processed by Stripe, Inc. By completing a purchase you agree to Stripe's terms of service. We do not store your payment card details; Stripe handles all card data under PCI-DSS compliance.
 
-The purchase price is **$99.00 USD**, charged once at the time of purchase. There are no recurring charges from Concerto. Your ongoing DigitalOcean Droplet costs are billed separately by DigitalOcean to your account.
+Subscriptions are billed monthly at the rate shown at checkout. Stripe will charge your payment method automatically on each renewal date. You can cancel at any time from your dashboard or by emailing support@concerto.run.
 
 ---
 
 ## 4. Refund Policy
 
-If your Droplet never reaches a "ready" state — meaning our provisioning process failed to successfully complete the installation — you are entitled to a **full refund** within **14 days** of your purchase date. To request a refund, email us at **support@concerto.run** with your purchase email address. We will process the refund through Stripe within 5 business days of approving your request.
+If the Concerto MCP service is not functional after purchase — meaning you cannot connect Claude using the provided command within 14 days of purchase — you are entitled to a **full refund**. Email **support@concerto.run** with your purchase email address. We will process approved refunds through Stripe within 5 business days.
 
-Once provisioning has completed successfully (you can access your Droplet via the dashboard), refunds are not available. The Droplet has been created inside your DigitalOcean account and belongs to you; the service has been rendered.
+Once you have successfully connected Claude to your Concerto endpoint and the service has been rendered, refunds are not available except at our discretion.
 
 A complete, standalone Refund Policy is available at [concerto.run/legal/refund](/legal/refund).
 
@@ -43,45 +49,41 @@ A complete, standalone Refund Policy is available at [concerto.run/legal/refund]
 
 ## 5. Your Responsibilities
 
-**DigitalOcean account**: You are responsible for providing a valid DigitalOcean API key with write permissions. Your DigitalOcean bill (for the Droplet's compute time) is between you and DigitalOcean. We are not responsible for your DO charges.
+**Anthropic account**: Claude Code requires an Anthropic Max subscription. Obtaining and maintaining that subscription is your responsibility.
 
-**Anthropic Max subscription**: Claude Code requires an Anthropic Max subscription. Obtaining and maintaining that subscription is your responsibility.
+**Your dashboard token**: Your token authenticates your MCP connection. Treat it like a password. Do not share it publicly.
 
-**Lawful use**: You may not use Concerto to provision Droplets for any purpose that violates DigitalOcean's Acceptable Use Policy, Anthropic's usage policies, or applicable law. See our full [Acceptable Use Policy](/legal/aup) for specifics.
+**Lawful use**: You may not use Concerto to run code or orchestrate tasks that violate Anthropic's usage policies or applicable law. See our full [Acceptable Use Policy](/legal/aup) for specifics.
 
-**Security**: Your dashboard token grants access to your Droplet's terminal. Treat it like a password. Do not share it publicly.
-
-**Your data**: Anything you store on your Droplet or run through your Claude Code agents is your responsibility. We do not access, monitor, or retain your code, conversations, or outputs.
+**Your data**: Anything you run through your Claude Code sessions is your responsibility. We do not access, monitor, or retain your code or conversation outputs.
 
 ---
 
 ## 6. What We Provide and Do Not Guarantee
 
-We will make reasonable efforts to provision your Droplet successfully and keep the Concerto dashboard operational. However, the service is provided **"as is"** without warranties of any kind, express or implied. We do not guarantee:
+We will make reasonable efforts to keep the Concerto MCP service operational. However, the service is provided **"as is"** without warranties of any kind, express or implied. We do not guarantee:
 
-- Uninterrupted availability of the Concerto dashboard
-- Compatibility with future versions of Claude Code, DigitalOcean's API, or Anthropic's services
-- That your Droplet will remain reachable if DigitalOcean experiences an outage or you exhaust your DO billing
+- Uninterrupted availability of the MCP endpoint or orchestration workers
+- Compatibility with future versions of Claude Code or Anthropic's services
+- That service will remain available if Anthropic changes its API or policies in ways that affect our infrastructure
 
 ---
 
 ## 7. Limitation of Liability
 
-To the maximum extent permitted by applicable law, our total liability to you for any claim arising from your use of Concerto — regardless of the legal theory — is limited to **the amount you paid us**, which is $99.00 USD. We are not liable for indirect, incidental, consequential, or punitive damages.
-
-This limitation exists because the infrastructure is in your hands: you own the Droplet, you control the DigitalOcean account, and any material loss would occur in your own cloud environment, not in ours.
+To the maximum extent permitted by applicable law, our total liability to you for any claim arising from your use of Concerto — regardless of the legal theory — is limited to **the amount you paid us in the three months preceding the claim**. We are not liable for indirect, incidental, consequential, or punitive damages.
 
 ---
 
 ## 8. Termination
 
-We reserve the right to suspend or terminate your Concerto dashboard access if:
+We reserve the right to suspend or terminate your Concerto access if:
 
 - We detect abuse as described in our Acceptable Use Policy
-- You initiate a fraudulent chargeback after a successful provisioning
+- You initiate a fraudulent chargeback
 - You take actions that materially harm our infrastructure or other users
 
-Termination of dashboard access does not affect the Droplet in your DigitalOcean account — that remains yours.
+Cancellation of your subscription takes effect at the end of your current billing period.
 
 ---
 
@@ -93,7 +95,7 @@ We take your privacy seriously. We collect the minimum data needed to deliver th
 
 ## 10. Changes to These Terms
 
-We may update these Terms by posting a new version at concerto.run/legal/terms with an updated "Last updated" date. Continued use of the service after changes are posted constitutes acceptance. We will make reasonable efforts to notify existing customers of material changes via email.
+We may update these Terms by posting a new version at concerto.run/legal/terms with an updated "Last updated" date. Continued use of the service after changes are posted constitutes acceptance. We will make reasonable efforts to notify existing subscribers of material changes via email.
 
 ---
 
