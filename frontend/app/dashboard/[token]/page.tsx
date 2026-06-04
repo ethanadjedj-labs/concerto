@@ -89,7 +89,7 @@ function LogoMark({ size = 28 }: { size?: number }) {
 }
 
 function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
-  const labels = ["Add MCP", "Connect", "Build"] as const
+  const labels = ["Sign in", "Connect", "Build"] as const
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex items-center">
@@ -376,81 +376,49 @@ function UpgradeCTAs({ token }: { token: string }) {
   )
 }
 
-// ─── MCP connect card ─────────────────────────────────────────────────────────
-function MpcConnectCard({ token, mcpUrl, isConnected }: { token: string; mcpUrl: string; isConnected: boolean }) {
-  const [copied, setCopied] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const cmd = mcpUrl && mcpUrl !== "Loading..."
-    ? `claude mcp add --transport http concerto ${mcpUrl}`
-    : `claude mcp add --transport http concerto https://api.concerto.run/mcp-proxy/${token}/mcp`
-
-  async function copyCmd() {
-    try {
-      await navigator.clipboard.writeText(cmd)
-    } catch {
-      const ta = document.createElement("textarea")
-      ta.value = cmd
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand("copy")
-      document.body.removeChild(ta)
-    }
-    setCopied(true)
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => setCopied(false), 2500)
-  }
-
+// ─── Onboarding connect card ──────────────────────────────────────────────────
+function MpcConnectCard({ isConnected }: { token: string; mcpUrl: string; isConnected: boolean }) {
   return (
     <div className="rounded-2xl" style={{ backgroundColor: "#fff", border: "1px solid #f3efe5" }}>
       <div className="space-y-5 px-6 py-6 md:px-8 md:py-8">
         <div>
           <h1 className="mb-2 text-[22px] font-semibold" style={{ color: "#191919" }}>
-            {isConnected ? "Waiting for your first request…" : "Connect Claude to Concerto"}
+            {isConnected ? "Waiting for your first request…" : "Complete your onboarding"}
           </h1>
           <p className="text-[15px] leading-relaxed" style={{ color: "#8a847b" }}>
             {isConnected
-              ? "MCP connection active. Ask Claude to run something and you’ll jump to step 3 automatically."
-              : "Run this command in your terminal. Your token is already filled in."}
+              ? "Your Concerto connection is active. Ask Claude to build something and you'll jump to step 3 automatically."
+              : "Check your email for the onboarding link. Click it to connect Claude to Concerto — the guided steps take about 2 minutes."}
           </p>
         </div>
 
-        <div
-          className="rounded-xl"
-          style={{ border: "1.5px solid #cc785c", backgroundColor: "#fffaf7", overflow: "hidden" }}
-        >
-          <div className="px-4 pt-3 pb-1">
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#b3613f" }}>
-              Terminal / Claude Desktop
-            </p>
+        {!isConnected && (
+          <div
+            className="rounded-xl px-5 py-4"
+            style={{ backgroundColor: "#faf9f5", border: "1px solid #f3efe5" }}
+          >
+            <ol className="space-y-3">
+              {[
+                { n: "1", label: "Open your email", detail: "Look for the onboarding message from Concerto" },
+                { n: "2", label: "Click the link", detail: "It opens the guided connection flow" },
+                { n: "3", label: "Follow the steps", detail: "Takes about 2 minutes, no terminal needed" },
+              ].map((step) => (
+                <li key={step.n} className="flex items-start gap-3">
+                  <span
+                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                    style={{ backgroundColor: "rgba(204,120,92,0.1)", color: "#cc785c" }}
+                  >
+                    {step.n}
+                  </span>
+                  <div>
+                    <span className="text-[13px] font-medium" style={{ color: "#191919" }}>{step.label}</span>
+                    <span className="text-[13px]" style={{ color: "#8a847b" }}> — {step.detail}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
-          <div className="flex items-start gap-2 px-4 pb-3">
-            <code
-              className="min-w-0 flex-1 break-all font-mono text-[13px] leading-relaxed"
-              style={{ color: "#191919" }}
-            >
-              {cmd}
-            </code>
-            <button
-              type="button"
-              onClick={copyCmd}
-              className="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium transition-all"
-              style={{
-                backgroundColor: copied ? "rgba(204,120,92,0.15)" : "rgba(204,120,92,0.10)",
-                color: "#cc785c",
-                whiteSpace: "nowrap",
-              }}
-              aria-label={copied ? "Copied" : "Copy command"}
-            >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-        </div>
-
-        <p className="text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
-          Your token appears in your dashboard right after checkout. Works the same for Claude Desktop and any other MCP client.
-        </p>
+        )}
 
         {isConnected && (
           <div
@@ -459,15 +427,19 @@ function MpcConnectCard({ token, mcpUrl, isConnected }: { token: string; mcpUrl:
           >
             <RefreshCw className="h-4 w-4 shrink-0 animate-spin" style={{ color: "#cc785c" }} />
             <p className="text-[14px] font-medium" style={{ color: "#191919" }}>
-              Waiting for your first Claude Code call — you’ll jump ahead automatically.
+              Waiting for your first Claude Code call — you'll jump ahead automatically.
             </p>
           </div>
         )}
+
+        <p className="text-[12px] leading-relaxed" style={{ color: "#8a847b" }}>
+          Didn't receive an email?{" "}
+          <a href="mailto:support@concerto.run" style={{ color: "#cc785c" }}>Contact support</a>
+        </p>
       </div>
     </div>
   )
 }
-
 // ─── Main page component ──────────────────────────────────────────
 
 export default function DashboardPage({

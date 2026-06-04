@@ -494,7 +494,7 @@ export default function TrialPage() {
                 <ol className="space-y-3">
                   {[
                     { n: "1", label: "Provisioning", detail: "Your environment is set up (~3 min)" },
-                    { n: "2", label: "Add MCP connection", detail: "One command: claude mcp add — takes 30 seconds" },
+                    { n: "2", label: "Check your email", detail: "A link arrives — click it to start guided onboarding" },
                     { n: "3", label: "Start orchestrating", detail: "Ask Claude to run anything in code" },
                   ].map((step) => (
                     <li key={step.n} className="flex items-start gap-3">
