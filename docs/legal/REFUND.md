@@ -9,7 +9,7 @@ _Last updated: 2026-06-04_
 ## The Short Version
 
 - **Full refund**: if the Concerto MCP service is not functional and it's been fewer than 14 days since you purchased.
-- **No refund**: once you have successfully connected Claude using the provided `claude mcp add` command, the service has been delivered.
+- **No refund**: once you have successfully connected Claude through the guided onboarding, the service has been delivered.
 - **How to claim**: email **support@concerto.run** from your purchase email address.
 - **Timeline**: Stripe processes refunds within 5 business days of approval.
 
@@ -22,7 +22,7 @@ _Last updated: 2026-06-04_
 You qualify for a **100% refund** if all of the following are true:
 
 1. Your purchase was made within the last **14 calendar days**.
-2. You were unable to connect Claude to your Concerto MCP endpoint using the provided command — meaning the service did not function as described.
+2. You were unable to connect Claude to your Concerto MCP endpoint through the guided onboarding — meaning the service did not function as described.
 3. You contacted support@concerto.run and gave us a reasonable opportunity to resolve the issue (typically 1 business day).
 
 We will issue the refund without argument if the service genuinely failed on our side.
